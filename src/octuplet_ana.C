@@ -50,13 +50,12 @@ int main()
 #define TDO_UPPER 440
   
   //initialize calibration
-  PDOToCharge PDO2Charge("~/atlas/VMM2_Calibration/DATA/PDO_Aug3/AllBoards_PDOcalib.root");
-  // Board105 here is wrong, I think!!!!
+  PDOToCharge PDO2Charge("/Users/sezata/atlas/VMM2_Calibration/DATA/PDO_Run3505/AllBoards_PDOcalib.root");
   
   //  TDOToTime TDO2Time("~/atlas/VMM2_Calibration/DATA/TDO_Aug3/AllBoards_TDOcalib.root");
   Octuplet oct;
-    scint s;
-    pacman p;
+  scint s;
+  pacman p;
   
   // declare and construct histograms
   TH1F ** hTDC = new TH1F*[25];
@@ -151,9 +150,9 @@ int main()
   TH2F *hresid;
   TH2F *hresidtrue;
   TH1F *hchid; 
- /////////////////////////////////
-
- ////////////////////
+  /////////////////////////////////
+  
+  ////////////////////
   hPadvsTr= new TH2F("padvstr","padvstr",150,150.,300., 200,150.,300.);
   hpadvsx= new TH2F("padvsx","padvsx",120,-120.,120, 100,0.,100.);
   hpadvsy= new TH2F("padvsy","padvsy",120,-120.,120, 100,0.,100.);
@@ -335,12 +334,13 @@ int main()
   TCanvas *fixsl = new TCanvas("fixsl","fixsl",635,490);
   /////////////////////////////////
   int  nrun, nev, nhit, channel, cont,an_nev,sel_ev,ret_ev,ch_ev;
+  int last_nev; //holds last event trig number
   int mm_nev, mm_hit,mm_trig,mm_vmm, mm_bcid,mm_board,mm_hits,mm_ch,mm_pdo,mm_tdo; 
   int sc_sec,sc_nsec,mm_sec,mm_nsec;
   int nch,mm_flag,time_flag;
   //   int numstrip;
   double ped, val,pdo_curr,tdo_curr,t0_off; 
-  char mm[2],strg1[5],strg2[6],strg3[9];
+  char mm[2],strg1[5],strg2[6],strg3[9],strg4[1];
   double pdo_cal[NUMBOARD][NUMVMM][64][2];
   double tdo_cal[NUMBOARD][NUMVMM][64][2];
   double tcorr[130];
@@ -357,98 +357,98 @@ int main()
 
   // corrections to flatten e+w vs e-w  -questionables, skipped
   /////////////////////////////////////////////////////
-   AT_Corr[0][0]=-0.033 ;
-   AT_Corr[0][1]=-0.01 ;
-   AT_Corr[1][0]=.05 ;
-   AT_Corr[1][1]=-.0088 ;
-   AT_Corr[2][0]=-.097 ;
-   AT_Corr[2][1]=-.0094 ;
-   AT_Corr[3][0]=-.053 ;
-   AT_Corr[3][1]= -.01;
-   AT_Corr[4][0]= -.048;
-   AT_Corr[4][1]= -.0081;
-   AT_Corr[5][0]= -.009;
-   AT_Corr[5][1]=-.0089 ;
-   AT_Corr[6][0]=-.0105 ;
-   AT_Corr[6][1]=-.01 ;
-   AT_Corr[7][0]=-.026 ;
-   AT_Corr[7][1]= -.01;
-   AT_Corr[8][0]= .089;
-   AT_Corr[8][1]= -.0094;
-   AT_Corr[9][0]= -.078;
-   AT_Corr[9][1]=-.01 ;
-   AT_Corr[10][0]= .0097;
-   AT_Corr[10][1]= -.01;
-   AT_Corr[11][0]=-0.017 ;
-   AT_Corr[11][1]=-.012 ;
+  AT_Corr[0][0]=-0.033 ;
+  AT_Corr[0][1]=-0.01 ;
+  AT_Corr[1][0]=.05 ;
+  AT_Corr[1][1]=-.0088 ;
+  AT_Corr[2][0]=-.097 ;
+  AT_Corr[2][1]=-.0094 ;
+  AT_Corr[3][0]=-.053 ;
+  AT_Corr[3][1]= -.01;
+  AT_Corr[4][0]= -.048;
+  AT_Corr[4][1]= -.0081;
+  AT_Corr[5][0]= -.009;
+  AT_Corr[5][1]=-.0089 ;
+  AT_Corr[6][0]=-.0105 ;
+  AT_Corr[6][1]=-.01 ;
+  AT_Corr[7][0]=-.026 ;
+  AT_Corr[7][1]= -.01;
+  AT_Corr[8][0]= .089;
+  AT_Corr[8][1]= -.0094;
+  AT_Corr[9][0]= -.078;
+  AT_Corr[9][1]=-.01 ;
+  AT_Corr[10][0]= .0097;
+  AT_Corr[10][1]= -.01;
+  AT_Corr[11][0]=-0.017 ;
+  AT_Corr[11][1]=-.012 ;
   ////////////////////////////////////////////////////////////
-
-   double top_corr[12],bot_corr[12]; 
-   bot_corr[0]=-0.6;
-   bot_corr[1]=-1.5;
-   bot_corr[2]=0.8;
-   bot_corr[3]=-1.5;
-   bot_corr[4]=1.4;
-   bot_corr[5]=0.8;
-   bot_corr[6]=-.8;
-   bot_corr[7]=0.1;
-   bot_corr[8]=-0.;
-   bot_corr[9]=-.8;
-   bot_corr[10]=1.4;
-   bot_corr[11]=.5;
-   top_corr[0]=-1.8;
-   top_corr[1]=2.4;
-   top_corr[2]=1.2;
-   top_corr[3]=0.6;
-   top_corr[4]=.5;
-   top_corr[5]=-3.6;
-   top_corr[6]=1.1;
-   top_corr[7]=2.;
-   top_corr[8]=-.1;
-   top_corr[9]=-2.;
-   top_corr[10]=.3;
-   top_corr[11]=-1.4;
-   double top_time=0.;
-   double bot_time=0.;
-   //  for(int i=0;i<12;i++) atdc_corr[i]=0;  
-    //////////////////////////////////
-   // corrections to equalize  e+w for t&b
-   atdc_corr[0]=-2.8;
-   atdc_corr[1]=-2.7;
-   atdc_corr[2]=-2.6;
-   atdc_corr[3]=-2.6;
-   atdc_corr[4]=-2.6;
-   atdc_corr[5]=-2.9;
-   atdc_corr[6]=-1.4;
-   atdc_corr[7]=-1.4;
-   atdc_corr[8]=-1.4;
-   atdc_corr[9]=-1.4;
-   atdc_corr[10]=-1.4;
-   atdc_corr[11]=-1.4;
-
-   ////////////////////////////////////////////
-   /// Set calibration constants
-   // AW - here we need to have multiple gain/tdo calibration files
-
-   for (int i=0 ; i < 64; i++) {
-     for (int j=0; j < NUMVMM; j++) {
-        for (int k=0; k < NUMBOARD; k++) {
-	           pdo_cal[k][j][i][0]=200.; //pedestal
-	           pdo_cal[k][j][i][1]=20.; //value
-	      }
+  
+  double top_corr[12],bot_corr[12]; 
+  bot_corr[0]=-0.6;
+  bot_corr[1]=-1.5;
+  bot_corr[2]=0.8;
+  bot_corr[3]=-1.5;
+  bot_corr[4]=1.4;
+  bot_corr[5]=0.8;
+  bot_corr[6]=-.8;
+  bot_corr[7]=0.1;
+  bot_corr[8]=-0.;
+  bot_corr[9]=-.8;
+  bot_corr[10]=1.4;
+  bot_corr[11]=.5;
+  top_corr[0]=-1.8;
+  top_corr[1]=2.4;
+  top_corr[2]=1.2;
+  top_corr[3]=0.6;
+  top_corr[4]=.5;
+  top_corr[5]=-3.6;
+  top_corr[6]=1.1;
+  top_corr[7]=2.;
+  top_corr[8]=-.1;
+  top_corr[9]=-2.;
+  top_corr[10]=.3;
+  top_corr[11]=-1.4;
+  double top_time=0.;
+  double bot_time=0.;
+  //  for(int i=0;i<12;i++) atdc_corr[i]=0;  
+  //////////////////////////////////
+  // corrections to equalize  e+w for t&b
+  atdc_corr[0]=-2.8;
+  atdc_corr[1]=-2.7;
+  atdc_corr[2]=-2.6;
+  atdc_corr[3]=-2.6;
+  atdc_corr[4]=-2.6;
+  atdc_corr[5]=-2.9;
+  atdc_corr[6]=-1.4;
+  atdc_corr[7]=-1.4;
+  atdc_corr[8]=-1.4;
+  atdc_corr[9]=-1.4;
+  atdc_corr[10]=-1.4;
+  atdc_corr[11]=-1.4;
+  
+  ////////////////////////////////////////////
+  /// Set calibration constants
+  // AW - here we need to have multiple gain/tdo calibration files
+  
+  for (int i=0 ; i < 64; i++) {
+    for (int j=0; j < NUMVMM; j++) {
+      for (int k=0; k < NUMBOARD; k++) {
+	pdo_cal[k][j][i][0]=200.; //pedestal
+	pdo_cal[k][j][i][1]=20.; //value
       }
     }
+  }
 
-   for (int i=0 ; i < 64; i++) {
-     for (int j=0; j < NUMVMM; j++) {
-        for (int k=0; k < NUMBOARD; k++) {
-	           tdo_cal[k][j][i][0]=12.;
-	           tdo_cal[k][j][i][1]=1.3;
-	      }
+  for (int i=0 ; i < 64; i++) {
+    for (int j=0; j < NUMVMM; j++) {
+      for (int k=0; k < NUMBOARD; k++) {
+	tdo_cal[k][j][i][0]=12.;
+	tdo_cal[k][j][i][1]=1.3;
       }
     }
+  }
 
-   //////////////////////////////////////////////////
+  //////////////////////////////////////////////////
   display_on=0;
   printf(" type 1 to see display, 2 to save it, 0 skip it it\n");
   scanf("%d",&display_on);
@@ -462,7 +462,7 @@ int main()
   
   ////////////////////////////////// test timestamp
 
-  fileout = fopen ("src/combined_example.dat","r");
+  fileout = fopen ("src/combined_example.dat","r"); // combined data file
   
   if(fileout == NULL)
     {
@@ -476,10 +476,7 @@ int main()
   // scan all events
   while (!feof(fileout)) {
     //  while(an_nev<50000) {
-    mm_flag=0;
-    an_nev++;
 
-    if (an_nev % 10000 == 0) cout << an_nev << " Events Analysed" << endl;
     //////////////////////////////////////////////////////////
     double tdc_padw[10],tdc_pade[10];
     int n_padw=0;
@@ -492,10 +489,22 @@ int main()
     double tdcav[12],tdcdiff[12],topxy[2][6],botxy[2][6];
     double length,dtime,botxpos,botypos,topxpos,topypos;
     double mu_phi,mu_stheta,tdo_upcut; 
+
+    mm_flag=0;
+    last_nev = nev;
     
     fscanf (fileout, "%s %s %d %d %d %d %d %d %d %d %d %d", strg1,strg2,
-	         &nrun, &nev,&mm_nev, &sc_sec,&mm_sec,&sc_nsec,
-	         &mm_nsec, &mm_trig, &nhit, &mm_hit);
+	    &nrun, &nev,&mm_nev, &sc_sec,&mm_sec,&sc_nsec,
+	    &mm_nsec, &mm_trig, &nhit, &mm_hit);
+
+    if (last_nev == nev) {
+      cout << "READING SAME EVENT "<<nev<<" TWICE! May have reached end of file" << endl;
+      break;
+    }
+
+    an_nev++;
+
+    if (an_nev % 10000 == 0) cout << an_nev << " Events Analysed" << endl;
     
     time_flag=1;
     
@@ -508,7 +517,7 @@ int main()
     
     ///////////////////////////////////
     printf ("EVENT HEADER: %d %d %d %d %d \n", nrun, nev,mm_nev, nhit,mm_hit);
-
+    
     if (nev == 0 && mm_nev!=0) {
       cout << "MISMATCH OF TRIGGER NUMBERS, SCINT: " << nev << " MM: " << mm_nev << endl;
       break;
@@ -519,33 +528,34 @@ int main()
       tdcinf[0] = channel;
       tdcinf[1] = cont;
       if (i<nhit-1) {
-    	    if (channel<12) {
-	            tdcinf[1]=tdcinf[1]+bot_corr[channel];
-              bot_array.push_back(tdcinf);
-	//	hTDC[channel]->Fill(cont);
-          }
-      // 1/2 middle counters
-	        if (channel==12) {
-	            if (cont >=150 && cont <= 200){
-	               tdc_padw[n_padw]=cont;
-	               n_padw++;
-	            }
+	if (channel<12) {
+	  cout << "found bottom hit: " << channel << endl;
+	  tdcinf[1]=tdcinf[1]+bot_corr[channel];
+	  bot_array.push_back(tdcinf);
+	  //	hTDC[channel]->Fill(cont);
+	}
+	// 1/2 middle counters
+	if (channel==12) {
+	  if (cont >=150 && cont <= 200){
+	    tdc_padw[n_padw]=cont;
+	    n_padw++;
+	  }
 	  // hPad[0]->Fill(cont);
-	        }
+	}
 	// the other middle counter
-	        if (channel==13) {
-	           if (cont >=150 && cont <= 200) {
-	               tdc_pade[n_pade]=cont +2; //2 for a centering
-	               n_pade++;
-	           }
+	if (channel==13) {
+	  if (cont >=150 && cont <= 200) {
+	    tdc_pade[n_pade]=cont +2; //2 for a centering
+	    n_pade++;
+	  }
 	  //	hPad[1]->Fill(cont);
-	        }  
-	        if (channel>15 && channel<28) {
-	            tdcinf[1]=tdcinf[1]+top_corr[channel-16];
-	//	hTDC[channel-4]->Fill(cont);    
-	            tdcinf[0]=tdcinf[0]-4;
-	            top_array.push_back(tdcinf);
-	        }  
+	}  
+	if (channel>15 && channel<28) {
+	  tdcinf[1]=tdcinf[1]+top_corr[channel-16];
+	  //	hTDC[channel-4]->Fill(cont);    
+	  tdcinf[0]=tdcinf[0]-4;
+	  top_array.push_back(tdcinf);
+	}  
       }
     } // all scintillators read out
 
@@ -575,6 +585,7 @@ int main()
       double gt= tdo_cal[bID][mm_vmm][mm_ch][1];
 
       pdo_curr=PDO2Charge.GetCharge(mm_pdo, mm_board, mm_vmm, mm_ch);
+      cout << "PDO! " << pdo_curr << endl;
       tdo_curr=(tdo_curr-pt)/gt;
 
       // old calibration format
@@ -589,7 +600,7 @@ int main()
       // if(mm_board==17) numprch[1]++;
     }
     fscanf(fileout, "%s",strg3); //end event readout
-
+    cout << strg3 << endl;
     // reorder micromega hits
     for (int k=0; k<NUMBOARD; k++){
       sort(mm_array[k].begin(), mm_array[k].end(), oct.compare);
@@ -609,11 +620,14 @@ int main()
 
     sort(bot_array.begin(), bot_array.end(), oct.compare);
     sort(top_array.begin(), top_array.end(), oct.compare);
-    // printf("reordered\n");
+    printf("reordered\n");
+    cout << "nbhits: " << nbhit << " nthits: " << nthit << endl;
  
     //////////// look for W+E pairs
     int bothits = s.pairs(bot_array,120.,170.);
+    cout << "Num bottom pairs: " << bothits << endl;
     int tophits= s.pairs(top_array,130.,170.);
+    cout << "Num top pairs: " << tophits << endl;
 
    //////////////////////////////////////////////////////////
    // keep events with only one top and  bottom  counter
@@ -623,7 +637,7 @@ int main()
    hMULT->Fill(bothits,tophits);
    if(bothits ==1 && tophits ==1 ) { /// to be removed
      ////////// paddle multiplicity
-    hPadMult->Fill(n_padw,n_pade);
+     hPadMult->Fill(n_padw,n_pade);
      if(n_padw==1 && n_pade==1) {
        sel_ev++;
        hPad[1]->Fill(tdc_pade[0]);
@@ -633,7 +647,7 @@ int main()
        pad_at=(tdc_pade[0]+tdc_padw[0])/2.;
        hPadat->Fill(pad_at);
        int outofbound=1;
-      for(int i=0; i<nthit;i++)   {
+       for(int i=0; i<nthit;i++)   {
 	 for(int j=i+1; j<nthit;j++) {
 	   if (top_array[i][2]==1.  && top_array[j][2]==1.) {
 	     int ind=top_array[i][0];
@@ -815,114 +829,22 @@ int main()
    for(int k=0; k<NUMBOARD; k++){
       p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at);
       if (mmhits[k] > 0 )
-        cout << "CLUSTER: " << mm_array[k][0][5]<< " MULT " << mm_array[k][0][4]<< endl; 
-  //    clust_end = -1;
-  //    cout << "BOARD " << k << ", Numhits " << mmhits[k] << endl; 
-  //    for(int i=0; i<mmhits[k]; i++) {
-  //      //       if(i >clust_end && mm_array[k][i][1]>= 6. && (mm_array[k][i][2]-0.5*pad_at+120.) <= tdo_upcut) { //WAS 5,then 10
-  //      if(i >clust_end && mm_array[k][i][1]>= 2.  && (mm_array[k][i][2]-0.5*pad_at+120.) <= TDO_UPPER) { //WAS 5,then 10
-	 // cout << "passed cut" << endl;
-	 // nclus++; // nclus indexes the found clusters
-	 // clust_start=i;
-	 // clust_end=i;
-	 // clust_mult=1;
-	 // mm_array[k][i][3] = nclus;
-	 // clust_cha = mm_array[k][i][1];
-	 // clust_time = mm_array[k][i][2];
-
-	 // //KEY//
-	 // //where a is board index, b loops through the hits
-	 // //mm_array[a][b][0] is CH #
-	 // //mm_array[a][b][1] is PDO
-	 // //mm_array[a][b][2] is TDO
-	 // //mm_array[a][b][3] is cluster number
-
-	 // for(int j=i+1; j<mmhits[k]; j++) {
-	 //   //check for duplicate channels
-	 //   if (mm_array[k][j][0 ]== mm_array[k][i][0] && irep==0) {
-	 //     printf(" duplicate ch ev: %d\n ",mm_nev);
-	 //     irep=1;
-	     
-	 //     for(int l=0; l<mmhits[k];l++) {
-	 //       //UNCOMMENT THIS OUT FOR DUPLICATE ANALYSIS
-	 //       // printf(" %5.1f %5.1f %5.1f  \n",
-	 //       // 	      mm_array[k][l][0], mm_array[k][l][1], mm_array[k][l][2]);
-	 //     }		 
-	 //   }
-	   
-	 //   //   if(clust_mult==1)
-	 //   clust_range = 5.; // look in a range of 5 channels from the last cluster end point
-	 //   // else clust_range=4.;
-	   
-	 //   if ( mm_array[k][j][1]>= 2.5 && (mm_array[k][j][2]- 0.5*pad_at + 120.) <= TDO_UPPER && 
-		// ( mm_array[k][j][0]<=(mm_array[k][clust_end][0]+clust_range) ))
-	 //     {
-	 //       mm_array[k][j][3] = nclus; 
-	 //       clust_mult++;
-	 //       clust_cha = clust_cha+mm_array[k][j][1];
-	 //       clust_time = clust_time+mm_array[k][j][2];    
-	 //       clust_end = j;
-	 //     }
-	 // }
-	 // mm_array[k][i][4] = clust_mult;
-	 // mm_array[k][i][5] = clust_end;
-	 // mm_array[k][i][6] = clust_cha;
-	 // mm_array[k][i][7] = clust_time/float(clust_mult); 
-  //      }
-  //    }
-    } // end cluster search
+        cout << "FORWARD CLUSTER: " << mm_array[k][0][5]<< " MULT " << mm_array[k][0][4]<< endl; 
+   } // end cluster search
  
    //hnclus->Fill(nclus);
    //   hnclus->Fill(nclus+10*(1-left));
-  /*
- if(an_nev==28701) {
-  printf("micromega  cluster  %d ev num %d \n",nclus,mm_nev);  
-        for(int i=0; i<mmhits;i++) {
-	  printf(" %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f \n",
-                  mm_array[0][i][0], mm_array[0][i][1], mm_array[0][i][2],
-		 mm_array[0][i][3], mm_array[0][i][4], mm_array[0][i][5], mm_array[0][i][6], 
-             mm_array[0][i][7]);
- 
-    }
-  }
-  */
+
    //////////////////////////////////////////////
    /////////////////////////////////////////////////////////
    /////////// add backward to cluster
    double run_clus=0;
-   double ind;
-   int ind1;
+   // double ind;
+   // int ind1;
    for (int k=0; k<NUMBOARD; k++) {
-     for(int i=0; i<mmhits[k]; i++) {
-       if(mm_array[k][i][3]>run_clus) {
-	 clust_mult=mm_array[k][i][4];
-	 //  if(clust_mult==1) 
-	 clust_range=5.;
-	 // else clust_range=4.;
-	 run_clus= mm_array[k][i][3];
-	 ind=  mm_array[k][i][0];
-	 ind1=i; 
-	 clust_beg=i;
-	 for(int j=i-1; j>-1 ; j--) {
-	   if( ( mm_array[k][j][0]>=mm_array[k][clust_beg][0]- clust_range)
-	       &&  mm_array[k][j][3]==0 && mm_array[k][j][1] >=2.5 &&
-	       (mm_array[k][j][2]-0.5*pad_at+120.) <= TDO_UPPER ) {
-	     mm_array[k][j][3]=run_clus;
-	     mm_array[k][j][4]= mm_array[k][ind1][4]+1.;
-	     mm_array[k][ind1][4]=0.;
-	     mm_array[k][j][5]= mm_array[k][ind1][5];
-	     mm_array[k][ind1][5]=0;	 
-	     mm_array[k][j][6]= mm_array[k][ind1][6]+ mm_array[k][j][1];
-	     mm_array[k][ind1][6]=0.;
-	     mm_array[k][j][7]= (mm_array[k][ind1][7]* (mm_array[k][j][4]-1.)+
-				 mm_array[k][j][2])/mm_array[k][j][4];
-	     mm_array[k][i][7]=0.;  
-	     ind1=j;
-	     clust_beg=j;
-	   }
-	 }
-       }
-     }
+     run_clus=p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at);
+     if (mmhits[k] > 1 )
+       cout << "BACKWARD CLUSTER: " << mm_array[k][1][5]<< " MULT " << mm_array[k][1][4]<< endl;
    }
    /*
   run_clus=0.;
@@ -958,7 +880,7 @@ int main()
    ////////// add average strip of cluster and tot charge ordering
    double xav; 
    run_clus=0.;
-   
+   int ind1=0;
    vector<double> chacont(2);
    vector< vector<double> > cluscha_ord[NUMBOARD];
    
@@ -1417,6 +1339,7 @@ int main()
 // ALL THE WAY TO HERE 
     ///////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////
+   //aw
  } // end mm study
   } // end while
  fclose(fileout);
