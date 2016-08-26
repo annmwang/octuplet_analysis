@@ -601,7 +601,8 @@ int main()
     }
     fscanf(fileout, "%s",strg3); //end event readout
     cout << strg3 << endl;
-    // reorder micromega hits
+    
+    // reorder micromega hits by increasing channel
     for (int k=0; k<NUMBOARD; k++){
       sort(mm_array[k].begin(), mm_array[k].end(), oct.compare);
       mmhits[k] = mm_array[k].size();
@@ -770,7 +771,7 @@ int main()
  ///////////////////////////////////////////
 
    int left=0;
- // if(mmhits>0 && mm_flag==1 && time_flag==1) {
+
    if(totHits>0 && mm_flag==1 && time_flag==1) {
      ch_ev++; 
      double totchal=0.;
@@ -780,145 +781,75 @@ int main()
      double art0=100.;
      double art1=100.;
      double art=100.;
-   ///////////////////////////////// 
-   /////////////// art signal
-   // AMW commented out for now
- //   for(int i=0; i<mmhits; i++) {
- //     if( mm_array[0][i][2]>art) art= mm_array[0][i][2]-0.5*pad_at+120.;
- //  if(mm_array[0][i][0]<=63. && mm_array[0][i][2]>art0) art0= mm_array[0][i][2]-0.5*pad_at+120. ;
- //    if(mm_array[0][i][0]>63. && mm_array[0][i][2]>art1) art1= mm_array[0][i][2]-0.5*pad_at+120.;
- //     if(mm_array[0][i][0]<=63.) left=1;  
- // if(mm_array[0][i][0]<=63.) totchal=totchal+mm_array[0][i][1];
- //  if(mm_array[0][i][0]>63.) totchar=totchar+mm_array[0][i][1];
- //    tcharge=tcharge+mm_array[0][i][1];
- //     nstrips++;
- // hchthre->Fill(mm_array[0][i][0]+0.5,mm_array[0][i][1]);
- // if(mm_array[0][i][0]<=63.) hchvstl->Fill(mm_array[0][i][1],mm_array[0][i][2]-0.5*pad_at+120.);
- //  if(mm_array[0][i][0]>63.) hchvstr->Fill(mm_array[0][i][1],mm_array[0][i][2]-0.5*pad_at+120.);
- // if(mm_array[0][i][0]<=63.) hchvstl_raw->Fill(mm_array[0][i][1],mm_array[0][i][2]);
- //  if(mm_array[0][i][0]>63.) hchvstr_raw->Fill(mm_array[0][i][1],mm_array[0][i][2]);
- //   }
- //   hart->Fill(art);
- //   hchalvsr->Fill(totchal,totchar);
- //   if(left==1) hTCvNSL->Fill(nstrips,tcharge);
- //   else   hTCvNSR->Fill(nstrips,tcharge);
-   //////////////////////////////
-   /////// correct for slewing after art signal
-   /*
-  for(int i=0; i<mmhits; i++) {
-      //200 and 100 ns
-    hsng_befcorr->Fill(mm_array[0][i][1],mm_array[0][i][2]);
-      tcorr[i]=3.564-0.0594*mm_array[0][i][1];
-      if(mm_array[0][i][1]  < 10.) tcorr[i]=tcorr[i]-74.96*TMath::Exp(-0.266*mm_array[0][i][1]);
-      mm_array[0][i][2]= mm_array[0][i][2]+tcorr[i];
-  }
-   */
-   //////////////////////////////////////////
-   //////////////////////////////////////////
-   ////////////////////// search for clusters
 
-   //PACMAN CLUSTERING//
-   
-   int nclus = 0;
-   int clust_start, clust_beg, clust_mult;
-   int clust_end = -1;
-   double clust_cha,clust_time, clust_range;
-   int irep=0;
-   // cout << "having fun" << endl;
-   //   for(int i=0; i<mmhits; i++) {
-   for(int k=0; k<NUMBOARD; k++){
-      p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at);
-      if (mmhits[k] > 0 )
-        cout << "FORWARD CLUSTER: " << mm_array[k][0][5]<< " MULT " << mm_array[k][0][4]<< endl; 
-   } // end cluster search
- 
-   //hnclus->Fill(nclus);
-   //   hnclus->Fill(nclus+10*(1-left));
+     //////////////////////////////////////////
+     //////////////////////////////////////////
+     ////////////////////// search for clusters
+     
+     //PACMAN CLUSTERING//
 
-   //////////////////////////////////////////////
-   /////////////////////////////////////////////////////////
-   /////////// add backward to cluster
-   double run_clus=0;
-   // double ind;
-   // int ind1;
-   for (int k=0; k<NUMBOARD; k++) {
-     run_clus=p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at);
-     if (mmhits[k] > 1 )
-       cout << "BACKWARD CLUSTER: " << mm_array[k][1][5]<< " MULT " << mm_array[k][1][4]<< endl;
-   }
-   /*
-  run_clus=0.;
-   for(int i=0; i<mmhits; i++) {
-     if(mm_array[0][i][3]>run_clus) {
-       run_clus= mm_array[0][i][3];
-        ind=  mm_array[0][i][5]+1.;    
-       for(int j=0; j<mmhits; j++) {
-       if(j == ind &&   mm_array[0][j][3]==0 && mm_array[0][j][1] >=2.5 &&
-        abs(mm_array[0][j][2]-mm_array[0][i][7]) <60. ) {
-           mm_array[0][j][3]=run_clus;
-	   mm_array[0][i][4]= mm_array[0][i][4]+1.;
-	   mm_array[0][i][5]= j;
-	      mm_array[0][i][6]= mm_array[0][i][6]+ mm_array[0][j][1];
-	    mm_array[0][i][7]= (mm_array[0][i][7]* (mm_array[0][i][4]-1.)+
-	      mm_array[0][j][2])/mm_array[0][i][4];   }
-      }
-    }
-   }
-   */
-   /*
- printf("micromega refined cluster  %d\n",nclus);  
-        for(int i=0; i<mmhits;i++){
-	  printf("%5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f \n",
-                   mm_array[0][i][0], mm_array[0][i][1], mm_array[0][i][2],
-		 mm_array[0][i][3], mm_array[0][i][4], mm_array[0][i][5], mm_array[0][i][6], mm_array[0][i][7]);
- 
-    }
-   */
-
-   /////////////////////////////////////////////
-   /////////////////////////////////////////////
-   ////////// add average strip of cluster and tot charge ordering
-   double xav; 
-   run_clus=0.;
-   int ind1=0;
-   vector<double> chacont(2);
-   vector< vector<double> > cluscha_ord[NUMBOARD];
-   
-   for(int k=0; k<NUMBOARD; k++) {
-     for(int i=0; i<mmhits[k]; i++) {
-       mm_array[k][i][8] = 0;
-       ind1=i;
-       if( mm_array[k][i][3] > run_clus) {
-	 xav = 0.; 
-	 run_clus = mm_array[k][i][3]; 
-	 chacont[0]= mm_array[k][i][6]; // charge
-	 chacont[1]= mm_array[k][i][3]; // cluster number
-	 cluscha_ord[k].push_back(chacont);
-	 for(int j=ind1; j<mmhits[k]; j++) {
-	   if(mm_array[k][j][3]==run_clus)  xav = xav + mm_array[k][j][0] * mm_array[k][j][1]; //channels avg weighted by pdo
-	 }
-	 xav=xav/mm_array[k][i][6];
-	 mm_array[k][i][8]=xav; 
-       }
+     // chomp forwards
+     int nclus = 0;
+     int clust_start, clust_beg, clust_mult;
+     int clust_end = -1;
+     double clust_cha,clust_time, clust_range;
+     int irep=0;
+     // cout << "having fun" << endl;
+     //   for(int i=0; i<mmhits; i++) {
+     for(int k=0; k<NUMBOARD; k++){
+       p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,6.,2.5); 
+     } // end cluster search
+     
+     //hnclus->Fill(nclus);
+     //   hnclus->Fill(nclus+10*(1-left));
+     
+     // chomp backwards
+     for (int k=0; k<NUMBOARD; k++) {
+       p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,2.5);
      }
-   }
-  
-   // reorder cluster according to charge
-   for (int k=0; k<NUMBOARD; k++){
-     sort(cluscha_ord[k].begin(), cluscha_ord[k].end(), oct.compare1);
-     int num_clus = cluscha_ord[k].size();
-     int irun;
-     for(int j=0; j<num_clus; j++) { 
-       run_clus = cluscha_ord[k][j][1]; //cluster number
-       irun = 0;
+
+     // calculate average strip for each cluster, saved in mm_array[k][i][8]
+     double xav; 
+     double run_clus=0.;
+     int ind1=0;
+     vector<double> chacont(2);
+     vector< vector<double> > cluscha_ord[NUMBOARD];
+   
+     for(int k=0; k<NUMBOARD; k++) {
        for(int i=0; i<mmhits[k]; i++) {
-	 if(irun == 0 && mm_array[k][i][3]==run_clus) {
-	   mm_array[k][i][9]=j+1;
-	   irun++; 
+	 mm_array[k][i][8] = 0;
+	 ind1=i;
+	 if( mm_array[k][i][3] > run_clus) {
+	   xav = 0.; 
+	   run_clus = mm_array[k][i][3]; 
+	   chacont[0]= mm_array[k][i][6]; // cluster total charge
+	   chacont[1]= mm_array[k][i][3]; // cluster number
+	   cluscha_ord[k].push_back(chacont);
+	   for(int j=ind1; j<mmhits[k]; j++) {
+	     if (mm_array[k][j][3] == run_clus)  xav = xav + mm_array[k][j][0] * mm_array[k][j][1]; //channels avg weighted by pdo
+	   }
+	   xav=xav/mm_array[k][i][6];
+	   mm_array[k][i][8] = xav; 
 	 }
        }
      }
-   }
+     
+     // reorder clusters according to most charge to least charge
+     for (int k=0; k<NUMBOARD; k++){
+       sort(cluscha_ord[k].begin(), cluscha_ord[k].end(), oct.compare1);
+       int num_clus = cluscha_ord[k].size(); // number of clusters for that board
+       int irun;
+       for(int j=0; j<num_clus; j++) { 
+	 run_clus = cluscha_ord[k][j][1]; //cluster number
+	 irun = 0;
+	 for(int i=0; i<mmhits[k]; i++) {
+	   if(irun == 0 && mm_array[k][i][3]==run_clus) {
+	     mm_array[k][i][9]=j+1; //save what order the cluster is in the cluster ranking
+	   irun++; 
+	   }
+	 }
+       }
+     }
   //////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////
     /*
