@@ -78,6 +78,11 @@ int main()
   TH2F *hpadvsy;
   TH2F *hPadvsTr;
   ///////////////////// micromega
+  TH1F ** channel_hits = new TH1F*[8];
+  TH2F ** hCHvsPDO = new TH2F*[8];
+  TH1F ** hClusterCharge = new TH1F*[8];
+  TH1F ** hClusterMult = new TH1F*[8];
+  TH1F ** hClusterHoles = new TH1F*[8];
   TH2F *hchthre;
   TH2F *hTCvNSL;
   TH2F *hTCvNSR;
@@ -244,6 +249,13 @@ int main()
   hTVSTOPX= new TH2F("TVSTOPX ","TVSTOPX ",26,-130,130.,100,150.,300.);
   hPadMult=new TH2F("padmult","padmult",10,0.,10.,10,0.,10.);
    //////////////// micromega histos
+  for (int k=0; k < NUMBOARD; k++){
+    channel_hits[k] = new TH1F(Form("Board %d Channel Hits",k), Form("Board %d Channel Hits",k) ,513,-0.5,512.5);
+    hCHvsPDO[k] = new TH2F(Form("Board %d Channel vs PDO",k), Form("Board %d Channel vs PDO",k) ,513,-0.5,512.5, 100,-0.5,50.5);
+    hClusterCharge[k] = new TH1F(Form("Board %d Charge of clusters",k), Form("Board %d Charge of clusters",k) ,50,0.,400.);
+    hClusterMult[k] = new TH1F(Form("Board %d StripMultiplicity of clusters",k), Form("Board %d Strip Multiplicity of clusters",k) ,21,-0.5,20.5);
+    hClusterHoles[k] = new TH1F(Form("Board %d Hole Multiplicity of clusters",k), Form("Board %d Hole Multiplicity of clusters",k) ,21,-0.5,20.5);
+  }
   hchthre= new TH2F("chthre ","chthre ",131,-1.,130.,180,-20.,160.);
   hTCvNSL= new TH2F("TCvNSL ","tcha vs nstrips ",30,0.,30.,360,-20.,600.); 
   hTCvNSR= new TH2F("TCvNSR ","tcha vs nstrips ",30,0.,30.,360,-20.,600.);
@@ -462,7 +474,7 @@ int main()
   
   ////////////////////////////////// test timestamp
 
-  fileout = fopen ("src/combined_example.dat","r"); // combined data file
+  fileout = fopen ("data/comb_r3505.dat","r"); // combined data file
   
   if(fileout == NULL)
     {
@@ -782,6 +794,14 @@ int main()
      double art1=100.;
      double art=100.;
 
+     // count channel hits for each board
+     for(int k=0; k<NUMBOARD; k++) {
+       for(int i=0; i<mmhits[k]; i++) {
+	 channel_hits[k]->Fill(mm_array[k][i][0]);
+	 hCHvsPDO[k]->Fill(mm_array[k][i][0],mm_array[k][i][1]);
+       }
+     }
+
      //////////////////////////////////////////
      //////////////////////////////////////////
      ////////////////////// search for clusters
@@ -797,6 +817,7 @@ int main()
      // cout << "having fun" << endl;
      //   for(int i=0; i<mmhits; i++) {
      for(int k=0; k<NUMBOARD; k++){
+       //p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,4.,2.5); 
        p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,6.,2.5); 
      } // end cluster search
      
@@ -806,6 +827,7 @@ int main()
      // chomp backwards
      for (int k=0; k<NUMBOARD; k++) {
        p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,2.5);
+       //       p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,2.5);
      }
 
      // calculate average strip for each cluster, saved in mm_array[k][i][8]
@@ -850,60 +872,31 @@ int main()
 	 }
        }
      }
-  //////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////
-    /*
-    // if(mm_nev<=70) {
-    //  printf("pad_at %f \n",pad_at);
-    printf("micromega ev num: %d final cluster:  %d\n",mm_nev,nclus);  
-        for(int i=0; i<mmhits;i++) {
 
-	  printf("%5.1f %5.1f  %5.1f  %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f  \n",
-                mm_array[0][i][0], mm_array[0][i][1], mm_array[0][i][2],
-		 mm_array[0][i][3], mm_array[0][i][4], mm_array[0][i][5], mm_array[0][i][6],
-          mm_array[0][i][7], mm_array[0][i][8], mm_array[0][i][9] );
-	}
-	//	}
-    */
-     
-   //////////////////////////////////////////////////////////
-   // THIS IS ASSUMING WE HAVE TWO BOARDS ONLY
-   // double cluschal=0.;
-   // double cluschar=0.;
-   int is_hole;
+     // count holes
+     int is_hole, istep;
+     for (int k=0; k<NUMBOARD; k++){
+       for(int i=0; i<mmhits[k]; i++) { 
+	 if ( mm_array[k][i][9]==1. ) { //highest charge loop
+	   cout << "passed charge loop" << endl;
+	   istep = mm_array[k][i][5]; //cluster end
+	   is_hole = mm_array[k][istep][0]-mm_array[k][i][0]+1.-mm_array[k][i][4]; // number of holes
+	   cout << "passed setting hole" << endl;
+	   hClusterHoles[k]->Fill(is_hole);
+	   hClusterCharge[k]->Fill(mm_array[k][i][6]);
+	   hClusterMult[k]->Fill(mm_array[k][i][4]);
+	   cout << "passed filling" << endl;
+	 }
+       }
+     }
+
    int d_strip;
    double dt_strip;
-   // for(int k=0; k<NUMBOARD; k++) {
-   //   for(int i=0; i<mmhits[k]; i++) {
-   //     if(mm_array[k][i][0]<=63.) cluschal=cluschal+mm_array[k][i][6];
-   //     if(mm_array[k][i][0]>63.) cluschar=cluschar+mm_array[k][i][6];
-   // }
-   // hmiss_chal->Fill(totchal-cluschal);
-   // hmiss_char->Fill(totchar-cluschar);
-   
-  
-   /////////////////////////////////////////////////////////
-  ////////////////////////////// right place for histos
-  ///////////////// first time for art in a cluster
 
-   // AWANG COMMENTED FROM HERE
-//    int goon;
-//    int istep;
-//    double ftclu0=100.;
-//    double ftclu1=100.;
-//    double ftclu=100.;
-//    double zfit, deltaz,adeltaz;
-//    int npoint=0;
-//    double corr, track_ang,xpos_res,xconst,xconst_max,xconst_min;
-//    double x_mm,z_mm,xclu_tpc,x_clu,clu_mult,m_av,m_min,m_max;
-//    int ncntr_bot;
-//    double chi2,truechi2;
-//    vector<double> zx(3);
-//    vector< vector<double> > clus_coord;
-//    vector< vector<double> > truec_coord;
-//    /////////find track's angle from ybot
-//    ncntr_bot=botypos/20.+2.5;
-//    track_ang=(float(ncntr_bot)*5.+90.)/180.*pi;
+   int ncntr_bot; // counts the bottom counter, indexed from 0 to 5
+   // find track's angle from ybot
+   ncntr_bot = botypos/20. + 2.5;
+   // track_ang=(float(ncntr_bot)*5.+90.)/180.*pi;
 //    m_av=TMath::Tan(track_ang);
 //    track_ang=(float(ncntr_bot)*5.-2.5+90.)/180.*pi;
 //    m_min=TMath::Tan(track_ang);
@@ -1305,7 +1298,15 @@ int main()
  hPadD->Write(); 
  hpadvsx->Write(); 
  hpadvsy->Write(); 
- hPadvsTr->Write(); 
+ hPadvsTr->Write();
+ for (int k=0; k<NUMBOARD; k++) {
+   channel_hits[k]->Write();
+   hCHvsPDO[k]->Write();
+   hClusterCharge[k]->Write();
+   hClusterMult[k]->Write();
+   hClusterHoles[k]->Write();
+ }
+
 // hchthre->Write(); 
 // hTCvNSL->Write();
 // hTCvNSR->Write();
@@ -1391,6 +1392,9 @@ int main()
  }
  delete hPad[0];
  delete hPad[1];
+ for (int k = 0; k<NUMBOARD; k++) {
+   delete channel_hits[k];
+ }
  return 0;
 }
 
