@@ -15,6 +15,7 @@ public :
 // pass an array, hitarray[a][b] where [a] indexes the counter hits,
 // [a][0] is counter # (channel), [a][1] is TDC recorded
 // low, high are the TDC cuts to get rid of crap events
+// returns amount of pairs and sets [a][2] to be 1. if pair found
 // 
 inline int scint::pairs(vector < vector<double> > & hitarray, double low, double high){
   int hits=0;
@@ -27,6 +28,9 @@ inline int scint::pairs(vector < vector<double> > & hitarray, double low, double
 	  hitarray[i][2]=1.;
 	  hitarray[j][2]=1.;
 	  hits++;
+	}
+	else {
+	  cout << "failed TDC cut" << endl;
 	}
       }
     }

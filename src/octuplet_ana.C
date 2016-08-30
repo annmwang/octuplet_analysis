@@ -83,78 +83,6 @@ int main()
   TH1F ** hClusterCharge = new TH1F*[8];
   TH1F ** hClusterMult = new TH1F*[8];
   TH1F ** hClusterHoles = new TH1F*[8];
-  TH2F *hchthre;
-  TH2F *hTCvNSL;
-  TH2F *hTCvNSR;
-  TH2F *hchvstl;
-  TH2F *hchvstr;
-  TH2F *hchvstl_raw;
-  TH2F *hchvstr_raw;
-  TH2F *hnclusvstcha;
-  TH2F *houtlier;
-  TH2F *hxdis;
-  TH2F *hxdis_1;
-  TH2F *hxdis_2;
-  TH2F *hxdis_2br;
-  TH2F *hxdis_ge3;
-  TH2F *hxdis_ge3br;
-  TH2F *hclustvscha_0;
-  TH2F *hclustvscha_1;
-  TH2F *hclustcha_01;
-  TH2F *hclustcha_11;
-  TH2F *hnstrpvscha_0;
-  TH2F *hnstrpvscha_1;
-  TH2F * hchalvsr;
-  TH1F *hnclus;
-  TH1F *hmiss_chal;
-  TH1F *hmiss_char;
-  TH2F *hclu_cha_nstrip;
-  TH2F *hchavsxclu; 
-  TH2F *hmax_cha;
-  TH2F *htvsnst0;
-  TH2F *htvsnst1;
-  TH2F *havtvsx;
-  TH2F *havtvsx23;
-  TH2F *hart0;
-  TH2F *hart1;
-  TH1F *hart;
-  TH1F *hartdiff0;
-  TH1F *hartdiff1;
-  TH2F *hclus_dis;
-  TH2F *hearlytvsx;
-  TH2F *hxdep;
-  TH2F *hydep;
-  TH1F *htslope;
-  TH2F *htgvsy;
-  TH2F *htgvsy_2strip;
-  TH2F *hmtpc;
-  TH2F *hmtpc_2strip;
-  TH2F *hmtpc_1;
-  TH2F *hmtpc_2;
-  TH2F *hmtpc_3;
-  TH2F *hmtpc_ck;
-  TH2F *hsng_tvsch;
-  TH2F *hsng_befcorr;
-  TH2F *hdtime;
-  TH1F *hzslope;
-  TH1F *hpruslope;
-  TH1F *hprutrue;
-  TH2F *hxclvstpc2;
-  TH2F *hxclvstpcge3;
-  TH2F *hcludiffvsmu;
-  TH2F *hztpc;
-  TH2F *hztpc_2strip;
-  TH2F *hftpc;
-  TH2F *hfftpc;
-  TH2F *hfftpc2;
-  TH2F *hftpc_res;
-  TH2F *hftpc2;
-  TH2F *hftpc_res2;
-  TH2F *hxpres;
-  TH2F *hxpres2;
-  TH2F *hresid;
-  TH2F *hresidtrue;
-  TH1F *hchid; 
   /////////////////////////////////
   
   ////////////////////
@@ -256,91 +184,7 @@ int main()
     hClusterMult[k] = new TH1F(Form("Board %d StripMultiplicity of clusters",k), Form("Board %d Strip Multiplicity of clusters",k) ,21,-0.5,20.5);
     hClusterHoles[k] = new TH1F(Form("Board %d Hole Multiplicity of clusters",k), Form("Board %d Hole Multiplicity of clusters",k) ,21,-0.5,20.5);
   }
-  hchthre= new TH2F("chthre ","chthre ",131,-1.,130.,180,-20.,160.);
-  hTCvNSL= new TH2F("TCvNSL ","tcha vs nstrips ",30,0.,30.,360,-20.,600.); 
-  hTCvNSR= new TH2F("TCvNSR ","tcha vs nstrips ",30,0.,30.,360,-20.,600.);
-  hchvstl= new TH2F("chvstl ","cha vs time ",70,0.,140.,200,100.,900.); 
-  hchvstr= new TH2F("chvstr ","cha vs time ",70,0.,140.,200,100.,900.);
-  hchvstl_raw= new TH2F("chvstl_raw ","cha vs time ",70,0.,140.,200,100.,900.); 
-  hchvstr_raw= new TH2F("chvstr_raw ","cha vs time ",70,0.,140.,200,100.,900.);
-  hnclusvstcha= new TH2F("nclusvstcha ","nclust vs cha ",20,0.,20.,70,0.,140.);
-  houtlier= new TH2F("outlier ","outlier ",100,0.,100.,300,-100.,500.);
-  hclustvscha_0= new TH2F("tvsch0 ","tvscha0 ",250,0.,250.,400,-100.,700.);
-  hclustvscha_1= new TH2F("tvsch1 ","tvscha1 ",250,0.,250.,400,-100.,700.);
-  hclustcha_01= new TH2F("tch01 ","tvscha0 one ",250,0.,250.,400,-100.,700.);
-  hclustcha_11= new TH2F("tch11 ","tvscha1 one ",250,0.,250.,400,-100.,700.);
-  hxdis= new TH2F("xdis ","xdis ",130,0.,130.,200,0.,400.);
-  hxdis_1= new TH2F("xdis_1 ","xdis ",130,0.,130.,200,0.,400.);
-  hxdis_2= new TH2F("xdis_2 ","xdis ",130,0.,130.,200,0.,400.);
-  hxdis_2br= new TH2F("xdis_2br","xdis ",130,0.,130.,200,0.,400.);
-  hxdis_ge3= new TH2F("xdis_ge3 ","xdis ",130,0.,130.,200,0.,400.);
-  hxdis_ge3br= new TH2F("xdis_ge3br","xdis ",130,0.,130.,200,0.,400.);
-  hnclus= new TH1F("nclus ","nclus ",20,0.,20.);
-  hmiss_chal= new TH1F("miss_chal "," miss chatge board 0 ",150,-50.,100.);
-  hmiss_char= new TH1F("miss_char "," miss chatge board 1 ",150,-50.,100.);
-  hnstrpvscha_0= new TH2F("nstrpvscha0 ","nstrip vs cha0 ",180,0.,180.,20,0.,20.);
-  hnstrpvscha_1= new TH2F("nstrpvscha1 ","nstrip vs cha1 ",180,0.,180.,20,0.,20.);
-  hchalvsr= new TH2F("chalvsr ","cha1 vs cha0 ",120,0.,240.,120,0.,240.);
-  hclu_cha_nstrip= new TH2F("clu_cha_nstrip ","clust nstri vs cha ",20,0.,20.,120,0.,240.);
-  hchavsxclu = new TH2F("chavsxclu ","clust x  vs cha ",140,0.,140.,150,0.,300.);
-  hmax_cha= new TH2F("maxcha ","maxcha ",300,0.,300.,300,0.,300.);
-  htvsnst0= new TH2F("tvsnst0 ","time vs mult ",20,0.,20.,300,-100.,500.);
-  htvsnst1= new TH2F("tvsnst1 ","time vs mult ",20,0.,20.,300,-100.,500.);
-  havtvsx = new TH2F("avtvsx ","time vs xdis ",130,0.,130.,300,100.,700.);
-  havtvsx23 = new TH2F("avtvsx23 ","time vs xdis ",130,0.,130.,300,100.,700.);
-  hart =new TH1F("art "," art ",120, 200.,800.);
-  hart0 =new TH2F("art0 "," art0 ",200,0.,1000.,200,-0.,1000.);
-  hart1 =new TH2F("art1 "," art0 ",200,0.,1000.,200,-0.,1000.);
-  hartdiff0= new TH1F("artdiff0 "," artdiff ",220,-100.,900.);
-  hartdiff1= new TH1F("artdiff1 "," artdiff ",220,-100.,900.);
-  hclus_dis     =new TH2F("clus_dis"," clust dis ",260,-130.,130.,100,0.,10.);
-  hearlytvsx     =new TH2F("earlytvsx"," clust early time dis ",130,-0.,130.,200,0.,1000.);
-  hxdep  =new TH2F("xdep", "xdep",50,-100.,100.,130,0.,130.);
-  hydep  =new TH2F("ydep", "xdep",6,-60.,60.,130,0.,130.);
-  htslope  =new TH1F("tslope", "tslope",130,0.,130.);
-  hzslope  =new TH1F("zslope", "x-z fit",128,0.,51.2);
-  hzslope->SetMaximum(10.);
-  hzslope->SetMinimum(-4.);
-  hzslope->SetMarkerStyle(8);
-  hprutrue  =new TH1F("prutrue", "fixed angle x-z fit",128,0.,51.2);
-  hprutrue->SetMaximum(10.);
-  hprutrue->SetMinimum(-4.);
-  hprutrue->SetMarkerStyle(8);
-  hpruslope  =new TH1F("pruslope", "x-z fit pruned",128,0.,51.2);
-  hpruslope->SetMaximum(10.);
-  hpruslope->SetMinimum(-4.);
-  hpruslope->SetMarkerStyle(8);
-  hmtpc=new TH2F("mtpc", "micro-TPC",6,-60.,60.,90,-90.,90.);
-  hmtpc_ck=new TH2F("mtpc_ck", "z vs x",130, 0.,52.,200,-20.,20.);
-  hmtpc_2strip=new TH2F("mtpc_2strip", "micro-TPC",6,-60.,60.,90,-90.,90.);
-  htgvsy=new TH2F("tgvsy", "micro-TPC",6,-60.,60.,180,-15.,15.);
-  htgvsy_2strip=new TH2F("tgvsy_2strip", "micro-TPC",6,-60.,60.,180,-15.,15.);
-  hmtpc_1=new TH2F("mtpc_1", "micro-TPC",6,-60.,60.,130,0.,130);
-  hmtpc_2=new TH2F("mtpc_2", "micro-TPC",6,-60.,60.,20,-0.5,19.5);
-  hmtpc_3=new TH2F("mtpc_3", "micro-TPC",6,-60.,60.,20,-0.5,19.5);//20,-0.5,19.5);
-  hsng_tvsch=new TH2F("sng_tvsch","sng_tvsch",100,0.,200.,400,0.,800.);
-  hsng_befcorr=new TH2F("sng_befcorr","sng_befcorr",100,0.,200.,400,0.,800.);
-  hdtime=new TH2F("dtime"," dtime", 80, -40., 40., 150,-150.,150.); 
-  hxclvstpc2=new TH2F("xclvstpc2"," x vs xtps", 260, 0., 52., 400,0.,80.);
-  hxclvstpcge3=new TH2F("xclvstpcge3"," x vs xtps", 260, 0., 52., 400, 0.,80.);
-  hcludiffvsmu=new TH2F("cludiffvsmu"," x diff vs mu",11,-0.5,10.5, 300,-30.,30.);
-  hztpc=new TH2F("ztpc"," x diff vs y", 6,-60., 60., 300,-30.,30.);
-  hztpc_2strip=new TH2F("ztpc_2strip"," x diff vs y", 6,-60., 60., 300,-30.,30.);
-  hftpc=new TH2F("ftpc"," x diff vs y", 6,-60., 60., 300,-30.,30.);
-  hfftpc=new TH2F("fftpc"," x diff vs y", 6,-60., 60., 300,-30.,30.);
-  hfftpc2=new TH2F("fftpc2"," x diff vs y", 6,-60., 60., 300,-30.,30.);
-  hftpc_res=new TH2F("ftpc_res"," x diff vs y", 6,-60., 60., 300,-30.,30.);
-  hftpc2=new TH2F("ftpc2"," x diff vs y", 6,-60., 60., 300,-30.,30.);
-  hftpc_res2=new TH2F("ftpc_res2"," x diff vs y", 6,-60., 60., 300,-30.,30.);
-  hxpres=new TH2F("xpres"," x res", 6,-60., 60., 400, -2.,2.);
-  hxpres2=new TH2F("xpres2"," x res", 6,-60., 60., 400,-2.,2.);
-  hresid=new TH2F("resid"," z residuals", 6,-60., 60., 100,-25.,25.);
-  hresidtrue=new TH2F("residtrue"," z residuals", 6,-60., 60., 100,-25.,25.);
-  hchid= new TH1F("chid","chi2",100,0.,100.);
   /////////////////////////////////////////
-  //  TCanvas *des = new TCanvas("des","des");
-  // TCanvas *prun = new TCanvas("prun","prun"); 
-  // TCanvas *fixsl = new TCanvas("fixsl","fixsl");
   TCanvas *des = new TCanvas("des","des",635,490);
   TCanvas *prun = new TCanvas("prun","prun",635,490); 
   TCanvas *fixsl = new TCanvas("fixsl","fixsl",635,490);
@@ -541,7 +385,7 @@ int main()
       tdcinf[1] = cont;
       if (i<nhit-1) {
 	if (channel<12) {
-	  cout << "found bottom hit: " << channel << endl;
+	  //	  cout << "found bottom hit: " << channel << endl;
 	  tdcinf[1]=tdcinf[1]+bot_corr[channel];
 	  bot_array.push_back(tdcinf);
 	  //	hTDC[channel]->Fill(cont);
@@ -583,7 +427,7 @@ int main()
     for (int i=0 ; i < mm_hit; i++) {
       
       fscanf(fileout, "%s %d %d %d %d %d %d %d", mm, &mm_vmm,&mm_ch, &mm_pdo,&mm_tdo,&mm_bcid,&mm_board,&mm_hits);
-      printf(" board: %d ch:%d pdo:%d tdo:%d\n",mm_board,mm_ch,mm_pdo,mm_tdo);
+      printf(" board: %d vmm: %d ch:%d pdo:%d tdo:%d\n",mm_board,mm_vmm, mm_ch,mm_pdo,mm_tdo);
 
       // NOISY CHANNEL
       //      if (mm_vmm==7 && mm_ch==43 && mm_board == 110) continue;
@@ -597,7 +441,7 @@ int main()
       double gt= tdo_cal[bID][mm_vmm][mm_ch][1];
 
       pdo_curr=PDO2Charge.GetCharge(mm_pdo, mm_board, mm_vmm, mm_ch);
-      cout << "PDO! " << pdo_curr << endl;
+      //      cout << "PDO! " << pdo_curr << endl;
       tdo_curr=(tdo_curr-pt)/gt;
 
       // old calibration format
@@ -612,7 +456,7 @@ int main()
       // if(mm_board==17) numprch[1]++;
     }
     fscanf(fileout, "%s",strg3); //end event readout
-    cout << strg3 << endl;
+    //    cout << strg3 << endl;
     
     // reorder micromega hits by increasing channel
     for (int k=0; k<NUMBOARD; k++){
@@ -634,13 +478,13 @@ int main()
     sort(bot_array.begin(), bot_array.end(), oct.compare);
     sort(top_array.begin(), top_array.end(), oct.compare);
     printf("reordered\n");
-    cout << "nbhits: " << nbhit << " nthits: " << nthit << endl;
+    //    cout << "nbhits: " << nbhit << " nthits: " << nthit << endl;
  
     //////////// look for W+E pairs
     int bothits = s.pairs(bot_array,120.,170.);
-    cout << "Num bottom pairs: " << bothits << endl;
+    //    cout << "Num bottom pairs: " << bothits << endl;
     int tophits= s.pairs(top_array,130.,170.);
-    cout << "Num top pairs: " << tophits << endl;
+    //    cout << "Num top pairs: " << tophits << endl;
 
    //////////////////////////////////////////////////////////
    // keep events with only one top and  bottom  counter
@@ -838,6 +682,7 @@ int main()
      vector< vector<double> > cluscha_ord[NUMBOARD];
    
      for(int k=0; k<NUMBOARD; k++) {
+       run_clus = 0.;
        for(int i=0; i<mmhits[k]; i++) {
 	 mm_array[k][i][8] = 0;
 	 ind1=i;
@@ -855,11 +700,13 @@ int main()
 	 }
        }
      }
-     
+
      // reorder clusters according to most charge to least charge
      for (int k=0; k<NUMBOARD; k++){
+       run_clus = 0.;
        sort(cluscha_ord[k].begin(), cluscha_ord[k].end(), oct.compare1);
        int num_clus = cluscha_ord[k].size(); // number of clusters for that board
+       cout << "NUMBER OF CLUSTER: " << num_clus << "FOR BOARD " << k << endl;
        int irun;
        for(int j=0; j<num_clus; j++) { 
 	 run_clus = cluscha_ord[k][j][1]; //cluster number
@@ -867,7 +714,7 @@ int main()
 	 for(int i=0; i<mmhits[k]; i++) {
 	   if(irun == 0 && mm_array[k][i][3]==run_clus) {
 	     mm_array[k][i][9]=j+1; //save what order the cluster is in the cluster ranking
-	   irun++; 
+	     irun++; 
 	   }
 	 }
        }
@@ -875,396 +722,74 @@ int main()
 
      // count holes
      int is_hole, istep;
+     int nBoardsHit = 0;
      for (int k=0; k<NUMBOARD; k++){
        for(int i=0; i<mmhits[k]; i++) { 
 	 if ( mm_array[k][i][9]==1. ) { //highest charge loop
-	   cout << "passed charge loop" << endl;
+	   nBoardsHit++;
 	   istep = mm_array[k][i][5]; //cluster end
 	   is_hole = mm_array[k][istep][0]-mm_array[k][i][0]+1.-mm_array[k][i][4]; // number of holes
-	   cout << "passed setting hole" << endl;
 	   hClusterHoles[k]->Fill(is_hole);
 	   hClusterCharge[k]->Fill(mm_array[k][i][6]);
 	   hClusterMult[k]->Fill(mm_array[k][i][4]);
-	   cout << "passed filling" << endl;
 	 }
        }
      }
 
-   int d_strip;
-   double dt_strip;
-
-   int ncntr_bot; // counts the bottom counter, indexed from 0 to 5
-   // find track's angle from ybot
-   ncntr_bot = botypos/20. + 2.5;
-   // track_ang=(float(ncntr_bot)*5.+90.)/180.*pi;
-//    m_av=TMath::Tan(track_ang);
-//    track_ang=(float(ncntr_bot)*5.-2.5+90.)/180.*pi;
-//    m_min=TMath::Tan(track_ang);
-//    track_ang=(float(ncntr_bot)*5.+2.5+90.)/180.*pi;
-//    m_max=TMath::Tan(track_ang);
-//   ///////////////////////////
-//    htslope->Reset();
-//    hzslope->Reset();
-//    for(int i=0; i<mmhits[0]; i++) { //loop 1
-//      if ( mm_array[0][i][9] ==1. && mm_array[0][i][8]>=8. && mm_array[0][i][8]<=119. ) { // this line for a test loop 2 add fiducial
-       
-//        hmtpc_2->Fill(botypos,mm_array[0][i][4]); 
-//        istep= mm_array[0][i][5];
-//        is_hole=mm_array[0][istep][0]-mm_array[0][i][0]+1.-mm_array[0][i][4];
-//        /* 
-// 	 if(is_hole>=1) {     
-// 	 printf("HolyEvent (%i,%i,%i) with %i holes in primary cluster!!!!\n",nev, mm_nev,is_hole);  
-// 	 for(int l=0; l<mmhits;l++) {
-// 	 printf("%5.1f %5.1f  %5.1f  %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f  \n",
-// 	 mm_array[0][l][0], mm_array[0][l][1], mm_array[0][l][2],
-// 	 mm_array[0][l][3], mm_array[0][l][4], mm_array[0][l][5], mm_array[0][l][6],
-// 	 mm_array[0][l][7], mm_array[0][l][8], mm_array[0][l][9] );
-// 	 }
-	 
-// 	 }
-//       */ 
-//       hmtpc_3->Fill(botypos,is_hole);
-//       x_clu=0.2+mm_array[0][i][8]*0.4;
-//       clu_mult=mm_array[0][i][4];
-      
-//       for(int j=i; j<istep+1; j++) {//loop3
-// 	if(mm_array[0][j][3]>0) {// loop 4
-// 	  ///////////// time profile
-
-// 	  d_strip=mm_array[0][j][0]-mm_array[0][i][8] ;
-// 	  dt_strip=mm_array[0][j][2]-mm_array[0][i][7] ;
-// 	  if(botypos>20. && mm_array[0][i][4] >=3) hdtime->Fill(d_strip,dt_strip);
-// 	  hsng_befcorr->Fill(mm_array[0][j][1],mm_array[0][j][2]);
-// 	  ///////////////////////////////////////////
-// 	  //correct for slewing
-// 	  if(nrun == 3079 || nrun== 3092 || nrun==3104) {
-// 	    corr=5.-0.084*mm_array[0][j][1];
-// 	    if(mm_array[0][j][1]  < 10.) corr=corr-105.6*TMath::Exp(-0.444*mm_array[0][j][1]);
-// 	  }
-// 	  else if(nrun==3106) corr=8.-0.1306*mm_array[0][j][1];
-// 	  else{
-// 	    corr=3.564-0.0594*mm_array[0][j][1];
-// 	    if(mm_array[0][j][1]  < 10.) corr=corr-74.9*TMath::Exp(-0.266*mm_array[0][j][1]);
-// 	  }
-	  
-// 	  mm_array[0][j][2]= mm_array[0][j][2]+corr;
-// 	  havtvsx->Fill(mm_array[0][j][0],  mm_array[0][j][2]-0.5*pad_at+120.);
-// 	  if(botypos>20.) havtvsx23->Fill(mm_array[0][j][0],  mm_array[0][j][2]-0.5*pad_at+120.);
-// 	  hsng_tvsch->Fill(mm_array[0][j][1],mm_array[0][j][2]-0.5*pad_at+120. );
-// 	  x_mm=mm_array[0][j][0]*0.4+0.2;
-	  
-// 	  z_mm=t0_off-(mm_array[0][j][2]-0.5*pad_at+120.)/20.; //
-	  
-// 	  hmtpc_ck->Fill(x_mm,z_mm);
-// 	  if(abs(d_strip)<=4.) {
-// 	    zx[0]= x_mm;
-// 	    zx[1]= z_mm;
-// 	    clus_coord.push_back(zx);
-// 	    truec_coord.push_back(zx);
-// 	    htslope->Fill(mm_array[0][j][0],mm_array[0][j][2]-0.5*pad_at+120.  );
-// 	    htslope->SetBinError(int(mm_array[0][j][0])+1, 5.);
-// 	    hzslope->Fill(x_mm,z_mm);
-// 	    hzslope->SetBinError(int(x_mm/0.4)+1,0.25);
-	    
-//    //double bincon=htslope->GetBinContent(int(mm_array[0][j][0])+1);
-//    //double binerr=htslope->GetBinError(int(mm_array[0][j][0])+1);
-// 	    if( i==istep) {
-// 	      hmtpc_1->Fill(botypos,mm_array[0][i][0]);
-// 	    }
-// 	    npoint++;
-// 	  }
-// 	  // printf(" strip %5.1f charge %5.1f time %5.1f %5.1f %5.1f \n", mm_array[0][j][0],mm_array[0][j][1],mm_array[0][j][2],
-//  //bincon,binerr);
-// 	}//loop 4
-// 	if(mm_array[0][j][0] <64 && mm_array[0][j][3]>0. && mm_array[0][j][2] >ftclu0) ftclu0= mm_array[0][j][2];
-// 	if(mm_array[0][j][0] >=64 && mm_array[0][j][3]>0. && mm_array[0][j][2] >ftclu1) ftclu1= mm_array[0][j][2];
-// 	if( mm_array[0][j][3]>0. && mm_array[0][j][2] >ftclu) ftclu= mm_array[0][j][2];
-//       } //loop3
-//   hearlytvsx->Fill(mm_array[0][i][8],ftclu);
-//     }//loop2
-//   } //loop1
-//   hart0->Fill(ftclu0,art0);
-//   hart1->Fill(ftclu1,art1);
-//   if(ftclu0>110.) hartdiff0->Fill(art0-ftclu0);
-//   if(ftclu1>110.) hartdiff1->Fill(art1-ftclu1);
-//   ///////////////////////////////////////////////
-  
-//   ////////////////////////////fit tslope
-//   double nang,ang,tgthe;
-//   TF1 *fttr= new TF1("fttr", "pol1(0)");
-//   TF1 *fttr1= new TF1("fttr1", "pol1(0)");
-//   TF1 *fttr2= new TF1("fttr2", "pol1(0)");
-//   fttr->SetParameter(0,400.);
-//   fttr->SetParameter(1,5.);
-//   fttr1->SetParameter(0,0.);
-//   fttr1->SetParameter(1,1.);
-//   fttr2->SetParameter(0,0.);
- 
-//   if(is_hole>=0) {
-//     if(npoint>=2) {
-//       ///////////// angle
-//       htslope->Fit(fttr,"Q","",0.,130.);
-//       /////////////////////////////////
-      
-//       double c1 = fttr->GetParameter(0);
-//       double c2 = fttr->GetParameter(1);
-//       //	printf("fit p1: %5.1f p2:%5.1f \n",c1,c2); 
-//       double xx=float(npoint-1)*0.4;
-//       double yy=-c2/20.*float(npoint-1);
-//         tgthe=yy/xx;
-// 	nang=TMath::ATan2(yy,xx)*180./pi;
-//         if(nang>=0.) ang=90.-nang;
-// 	else ang=-90.-nang;
-// 	//printf("fit p1: %5.3f p2:%5.3f tgthe %5.3f ang %5.3f   : \n",c1,c2,tgthe,ang);
-// 	////////////////////////////////////////////
-// 	/////////////////////////// zcluster
-// 	hzslope->Fit(fttr1,"Q","",0.,51.2);
-// 	c1 = fttr1->GetParameter(0);
-//         c2 = fttr1->GetParameter(1);
-// 	chi2= fttr1->GetChisquare();
-// 	xclu_tpc=(2.5-c1)/c2;
-// 	//////////////////////////////////////
-// 	/// residual check
-// 	if(npoint>=3) {	
-// 	  for(int l=0; l<npoint;l++) {
-// 	    zfit=c1+c2*clus_coord[l][0];
-// 	    deltaz=(clus_coord[l][1]-zfit)/0.25;
-// 	    adeltaz=abs(deltaz);
-// 	    clus_coord[l][2]=adeltaz;
-// 	    hresid->Fill(botypos,deltaz);
-// 	}
-// 	}
-// 	//////////////////////////////////////////////
-// 	// event display
-// 	if(npoint>=5 && botypos>=20. && display_on==1) {
-// 	  des->cd(0);
-// 	  hzslope->Draw();
-// 	TLine* line = new TLine(0.0, 2.5, 51.2, 2.5);
-// 	line->Draw("same");
-// 	TLine* line1 = new TLine(x_clu, -4., x_clu, 10.);
-//   	line1->Draw("same");   
-// 	des->Update();
-//         for(int k=0; k<npoint; k++) 
-// 	  printf(" here1 %d %5.3f %5.3f %5.3f \n ",an_nev,clus_coord[k][0],clus_coord[k][1],clus_coord[k][2]);
-//   printf(" write 1 to continue 0 to end\n");
-//   scanf("%d",&goon);
-//   if(goon==0) return 0;
-// 	}
-	
-// 	//////////////////////////////////////////////////////// 
-// 	/////////////////// pruning zslope
- 
-// 	sort(clus_coord.begin(),clus_coord.end(), compare2);
-// 	int remove=0.;
-// 	int ckp;
-	
-// 	hpruslope->Reset();
-	
-//     for(int kk=0; kk<npoint-3;kk++) {
-//       remove=0;
-//       if(remove==0 && clus_coord[kk][2]>4. )	{
-// 	clus_coord[kk][0]= -1.;
-//    clus_coord[kk][2]=100.;
-//    remove++;
-//       }   
-      
-//       if(remove>=1) {
-// 	hpruslope->Reset();
-//     for(int l=0; l<npoint; l++) {
-//       if(clus_coord[l][0]>0.) {
-// 	hpruslope->Fill(clus_coord[l][0],clus_coord[l][1]);
-// 	hpruslope->SetBinError(int(clus_coord[l][0]/0.4)+1,0.25);
-//       }   
-//     }
-//     fttr1->SetParameter(0,0.);
-//      fttr1->SetParameter(1,1.);
-//      hpruslope->Fit(fttr1,"Q","",0.,51.2);
-//      c1 = fttr1->GetParameter(0);
-//      c2 = fttr1->GetParameter(1);
-//      chi2= fttr1->GetChisquare();
-//      xclu_tpc=(2.5-c1)/c2;
-     
-//      for(int l=kk+1; l<npoint;l++) {
-//        zfit=c1+c2*clus_coord[l][0];
-//        deltaz=(clus_coord[l][1]-zfit)/0.25;
-//        adeltaz=abs(deltaz);
-//        clus_coord[l][2]=adeltaz;
-//      }
-//      sort(clus_coord.begin(),clus_coord.end(), compare2);
-     
-//       } //remove loop
-      
-//     } //kk loop
-    
-//     ////////// 
-    
-//     // event display 
-//     if(npoint>=5 && botypos>=20. && display_on==1) {
-//       prun->cd(0);
-//       hpruslope->Draw();
-//       TLine* line = new TLine(0., 2.5, 51.2, 2.5);
-//       line->Draw("same");
-//       TLine* line1 = new TLine(x_clu, -4., x_clu, 10.);
-//       line1->Draw("same");     
-//       prun->Update();  
-// 	printf("reordered \n");
-// 	for(int k=0; k<npoint; k++)  
-// 	  printf("here 2 %d %5.3f %5.3f %5.3f \n ",an_nev,clus_coord[k][0],clus_coord[k][1],clus_coord[k][2]);
-	
-// 	printf(" write 1 to continue 0 to end\n");
-// 	scanf("%d",&goon);
-// 	if(goon==0) return 0;
-//     }
-    
-//     /////////////////////////////////////////
-//     //printf("fit p1: %5.3f p2:%5.3f x_tpc: %5.3f x_clu: %5.3f   : \n",c1,c2,xclu_tpc,x_clu); 
-//     ///////////////////////////////////
-// 	//////// fit with constrained angle
-//     fttr2->FixParameter(1,m_av);
-//     hzslope->Fit(fttr2,"Q","",0.,51.2);
-//     c1 = fttr2->GetParameter(0);
-//     c2 = fttr2->GetParameter(1);
-//     xconst=(2.5-c1)/c2;
-//  // event display
-//     if(npoint>=5 && botypos>=20. && display_on==1) {
-//       fixsl->cd(0);
-//       hzslope->Draw();
-//       TLine* line = new TLine(0.0, 2.5, 51.2, 2.5);
-// 	line->Draw("same");
-// 	TLine* line1 = new TLine(x_clu, -4., x_clu, 10.);
-//   	line1->Draw("same");   
-// 	fixsl->Update();
-// 	scanf("%d",&goon);
-// 	if (goon==2) {
-// 	  des->Print(Form("des_%i.png",nev));
-// 	  prun->Print(Form("prun_%i.png",nev));
-// 	  fixsl->Print(Form("fixsl_%i.png",nev));
-//     }
-// 	if(goon==0) return 0;
-//     }
-//     ///////////////////////////////
-//     /////////////RESIDUAL CHECK AND  PRUNING
-//     if(npoint>=3) {	
-// 	for(int l=0; l<npoint;l++) {
-// 	  zfit=c1+c2*truec_coord[l][0];
-//           deltaz=(truec_coord[l][1]-zfit)/0.25;
-//           adeltaz=abs(deltaz);
-//           truec_coord[l][2]=adeltaz;
-// 	  hresidtrue->Fill(botypos,deltaz);
-// 	}
-//     }
-    
-//     sort(truec_coord.begin(),truec_coord.end(), compare2);
-//     remove=0.;
-//     ckp=npoint-remove;
-//     if(ckp>3) {
-//       for(int k=0; k<npoint; k++){
-// 	if(truec_coord[k][2]>4. && npoint-remove>3) {
-// 	  truec_coord[k][0]= -1.;       
-// 	remove++;
-// 	}
-//       }
-//     }
-//     hprutrue->Reset();
-//     if(remove>=1) {
-      
-//     for(int l=0; l<npoint; l++) {
-//       if(truec_coord[l][0]>0.) {
-// 	hprutrue->Fill(truec_coord[l][0],truec_coord[l][1]);
-// 	hprutrue->SetBinError(int(truec_coord[l][0]/0.4)+1,0.25);
-//       }   
-//  }
-//     hprutrue->Fit(fttr2,"Q","",0.,51.2);
-//     c1 = fttr2->GetParameter(0);
-//     c2 = fttr2->GetParameter(1);
-// 	xconst=(2.5-c1)/c2;
-//     } 
-//     ////////////////////////////// ev display
-    
-//     ///////////////////////////////////////////////////
-//     ////////////////////////////////////////////////////////
-//     ///// fix angle to errors 
-//     fttr2->FixParameter(1,m_min);
-//          hzslope->Fit(fttr2,"Q","",0.,51.2);
-// 	 c1 = fttr2->GetParameter(0);
-// 	 c2 = fttr2->GetParameter(1);
-// 	 xconst_min=(2.5-c1)/c2;
-// 	 fttr2->FixParameter(1,m_max);
-//          hzslope->Fit(fttr2,"Q","",0.,51.2);
-//        c1 = fttr2->GetParameter(0);
-//        c2 = fttr2->GetParameter(1);
-//        xconst_max=(2.5-c1)/c2;
-//        xpos_res=xconst_max-xconst_min;
-// 	//////////////////////////// fill histos with results
-//        if(botypos>20.)  hcludiffvsmu->Fill(clu_mult,x_clu-xclu_tpc);
-//        if(npoint>=3) {
-// 	  hchid->Fill(chi2);
-// 	  if(botypos>20.)   hxclvstpcge3->Fill(x_clu,xclu_tpc);
-// 	  hztpc->Fill(botypos,x_clu-xclu_tpc); 	  
-// 	  hftpc->Fill(botypos,x_clu-xconst);
-// 	  hfftpc->Fill(botypos,xclu_tpc-xconst);
-// 	  hftpc_res->Fill(botypos,(x_clu-xconst)/xpos_res);
-// 	  hxpres->Fill(botypos,xpos_res);
-// 	  hmtpc->Fill(botypos,ang);
-// 	  htgvsy->Fill(botypos,tgthe);
-// 	}
-// 	else {
-// 	  if(botypos>20. )  hxclvstpc2->Fill(x_clu,xclu_tpc);
-// 	  hftpc2->Fill(botypos,x_clu-xconst);
-//           hfftpc2->Fill(botypos,xclu_tpc-xconst);
-// 	  hftpc_res2->Fill(botypos,(x_clu-xconst)/xpos_res);
-//      hxpres2->Fill(botypos,xpos_res);
-//     hztpc_2strip->Fill(botypos,x_clu-xclu_tpc); 	  
-//   hmtpc_2strip->Fill(botypos,ang);
-// htgvsy_2strip->Fill(botypos,tgthe);
-// 	}
+     // event display of barycenter positions
+     int go_on;
+     int bloop = 0;
+     double board_x[NUMBOARD][2];
+     double board_z[NUMBOARD][2];
+     for (int k=0; k<NUMBOARD; k++){
+       board_x[k][0] = 0.;
+       board_z[k][0] = getz(k);
+       board_x[k][1] = 204.6;
+       board_z[k][1] = getz(k);
+     }
+     double barycenter_x[nBoardsHit];
+     double barycenter_z[nBoardsHit];
+     //    if(true) {
+     if(display_on==1) {
+       des->cd(0);
+       for (int k=0; k < NUMBOARD; k++) {
+	 cout << "BOARD: " << k << endl;
+	 for (int i=0; i < mmhits[k]; i++) {
+	   if (mm_array[k][i][9] == 1.) { //highest charge loop
+	     barycenter_x[bloop]=(getx(k, mm_array[k][i][8]));
+	     barycenter_z[bloop]=(getz(k));
+	     bloop++;
+	   }
+	 }
+       }
+       TGraph *gr  = new TGraph(nBoardsHit, barycenter_x, barycenter_z);
+       gr->SetTitle("Highest charge barycenter cluster locations");
+       gr->GetXaxis()->SetLimits(0.,204.6);
+       gr->GetXaxis()->SetTitle("x position (mm)");
+       gr->GetYaxis()->SetRangeUser(0.,158.);
+       gr->GetYaxis()->SetTitle("z position (mm)");
+       gr->SetMarkerColor(46);
+       gr->SetMarkerStyle(20);
+       gr->SetMarkerSize(1);
+       gr->SetLineColor(kBlack);
+       gr -> Draw("PA");
+       TGraph *grb[NUMBOARD];
+       for (int k=0; k<NUMBOARD; k++){
+	 grb[k] = new TGraph(2, board_x[k], board_z[k]);
+	 grb[k]->SetLineColor(kBlue);
+	 grb[k]->Draw("L same");
+       }
+       des->Update();
+       printf("write 2 to print + continue, 0 to end\n");
+       scanf("%d", &go_on);
+       if (go_on==2) {
+	 des->Print(Form("barycenter_plts/barycenter_%i.png",nev));
+       }
+       if (go_on == 0)
+	 return 0;
+     }
    
-//     }
-//       }
-//   //////////////////////////////////////
-//   for(int i=0; i<mmhits[0]; i++) {
-//     if ( mm_array[0][i][9] ==1.) {
-//       //////////////////////////
-//       istep= mm_array[0][i][5];
-//       hydep->Fill(botypos,mm_array[0][i][8]);
-//       hxdep->Fill(botxpos,mm_array[0][i][8]);
-//   for(int j=0; j< mmhits[0]; j++) {
-//      double xdist=mm_array[0][j][0]-mm_array[0][i][8];
-//      hclus_dis->Fill(xdist,mm_array[0][j][1]/mm_array[0][i][6]);
-//    }
-//   ////////////////////////////////////////////////
-//  if(mm_array[0][i][4] >=1) {
- 
-//       if(mm_array[0][i][8]<64.)  hclustvscha_0->Fill(mm_array[0][i][6], mm_array[0][i][7]-0.5*pad_at+120.);
-//       if(mm_array[0][i][8]>=64.)  hclustvscha_1->Fill(mm_array[0][i][6], mm_array[0][i][7]-0.5*pad_at+120.);
-//       if(mm_array[0][i][8]<64.)  hnstrpvscha_0->Fill(mm_array[0][i][6], mm_array[0][i][4]);
-//       if(mm_array[0][i][8]>=64.)  hnstrpvscha_1->Fill(mm_array[0][i][6], mm_array[0][i][4]);
-//       hchavsxclu->Fill(mm_array[0][i][8],mm_array[0][i][6]);
-//       hxdis->Fill( mm_array[0][i][8],mm_array[0][i][6]);
-//      if(mm_array[0][i][8]<64.)  htvsnst0->Fill( mm_array[0][i][4], mm_array[0][i][7]-0.5*pad_at+120.);
-//       if(mm_array[0][i][8]>=64.)  htvsnst1->Fill( mm_array[0][i][4], mm_array[0][i][7]-0.5*pad_at+120.);
-  
-// }
-//  ///////////////////////////////
-//       if(mm_array[0][i][4] ==1) hxdis_1->Fill(mm_array[0][i][8],mm_array[0][i][6]);
-//       if(mm_array[0][i][4] ==2) {
-//       if(mm_array[0][istep][0]-mm_array[0][i][0]+1. ==mm_array[0][i][4])  hxdis_2->Fill(mm_array[0][i][8],mm_array[0][i][6]);
-//       else hxdis_2br->Fill(mm_array[0][i][8],mm_array[0][i][6]);
-//       }
-//     if (mm_array[0][i][4] >2) {
-//       if(mm_array[0][istep][0]-mm_array[0][i][0]+1. ==mm_array[0][i][4])  hxdis_ge3->Fill(mm_array[0][i][8],mm_array[0][i][6]);
-//       else hxdis_ge3br->Fill(mm_array[0][i][8],mm_array[0][i][6]);
-//     }
- 
-	
-//     }
-//   }
-
-// ALL THE WAY TO HERE 
-    ///////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////
-   //aw
- } // end mm study
+   }// end mm study
   } // end while
  fclose(fileout);
  printf("event analyzed %d ev sel %d ev cut %d ev with mm %d\n",an_nev,sel_ev,ret_ev,ch_ev);
@@ -1306,79 +831,7 @@ int main()
    hClusterMult[k]->Write();
    hClusterHoles[k]->Write();
  }
-
-// hchthre->Write(); 
-// hTCvNSL->Write();
-// hTCvNSR->Write();
-// hchvstl->Write();
-// hchvstr->Write();
-// hchvstl_raw->Write();
-// hchvstr_raw->Write();
-// hnclusvstcha->Write();
-// houtlier->Write();
-//  hxdis->Write();
-//  hxdis_1->Write();
-//  hxdis_2->Write();
-//  hxdis_2br->Write();
-//  hxdis_ge3->Write();
-//  hxdis_ge3br->Write();
-// hclustvscha_0->Write();
-// hclustvscha_1->Write();
-// hclustcha_01->Write();
-// hclustcha_11->Write();
-// hnstrpvscha_0->Write();
-// hnstrpvscha_1->Write();
-// hchalvsr->Write();
- hnclus->Write();
-// hmiss_chal->Write();
-// hmiss_char->Write();
-// hchavsxclu->Write();
-// hmax_cha->Write();
-// htvsnst0->Write();
-// htvsnst1->Write();
-// havtvsx->Write();
-// havtvsx23->Write();
-// hart0->Write();
-// hart->Write();
-// hart1->Write();
-// hartdiff0->Write();
-// hartdiff1->Write();
-// hclus_dis->Write();
-// hearlytvsx->Write();
-// hxdep->Write();
-// hydep->Write();
-// hmtpc->Write();
-// hmtpc_2strip->Write();
-// hmtpc_1->Write();
-// hmtpc_2->Write();
-// hmtpc_3->Write();
-// hmtpc_ck->Write();
-// htgvsy->Write();
-// htgvsy_2strip->Write();
-// hsng_tvsch->Write();
-// hsng_befcorr->Write();
-// hdtime->Write();
-// hzslope->Write();
-// hztpc->Write();
-// hztpc_2strip->Write();
-// hxclvstpc2->Write();
-// hxclvstpcge3->Write();
-// hcludiffvsmu->Write();
-// hftpc->Write();
-// hftpc_res->Write();
-// hftpc2->Write();
-// hftpc_res2->Write();
-// hfftpc->Write();
-// hfftpc2->Write();
-// hxpres->Write();
-// hxpres2->Write();
-// hresid->Write();
-// hresidtrue->Write();
-// hpruslope->Write();
-// hprutrue->Write();
-// hchid->Write();
  fout->Close();
- cout << "successfully closed" << endl;
 
  // delete pointers
  for (int  i=0; i<25;i++) {
