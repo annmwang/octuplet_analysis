@@ -50,7 +50,7 @@ int main()
 #define TDO_UPPER 440
   
   //initialize calibration
-  PDOToCharge PDO2Charge("/Users/sezata/atlas/VMM2_Calibration/DATA/PDO_Run3505/AllBoards_PDOcalib.root");
+  PDOToCharge PDO2Charge("/Users/sezata/atlas/VMM2_Calibration/CALIBRATIONS/Sep08_16/AllBoards_PDOcalib.root");
   
   //  TDOToTime TDO2Time("~/atlas/VMM2_Calibration/DATA/TDO_Aug3/AllBoards_TDOcalib.root");
   Octuplet oct;
@@ -78,7 +78,9 @@ int main()
   TH2F *hpadvsy;
   TH2F *hPadvsTr;
   ///////////////////// micromega
+  TH1F ** hPDO = new TH1F*[8];
   TH1F ** channel_hits = new TH1F*[8];
+  TH2F ** hCHvsPDOraw = new TH2F*[8];
   TH2F ** hCHvsPDO = new TH2F*[8];
   TH1F ** hClusterCharge = new TH1F*[8];
   TH1F ** hClusterMult = new TH1F*[8];
@@ -178,8 +180,10 @@ int main()
   hPadMult=new TH2F("padmult","padmult",10,0.,10.,10,0.,10.);
    //////////////// micromega histos
   for (int k=0; k < NUMBOARD; k++){
+    hPDO[k] = new TH1F(Form("Board %d PDO",k), Form("Board %d PDO",k) ,500,-0.5,1000.5);
     channel_hits[k] = new TH1F(Form("Board %d Channel Hits",k), Form("Board %d Channel Hits",k) ,513,-0.5,512.5);
-    hCHvsPDO[k] = new TH2F(Form("Board %d Channel vs PDO",k), Form("Board %d Channel vs PDO",k) ,513,-0.5,512.5, 100,-0.5,50.5);
+    hCHvsPDOraw[k] = new TH2F(Form("Board %d Channel vs PDO counts",k), Form("Board %d Channel vs PDO counts",k) ,513,-0.5,512.5, 100,0.,1000.);
+    hCHvsPDO[k] = new TH2F(Form("Board %d Channel vs PDO",k), Form("Board %d Channel vs PDO",k) ,513,-0.5,512.5, 100,-0.5,100.5);
     hClusterCharge[k] = new TH1F(Form("Board %d Charge of clusters",k), Form("Board %d Charge of clusters",k) ,50,0.,400.);
     hClusterMult[k] = new TH1F(Form("Board %d StripMultiplicity of clusters",k), Form("Board %d Strip Multiplicity of clusters",k) ,21,-0.5,20.5);
     hClusterHoles[k] = new TH1F(Form("Board %d Hole Multiplicity of clusters",k), Form("Board %d Hole Multiplicity of clusters",k) ,21,-0.5,20.5);
@@ -205,39 +209,12 @@ int main()
   FILE* fileout;
   int display_on;
   // corrections to  equalize west and east TOF 
-  double time_cut=8.;
+  double time_cut=20.;
   double atdc_corr[12];     //correction for W+E
-  double AT_Corr[12][2];    // flatteners of W+E vs W-E
   const int oversampling = 1;
   const double samplingtime = 0.250 + oversampling*0.500;
 
-  // corrections to flatten e+w vs e-w  -questionables, skipped
-  /////////////////////////////////////////////////////
-  AT_Corr[0][0]=-0.033 ;
-  AT_Corr[0][1]=-0.01 ;
-  AT_Corr[1][0]=.05 ;
-  AT_Corr[1][1]=-.0088 ;
-  AT_Corr[2][0]=-.097 ;
-  AT_Corr[2][1]=-.0094 ;
-  AT_Corr[3][0]=-.053 ;
-  AT_Corr[3][1]= -.01;
-  AT_Corr[4][0]= -.048;
-  AT_Corr[4][1]= -.0081;
-  AT_Corr[5][0]= -.009;
-  AT_Corr[5][1]=-.0089 ;
-  AT_Corr[6][0]=-.0105 ;
-  AT_Corr[6][1]=-.01 ;
-  AT_Corr[7][0]=-.026 ;
-  AT_Corr[7][1]= -.01;
-  AT_Corr[8][0]= .089;
-  AT_Corr[8][1]= -.0094;
-  AT_Corr[9][0]= -.078;
-  AT_Corr[9][1]=-.01 ;
-  AT_Corr[10][0]= .0097;
-  AT_Corr[10][1]= -.01;
-  AT_Corr[11][0]=-0.017 ;
-  AT_Corr[11][1]=-.012 ;
-  ////////////////////////////////////////////////////////////
+  // corrections for scint stuff
   
   double top_corr[12],bot_corr[12]; 
   bot_corr[0]=-0.6;
@@ -257,7 +234,7 @@ int main()
   top_corr[2]=1.2;
   top_corr[3]=0.6;
   top_corr[4]=.5;
-  top_corr[5]=-3.6;
+  top_corr[5]=-1.6; //used to be -3.6
   top_corr[6]=1.1;
   top_corr[7]=2.;
   top_corr[8]=-.1;
@@ -318,7 +295,7 @@ int main()
   
   ////////////////////////////////// test timestamp
 
-  fileout = fopen ("data/comb_r3505.dat","r"); // combined data file
+  fileout = fopen ("data/comb_r3508_part.dat","r"); // combined data file
   
   if(fileout == NULL)
     {
@@ -373,11 +350,16 @@ int main()
     
     ///////////////////////////////////
     printf ("EVENT HEADER: %d %d %d %d %d \n", nrun, nev,mm_nev, nhit,mm_hit);
-    
+
+    if (mm_nev == 139855) {
+      cout << "THERE IS A PROBLEM, hardcode cut at this event" << endl;
+      break;
+    }
     if (nev == 0 && mm_nev!=0) {
       cout << "MISMATCH OF TRIGGER NUMBERS, SCINT: " << nev << " MM: " << mm_nev << endl;
       break;
     }
+
     ///// read scintillators info: counter #, TDC
     for (int i=0 ; i < nhit; i++) {
       fscanf(fileout, "%d %d", &channel, &cont);
@@ -388,33 +370,36 @@ int main()
 	  //	  cout << "found bottom hit: " << channel << endl;
 	  tdcinf[1]=tdcinf[1]+bot_corr[channel];
 	  bot_array.push_back(tdcinf);
-	  //	hTDC[channel]->Fill(cont);
+	  hTDC[channel]->Fill(cont);
 	}
 	// 1/2 middle counters
 	if (channel==12) {
-	  if (cont >=150 && cont <= 200){
+	  if (cont >=200 && cont <= 250){
+	    //	  if (cont >=150 && cont <= 200){
 	    tdc_padw[n_padw]=cont;
 	    n_padw++;
 	  }
-	  // hPad[0]->Fill(cont);
+	  hPad[0]->Fill(cont);
 	}
 	// the other middle counter
 	if (channel==13) {
-	  if (cont >=150 && cont <= 200) {
+	  if (cont >=200 && cont <= 250) {
+	    //	  if (cont >=150 && cont <= 200) {
 	    tdc_pade[n_pade]=cont +2; //2 for a centering
 	    n_pade++;
 	  }
-	  //	hPad[1]->Fill(cont);
+	  hPad[1]->Fill(cont);
 	}  
 	if (channel>15 && channel<28) {
 	  tdcinf[1]=tdcinf[1]+top_corr[channel-16];
-	  //	hTDC[channel-4]->Fill(cont);    
+	  hTDC[channel-4]->Fill(cont);    
 	  tdcinf[0]=tdcinf[0]-4;
 	  top_array.push_back(tdcinf);
 	}  
       }
     } // all scintillators read out
 
+    cout << "read out scint" << endl;
     ////////////////////////////////////////////////
     // read micromega if any
 
@@ -430,17 +415,26 @@ int main()
       printf(" board: %d vmm: %d ch:%d pdo:%d tdo:%d\n",mm_board,mm_vmm, mm_ch,mm_pdo,mm_tdo);
 
       // NOISY CHANNEL
-      //      if (mm_vmm==7 && mm_ch==43 && mm_board == 110) continue;
+      if (  (mm_board == 111 && (mm_ch + mm_vmm*64)==342)
+	  | (mm_board == 116 && (mm_ch + mm_vmm*64)==25)
+	  | (mm_board == 101 && (mm_ch + mm_vmm*64)==450)
+	  | (mm_board == 109 && (mm_ch + mm_vmm*64)==185)
+	  | (mm_board == 112 && (mm_ch + mm_vmm*64)==322)
+	  | (mm_board == 112 && (mm_ch + mm_vmm*64)==324)
+	  | (mm_board == 107 && (mm_ch + mm_vmm*64)==512) ) continue;
       bID = oct.getBoardIndex(mm_board,nrun);
       pdo_curr=float(mm_pdo);
+      hPDO[bID]->Fill(pdo_curr);
+      hCHvsPDOraw[bID]->Fill((mm_ch + mm_vmm*64),mm_pdo);
       tdo_curr=float(mm_tdo);
-        
+
       //double pc= pdo_cal[bID][mm_vmm][mm_ch][0]; 
       //double gc= pdo_cal[bID][mm_vmm][mm_ch][1];
       double pt= tdo_cal[bID][mm_vmm][mm_ch][0];
       double gt= tdo_cal[bID][mm_vmm][mm_ch][1];
 
       pdo_curr=PDO2Charge.GetCharge(mm_pdo, mm_board, mm_vmm, mm_ch);
+
       //      cout << "PDO! " << pdo_curr << endl;
       tdo_curr=(tdo_curr-pt)/gt;
 
@@ -448,15 +442,15 @@ int main()
       // pdo_curr=(pdo_curr-pc)/gc;
       // tdo_curr=(tdo_curr-pt)/gt;
 
+
       mminf[0]=mm_ch + mm_vmm*64;
       mminf[1]=pdo_curr;
       mminf[2]=tdo_curr;
+      //      mminf[3]=mm_bcid;
       mm_array[bID].push_back(mminf);
-      // if(mm_board==105) numprch[0]++;
-      // if(mm_board==17) numprch[1]++;
+
     }
     fscanf(fileout, "%s",strg3); //end event readout
-    //    cout << strg3 << endl;
     
     // reorder micromega hits by increasing channel
     for (int k=0; k<NUMBOARD; k++){
@@ -481,9 +475,11 @@ int main()
     //    cout << "nbhits: " << nbhit << " nthits: " << nthit << endl;
  
     //////////// look for W+E pairs
-    int bothits = s.pairs(bot_array,120.,170.);
+    int bothits = s.pairs(bot_array,160.,220.);
+    //    int bothits = s.pairs(bot_array,120.,170.);
     //    cout << "Num bottom pairs: " << bothits << endl;
-    int tophits= s.pairs(top_array,130.,170.);
+    int tophits= s.pairs(top_array,180.,240.);
+    //    int tophits= s.pairs(top_array,130.,170.);
     //    cout << "Num top pairs: " << tophits << endl;
 
    //////////////////////////////////////////////////////////
@@ -525,7 +521,7 @@ int main()
 	     }
 	   }
 	 }
-}
+       }
        
    
        for(int i=0; i<nbhit;i++)   {
@@ -542,7 +538,7 @@ int main()
 	       if(abs(botxy[0][ind])>100.) outofbound=0;
 	       botxpos=botxy[0][ind];
 	       botypos= botxy[1][ind];
-	       length=sqrt(247.*247.+(botxpos-topxpos)*(botxpos-topxpos)+
+	       length=sqrt(274.3*274.3+(botxpos-topxpos)*(botxpos-topxpos)+
 			   (topypos-botypos)*(topypos-botypos))/100.;
 	       dtime=2.*3.3*length;
 	       mu_phi=TMath::ATan2(topypos-botypos,topxpos-botxpos);
@@ -595,9 +591,9 @@ int main()
        double av_time=  (top_time+bot_time)/2.;
        // if(time_diff<0) av_time=av_time+0.719*time_diff;
        //if(time_diff>=0) av_time=av_time-0.579*time_diff;
-       
+
        if(outofbound==1)  {  // add y pos cut
-	 if(abs(top_time-bot_time)<=time_cut) { // normallly <=4
+	 if(abs(top_time-bot_time)<=time_cut) { // used to be 8
 	   
 	   ret_ev++;
 	   mm_flag=1;
@@ -629,6 +625,7 @@ int main()
    int left=0;
 
    if(totHits>0 && mm_flag==1 && time_flag==1) {
+     //   if(totHits>0 && mm_flag==1 && time_flag==1) {
      ch_ev++; 
      double totchal=0.;
      double totchar=0.;  
@@ -662,7 +659,7 @@ int main()
      //   for(int i=0; i<mmhits; i++) {
      for(int k=0; k<NUMBOARD; k++){
        //p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,4.,2.5); 
-       p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,6.,2.5); 
+       p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,10.,2.5); //used to be 6.
      } // end cluster search
      
      //hnclus->Fill(nclus);
@@ -825,7 +822,9 @@ int main()
  hpadvsy->Write(); 
  hPadvsTr->Write();
  for (int k=0; k<NUMBOARD; k++) {
+   hPDO[k]->Write();
    channel_hits[k]->Write();
+   hCHvsPDOraw[k]->Write();
    hCHvsPDO[k]->Write();
    hClusterCharge[k]->Write();
    hClusterMult[k]->Write();
@@ -834,20 +833,21 @@ int main()
  fout->Close();
 
  // delete pointers
- for (int  i=0; i<25;i++) {
-   delete hTDC[i];
- }
- for (int  i=0; i<12;i++) {
-   delete hATDC[i],hDTDC[i],hDVSATDC[i]; 
- }
- for (int  i = 0; i<14;i++) {
-   delete hSTDC[i];
- }
- delete hPad[0];
- delete hPad[1];
- for (int k = 0; k<NUMBOARD; k++) {
-   delete channel_hits[k];
- }
+ // for (int  i=0; i<25;i++) {
+ //   delete hTDC[i];
+ // }
+ // for (int  i=0; i<12;i++) {
+ //   delete hATDC[i],hDTDC[i],hDVSATDC[i]; 
+ // }
+ // for (int  i = 0; i<14;i++) {
+ //   delete hSTDC[i];
+ // }
+ // delete hPad[0];
+ // delete hPad[1];
+ // for (int k = 0; k<NUMBOARD; k++) {
+ //   delete hPDO[k];
+ //   delete channel_hits[k];
+ // }
  return 0;
 }
 
