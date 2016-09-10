@@ -48,7 +48,7 @@ int main()
 #define NUMBOARD 8 
 #define NUMVMM 8 
 #define TDO_UPPER 440
-  
+#define TRIG_DELAY 40 //max diff in BCID between trigger + event
   //initialize calibration
   PDOToCharge PDO2Charge("/Users/sezata/atlas/VMM2_Calibration/CALIBRATIONS/Sep08_16/AllBoards_PDOcalib.root");
   
@@ -80,9 +80,11 @@ int main()
   ///////////////////// micromega
   TH1F ** hPDO = new TH1F*[8];
   TH1F ** channel_hits = new TH1F*[8];
+  TH1F ** hDeltaBCID = new TH1F*[8];
   TH2F ** hCHvsPDOraw = new TH2F*[8];
   TH2F ** hCHvsPDO = new TH2F*[8];
   TH1F ** hClusterCharge = new TH1F*[8];
+  TH1F ** hClusterChargeMult2 = new TH1F*[8];
   TH1F ** hClusterMult = new TH1F*[8];
   TH1F ** hClusterHoles = new TH1F*[8];
   /////////////////////////////////
@@ -182,9 +184,11 @@ int main()
   for (int k=0; k < NUMBOARD; k++){
     hPDO[k] = new TH1F(Form("Board %d PDO",k), Form("Board %d PDO",k) ,500,-0.5,1000.5);
     channel_hits[k] = new TH1F(Form("Board %d Channel Hits",k), Form("Board %d Channel Hits",k) ,513,-0.5,512.5);
+    hDeltaBCID[k] = new TH1F(Form("Board %d Delta BCID",k), Form("Board %d Delta BCID",k) ,100,-0.5,101.5);
     hCHvsPDOraw[k] = new TH2F(Form("Board %d Channel vs PDO counts",k), Form("Board %d Channel vs PDO counts",k) ,513,-0.5,512.5, 100,0.,1000.);
     hCHvsPDO[k] = new TH2F(Form("Board %d Channel vs PDO",k), Form("Board %d Channel vs PDO",k) ,513,-0.5,512.5, 100,-0.5,100.5);
     hClusterCharge[k] = new TH1F(Form("Board %d Charge of clusters",k), Form("Board %d Charge of clusters",k) ,50,0.,400.);
+    hClusterChargeMult2[k] = new TH1F(Form("Board %d Charge of clusters with >1 multiplicity",k), Form("Board %d Charge of clusters with >1 multiplicity",k) ,50,0.,400.);
     hClusterMult[k] = new TH1F(Form("Board %d StripMultiplicity of clusters",k), Form("Board %d Strip Multiplicity of clusters",k) ,21,-0.5,20.5);
     hClusterHoles[k] = new TH1F(Form("Board %d Hole Multiplicity of clusters",k), Form("Board %d Hole Multiplicity of clusters",k) ,21,-0.5,20.5);
   }
@@ -422,8 +426,12 @@ int main()
 	  | (mm_board == 112 && (mm_ch + mm_vmm*64)==322)
 	  | (mm_board == 112 && (mm_ch + mm_vmm*64)==324)
 	  | (mm_board == 107 && (mm_ch + mm_vmm*64)==512) ) continue;
+
+      if (fabs(mm_trig-mm_bcid) > TRIG_DELAY) continue; //bcid cut
+      
       bID = oct.getBoardIndex(mm_board,nrun);
       pdo_curr=float(mm_pdo);
+      hDeltaBCID[bID]->Fill(fabs(mm_trig-mm_bcid));
       hPDO[bID]->Fill(pdo_curr);
       hCHvsPDOraw[bID]->Fill((mm_ch + mm_vmm*64),mm_pdo);
       tdo_curr=float(mm_tdo);
@@ -446,7 +454,7 @@ int main()
       mminf[0]=mm_ch + mm_vmm*64;
       mminf[1]=pdo_curr;
       mminf[2]=tdo_curr;
-      //      mminf[3]=mm_bcid;
+      mminf[3]=mm_bcid;
       mm_array[bID].push_back(mminf);
 
     }
@@ -659,7 +667,8 @@ int main()
      //   for(int i=0; i<mmhits; i++) {
      for(int k=0; k<NUMBOARD; k++){
        //p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,4.,2.5); 
-       p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,10.,2.5); //used to be 6.
+       //       p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,10.,2.5); //used to be 6.
+       p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,15.,10.); //used to be 6.
      } // end cluster search
      
      //hnclus->Fill(nclus);
@@ -667,11 +676,12 @@ int main()
      
      // chomp backwards
      for (int k=0; k<NUMBOARD; k++) {
-       p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,2.5);
+       p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,10.);
+       //       p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,2.5);
        //       p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,2.5);
      }
 
-     // calculate average strip for each cluster, saved in mm_array[k][i][8]
+     // calculate average strip for each cluster, saved in mm_array[k][i][9]
      double xav; 
      double run_clus=0.;
      int ind1=0;
@@ -681,19 +691,19 @@ int main()
      for(int k=0; k<NUMBOARD; k++) {
        run_clus = 0.;
        for(int i=0; i<mmhits[k]; i++) {
-	 mm_array[k][i][8] = 0;
+	 mm_array[k][i][9] = 0;
 	 ind1=i;
-	 if( mm_array[k][i][3] > run_clus) {
+	 if( mm_array[k][i][4] > run_clus) {
 	   xav = 0.; 
-	   run_clus = mm_array[k][i][3]; 
-	   chacont[0]= mm_array[k][i][6]; // cluster total charge
-	   chacont[1]= mm_array[k][i][3]; // cluster number
+	   run_clus = mm_array[k][i][4]; 
+	   chacont[0]= mm_array[k][i][7]; // cluster total charge
+	   chacont[1]= mm_array[k][i][4]; // cluster number
 	   cluscha_ord[k].push_back(chacont);
 	   for(int j=ind1; j<mmhits[k]; j++) {
-	     if (mm_array[k][j][3] == run_clus)  xav = xav + mm_array[k][j][0] * mm_array[k][j][1]; //channels avg weighted by pdo
+	     if (mm_array[k][j][4] == run_clus)  xav = xav + mm_array[k][j][0] * mm_array[k][j][1]; //channels avg weighted by pdo
 	   }
-	   xav=xav/mm_array[k][i][6];
-	   mm_array[k][i][8] = xav; 
+	   xav=xav/mm_array[k][i][7];
+	   mm_array[k][i][9] = xav; 
 	 }
        }
      }
@@ -709,8 +719,8 @@ int main()
 	 run_clus = cluscha_ord[k][j][1]; //cluster number
 	 irun = 0;
 	 for(int i=0; i<mmhits[k]; i++) {
-	   if(irun == 0 && mm_array[k][i][3]==run_clus) {
-	     mm_array[k][i][9]=j+1; //save what order the cluster is in the cluster ranking
+	   if(irun == 0 && mm_array[k][i][4]==run_clus) {
+	     mm_array[k][i][10]=j+1; //save what order the cluster is in the cluster ranking
 	     irun++; 
 	   }
 	 }
@@ -722,13 +732,16 @@ int main()
      int nBoardsHit = 0;
      for (int k=0; k<NUMBOARD; k++){
        for(int i=0; i<mmhits[k]; i++) { 
-	 if ( mm_array[k][i][9]==1. ) { //highest charge loop
+	 if ( mm_array[k][i][10]==1. ) { //highest charge loop
 	   nBoardsHit++;
-	   istep = mm_array[k][i][5]; //cluster end
-	   is_hole = mm_array[k][istep][0]-mm_array[k][i][0]+1.-mm_array[k][i][4]; // number of holes
+	   istep = mm_array[k][i][6]; //cluster end
+	   is_hole = mm_array[k][istep][0]-mm_array[k][i][0]+1.-mm_array[k][i][5]; // number of holes
 	   hClusterHoles[k]->Fill(is_hole);
-	   hClusterCharge[k]->Fill(mm_array[k][i][6]);
-	   hClusterMult[k]->Fill(mm_array[k][i][4]);
+	   hClusterCharge[k]->Fill(mm_array[k][i][7]);
+	   if (mm_array[k][i][5]>1) {
+	     hClusterChargeMult2[k]->Fill(mm_array[k][i][7]);
+	   }
+	   hClusterMult[k]->Fill(mm_array[k][i][5]);
 	 }
        }
      }
@@ -752,8 +765,8 @@ int main()
        for (int k=0; k < NUMBOARD; k++) {
 	 cout << "BOARD: " << k << endl;
 	 for (int i=0; i < mmhits[k]; i++) {
-	   if (mm_array[k][i][9] == 1.) { //highest charge loop
-	     barycenter_x[bloop]=(getx(k, mm_array[k][i][8]));
+	   if (mm_array[k][i][10] == 1.) { //highest charge loop
+	     barycenter_x[bloop]=(getx(k, mm_array[k][i][9]));
 	     barycenter_z[bloop]=(getz(k));
 	     bloop++;
 	   }
@@ -824,11 +837,53 @@ int main()
  for (int k=0; k<NUMBOARD; k++) {
    hPDO[k]->Write();
    channel_hits[k]->Write();
+   hDeltaBCID[k]->Write();
    hCHvsPDOraw[k]->Write();
    hCHvsPDO[k]->Write();
    hClusterCharge[k]->Write();
+   hClusterChargeMult2[k]->Write();
    hClusterMult[k]->Write();
    hClusterHoles[k]->Write();
+    }
+ TCanvas *c1 = new TCanvas("c1","Root Canvas 1");
+ c1->cd();
+ for (int k=0; k<NUMBOARD; k++) {
+   c1->SetLogy(1);
+   hPDO[k]->Draw("");
+   c1->Print(Form("Board_%d_PDO.pdf",k));
+   c1->Clear();
+   c1->SetLogy(0);
+   channel_hits[k]->Draw();
+   c1->Print(Form("Board_%d_ChannelHits.pdf",k));
+   c1->Clear();
+   c1->SetLogy(1);
+   hDeltaBCID[k]->Draw("");
+   c1->Print(Form("Board_%d_BCID.pdf",k));
+   c1->Clear();
+   c1->SetLogy(0);
+   c1->SetLogz(1);
+   hCHvsPDOraw[k]->Draw("colz");
+   c1->Print(Form("Board_%d_PDOraw.pdf",k));
+   c1->Clear();
+   c1->SetLogy(0);
+   c1->SetLogz(1);
+   hCHvsPDO[k]->Draw("colz");
+   c1->Print(Form("Board_%d_PDO.pdf",k));
+   c1->Clear();
+   c1->SetLogy(0);
+   c1->SetLogz(0);
+   hClusterCharge[k]->Draw();
+   c1->Print(Form("Board_%d_ClusterCharge.pdf",k));
+   c1->Clear();
+   hClusterChargeMult2[k]->Draw();
+   c1->Print(Form("Board_%d_ClusterChargeMult2.pdf",k));
+   c1->Clear();
+   hClusterMult[k]->Draw();
+   c1->Print(Form("Board_%d_ClusterMult.pdf",k));
+   c1->Clear();
+   hClusterHoles[k]->Draw();
+   c1->Print(Form("Board_%d_ClusterHoles.pdf",k));
+   c1->Clear();
  }
  fout->Close();
 

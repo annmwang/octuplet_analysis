@@ -24,7 +24,8 @@ public:
 	 //mm_array[a][b][0] is CH #
 	 //mm_array[a][b][1] is PDO
 	 //mm_array[a][b][2] is TDO
-	 //mm_array[a][b][3] is cluster number
+	 //mm_array[a][b][2] is BCID
+	 //mm_array[a][b][4] is cluster number
 inline void pacman::forward(vector< vector<double> >  mm_array[NUMBOARD], int mmhits[NUMBOARD], double clust_range, int tdo_cut, int iboard, double pad_at, double seed_thr, double thr){
   int nclus = 0;
   int clust_start, clust_mult;
@@ -40,7 +41,7 @@ inline void pacman::forward(vector< vector<double> >  mm_array[NUMBOARD], int mm
       clust_start=i;
       clust_end=i;
       clust_mult=1;
-      mm_array[k][i][3] = nclus;
+      mm_array[k][i][4] = nclus;
       clust_cha = mm_array[k][i][1];
       clust_time = mm_array[k][i][2];
       for(int j=i+1; j<mmhits[k]; j++) {
@@ -58,18 +59,18 @@ inline void pacman::forward(vector< vector<double> >  mm_array[NUMBOARD], int mm
 	
 	if ( mm_array[k][j][1]>= thr && (mm_array[k][j][2]- 0.5*pad_at + 120.) <= tdo_cut && 
 	     ( mm_array[k][j][0]<=(mm_array[k][clust_end][0]+clust_range) )) {
-	  mm_array[k][j][3] = nclus; // set it to be part of the same cluster 
+	  mm_array[k][j][4] = nclus; // set it to be part of the same cluster 
 	  clust_mult++; 
 	  clust_cha = clust_cha+mm_array[k][j][1]; // clust_cha is total charge
 	  clust_time = clust_time+mm_array[k][j][2]; // clust_time is total time
 	  clust_end = j; // clust_end is the last strip in the cluster
 	}	
       }
-      mm_array[k][i][4] = clust_mult; 
+      mm_array[k][i][5] = clust_mult; 
       cout << "FORWARD CLUSTER NUMBER: " << nclus << " MULT: " << clust_mult << " END: " << clust_end << " CHA: " << clust_cha << " TIME: " << clust_time << endl;
-      mm_array[k][i][5] = clust_end;
-      mm_array[k][i][6] = clust_cha;
-      mm_array[k][i][7] = clust_time/float(clust_mult); //avg TDO?
+      mm_array[k][i][6] = clust_end;
+      mm_array[k][i][7] = clust_cha;
+      mm_array[k][i][8] = clust_time/float(clust_mult); //avg TDO?
     }
   }
 }
@@ -80,10 +81,10 @@ inline void pacman::backward(vector< vector<double> >  mm_array[NUMBOARD], int m
   double ind;
   int ind1_temp;
     for(int i=0; i<mmhits[k]; i++) {
-      if(mm_array[k][i][3]> run_clus_temp) { //if part of a cluster
+      if(mm_array[k][i][4]> run_clus_temp) { //if part of a cluster
 	cout << "CLUSTER RUN: " << run_clus_temp << endl;
-	clust_mult = mm_array[k][i][4];
-	run_clus_temp = mm_array[k][i][3];
+	clust_mult = mm_array[k][i][5];
+	run_clus_temp = mm_array[k][i][4];
 	ind = mm_array[k][i][0]; //channel
 	ind1_temp = i; //hit #
 	clust_beg = i; //hit #
@@ -91,17 +92,17 @@ inline void pacman::backward(vector< vector<double> >  mm_array[NUMBOARD], int m
 	  if( ( mm_array[k][j][0]>=mm_array[k][clust_beg][0]- clust_range) //in range of the cluster
 	      &&  mm_array[k][j][3]==0 && mm_array[k][j][1] >= thr && //not already part of a cluster
 	      (mm_array[k][j][2]-0.5*pad_at+120.) <= tdo_cut ) {
-	    mm_array[k][j][3]=run_clus_temp; //add to that cluster
+	    mm_array[k][j][4]=run_clus_temp; //add to that cluster
 	    // push the cluster multiplicity, end, charge, and TDO information to the new cluster beginnnig
-	    mm_array[k][j][4]= mm_array[k][ind1_temp][4] + 1.; // multiplicity
-	    mm_array[k][ind1_temp][4] = 0.; 
-	    mm_array[k][j][5]= mm_array[k][ind1_temp][5]; //end
-	    mm_array[k][ind1_temp][5] = 0;
-	    mm_array[k][j][6]= mm_array[k][ind1_temp][6]+ mm_array[k][j][1]; //charge 
-	    mm_array[k][ind1_temp][6]=0.;
-	    mm_array[k][j][7]= (mm_array[k][ind1_temp][7]* (mm_array[k][j][4]-1.)+
-				mm_array[k][j][2])/mm_array[k][j][4]; //avg TDO
-	    mm_array[k][i][7]=0.;
+	    mm_array[k][j][5]= mm_array[k][ind1_temp][5] + 1.; // multiplicity
+	    mm_array[k][ind1_temp][5] = 0.; 
+	    mm_array[k][j][6]= mm_array[k][ind1_temp][6]; //end
+	    mm_array[k][ind1_temp][6] = 0;
+	    mm_array[k][j][7]= mm_array[k][ind1_temp][7]+ mm_array[k][j][1]; //charge 
+	    mm_array[k][ind1_temp][7]=0.;
+	    mm_array[k][j][8]= (mm_array[k][ind1_temp][8]* (mm_array[k][j][5]-1.)+
+				mm_array[k][j][2])/mm_array[k][j][5]; //avg TDO
+	    mm_array[k][i][8]=0.;
 	    ind1_temp=j;
 	    clust_beg=j;
 	  }
