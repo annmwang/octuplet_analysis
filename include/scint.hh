@@ -2,6 +2,8 @@
 #ifndef scint_h
 #define scint_h
 
+
+#define PR 0 //print flag 
 using namespace std;
 
 class scint {
@@ -29,7 +31,7 @@ inline int scint::pairs(vector < vector<double> > & hitarray, double low, double
 	  hitarray[j][2]=1.;
 	  hits++;
 	}
-	else {
+	else if (PR==1) {
 	  cout << "failed TDC cut" << endl;
 	}
       }
