@@ -19,6 +19,7 @@ public:
   MMFE8Hits();
   MMFE8Hits(const MMHit& hit);
   MMFE8Hits(const MMFE8Hits& hits);
+  MMFE8Hits(const MMLinkedHit& hit);
   
   ~MMFE8Hits();
 
@@ -27,6 +28,7 @@ public:
 
   bool AddHit(const MMHit& hit);
   bool AddHits(const MMFE8Hits& hits);
+  bool AddLinkedHit(const MMLinkedHit& hit);
 
   bool operator += (const MMHit& hit);
   bool operator += (const MMFE8Hits& hits);
@@ -58,8 +60,13 @@ inline MMFE8Hits::MMFE8Hits(){ }
 inline MMFE8Hits::MMFE8Hits(const MMHit& hit){
   AddHit(hit);
 }
+
 inline MMFE8Hits::MMFE8Hits(const MMFE8Hits& hits){
   AddHits(hits);
+}
+
+inline MMFE8Hits::MMFE8Hits(const MMLinkedHit& hit){
+  AddLinkedHit(hit);
 }
   
 inline MMFE8Hits::~MMFE8Hits(){ }
