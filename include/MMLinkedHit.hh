@@ -31,6 +31,8 @@ public:
 private:
   MMLinkedHit* m_next;
 
+  friend class PDOToCharge;
+  friend class TDOToTime;
 };
 
 #endif

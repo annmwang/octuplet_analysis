@@ -51,7 +51,10 @@ private:
   int m_FIFOcount;
 
   double m_charge;
-  double m_time; 
+  double m_time;
+
+  friend class PDOToCharge;
+  friend class TDOToTime;
 };
 
 #endif

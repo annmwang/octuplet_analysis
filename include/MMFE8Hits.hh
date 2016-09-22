@@ -46,6 +46,8 @@ public:
 private:
   vector<MMLinkedHit> m_hits;
 
+  friend class PDOToCharge;
+  friend class TDOToTime;
 };
 
 MMFE8Hits operator + (const MMFE8Hits& hits_a, const MMFE8Hits& hits_b);

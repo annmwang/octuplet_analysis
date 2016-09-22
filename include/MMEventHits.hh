@@ -38,6 +38,9 @@ public:
   int GetNDuplicates() const;
 
   MMEventHits GetDuplicates() const;
+
+  friend class PDOToCharge;
+  friend class TDOToTime;
   
 private:
   vector<MMFE8Hits> m_boards;

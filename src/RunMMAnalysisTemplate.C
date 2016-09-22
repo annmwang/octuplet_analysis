@@ -95,6 +95,6 @@ int main(int argc, char* argv[]){
   for(int evt = 0; evt < Nevent; evt++){
     DATA->GetEntry(evt);
 
-    cout << DATA->mm_EventHits.GetNBoards() << endl;
+    cout << DATA->mm_EventHits.GetNDuplicates() << endl;
   }
 }
