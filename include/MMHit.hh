@@ -15,20 +15,32 @@ class MMHit {
 
 public:
   MMHit();
+  MMHit(int mmfe8 = -1, int vmm = -1, int ch = -1);
   MMHit(const MMHit& hit);
   ~MMHit();
 
+  int MMFE8() const;
   int VMM() const;
   int Channel() const;
   int VMMChannel() const;
   int PDO() const;
   int TDO() const;
   int BCID() const;
-  int MMFE8() const;
   int FIFOcount() const;
 
   double Charge() const;
   double Time() const;
+
+  void SetMMFE8(int mmfe8);
+  void SetMMFE8(int mmfe8);
+  void SetMMFE8(int mmfe8);
+  void SetMMFE8(int mmfe8);
+  void SetMMFE8(int mmfe8);
+  void SetMMFE8(int mmfe8);
+  void SetMMFE8(int mmfe8);
+  void SetMMFE8(int mmfe8);
+  void SetMMFE8(int mmfe8);
+  void SetMMFE8(int mmfe8);
   
 private:
   int m_MMFE8;
