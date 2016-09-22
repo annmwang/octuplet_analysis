@@ -95,8 +95,21 @@ int main(int argc, char* argv[]){
   for(int evt = 0; evt < Nevent; evt++){
     DATA->GetEntry(evt);
 
-    cout << DATA->mm_EventHits.GetNDuplicates() << endl;
-
     PDOCalibrator->Calibrate(DATA->mm_EventHits);
+    TDOCalibrator->Calibrate(DATA->mm_EventHits);
+  
+    int Nboard = DATA->mm_EventHits.GetNBoards();
+    cout << "N boards with hits: " << Nboard << endl;
+
+    for(int i = 0; i < Nboard; i++){
+      int Nhit = DATA->mm_EventHits[i]->GetNHits();
+      cout << "board " << i << "(" << DATA->mm_EventHits[i]->MMFE8() << ") ";
+      cout << "has " << Nhit << " hits" << endl;
+      for(int j = 0; j < Nhit; j++){
+	cout << "(" << DATA->mm_EventHits[i]->Get(j)->Charge() << ", " << DATA->mm_EventHits[i]->Get(j)->Time() << ") ";
+      }
+      cout << endl;
+    }
+    cout << endl << endl;
   }
 }

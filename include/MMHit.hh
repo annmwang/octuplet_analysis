@@ -38,8 +38,8 @@ public:
   void SetTDO(int tdo);
   void SetBCID(int bcid);
   void SetFIFOcount(int fifo);
-  void SetCharge(int q);
-  void SetTime(int t);
+  void SetCharge(double q);
+  void SetTime(double t);
   
 private:
   int m_MMFE8;
@@ -168,11 +168,11 @@ inline void MMHit::SetFIFOcount(int fifo){
   m_FIFOcount = fifo;
 }
 
-inline void MMHit::SetCharge(int q){
+inline void MMHit::SetCharge(double q){
   m_charge = q;
 }
 
-inline void MMHit::SetTime(int t){
+inline void MMHit::SetTime(double t){
   m_time = t;
 }
 
