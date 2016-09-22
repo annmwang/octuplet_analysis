@@ -30,9 +30,9 @@ public:
   // returns probability from PDO v charge fit
   double GetFitProb(int MMFE8, int VMM, int CH) const;
 
-  void Calibrate(const MMEventHits& evt_hits) const;
-  void Calibrate(const MMFE8Hits& hits) const;
-  void Calibrate(const MMHit& hit) const;
+  void Calibrate(MMEventHits& evt_hits) const;
+  void Calibrate(MMFE8Hits& hits) const;
+  void Calibrate(MMHit& hit) const;
 
 private:
   mutable map<pair<int,int>, int> m_MMFE8VMM_to_index;
@@ -104,13 +104,13 @@ inline PDOToCharge::~PDOToCharge(){}
 inline double PDOToCharge::GetCharge(double PDO, int MMFE8, int VMM, int CH) const {
   pair<int,int> key(MMFE8,VMM);
   if(m_MMFE8VMM_to_index.count(key) == 0){
-    PrintError(MMFE8,VMM,CH);
+    //PrintError(MMFE8,VMM,CH);
     return -1;
   }
   int i = m_MMFE8VMM_to_index[key];
-
+ 
   if(m_CH_to_index[i].count(CH) == 0){
-    PrintError(MMFE8,VMM,CH);
+    //PrintError(MMFE8,VMM,CH);
     return -1;
   }
   int c = m_CH_to_index[i][CH];
@@ -161,13 +161,13 @@ inline double PDOToCharge::GetFitProb(int MMFE8, int VMM, int CH) const {
   return m_prob[c];
 }
 
-inline void PDOToCharge::Calibrate(const MMEventHits& evt_hits) const {
+inline void PDOToCharge::Calibrate(MMEventHits& evt_hits) const {
   int NBoards = evt_hits.GetNBoards();
   for(int i = 0; i < NBoards; i++)
     Calibrate(evt_hits.m_boards[i]);
 }
 
-inline void PDOToCharge::Calibrate(const MMFE8Hits& hits) const {
+inline void PDOToCharge::Calibrate(MMFE8Hits& hits) const {
   int NHits = hits.GetNHits();
   for(int i = 0; i < NHits; i++){
     MMLinkedHit* hit_ptr = &hits.m_hits[i];
@@ -180,6 +180,6 @@ inline void PDOToCharge::Calibrate(const MMFE8Hits& hits) const {
   }
 }
 
-inline void PDOToCharge::Calibrate(const MMHit& hit) const {
-  
+inline void PDOToCharge::Calibrate(MMHit& hit) const {
+  hit.SetCharge(GetCharge(hit.PDO(), hit.MMFE8(), hit.VMM(), hit.VMMChannel()));
 }

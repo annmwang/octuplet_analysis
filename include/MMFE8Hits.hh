@@ -44,7 +44,7 @@ public:
   MMFE8Hits GetDuplicates() const;
   
 private:
-  vector<MMLinkedHit> m_hits;
+  std::vector<MMLinkedHit> m_hits;
 
   friend class PDOToCharge;
   friend class TDOToTime;

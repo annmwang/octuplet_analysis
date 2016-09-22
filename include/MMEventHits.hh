@@ -43,11 +43,9 @@ public:
   friend class TDOToTime;
   
 private:
-  vector<MMFE8Hits> m_boards;
+  std::vector<MMFE8Hits> m_boards;
 
 };
-
-#endif
 
 inline MMEventHits::MMEventHits() {}
 
@@ -171,3 +169,5 @@ inline MMEventHits operator + (const MMHit& hit,
   ret += hit;
   return ret;
 }
+
+#endif

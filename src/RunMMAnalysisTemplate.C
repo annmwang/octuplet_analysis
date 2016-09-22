@@ -96,5 +96,7 @@ int main(int argc, char* argv[]){
     DATA->GetEntry(evt);
 
     cout << DATA->mm_EventHits.GetNDuplicates() << endl;
+
+    PDOCalibrator->Calibrate(DATA->mm_EventHits);
   }
 }
