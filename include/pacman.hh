@@ -3,6 +3,7 @@
 #define pacman_h
 
 #define NUMBOARD 8
+#define PR 0 //print flag
 
 using namespace std;
 
@@ -34,7 +35,8 @@ inline void pacman::forward(vector< vector<double> >  mm_array[NUMBOARD], int mm
   int irep=0;
   int k = iboard;
   clust_end = -1;
-  cout << "BOARD " << k << ", Numhits " << mmhits[k] << endl; 
+  if (PR==1)
+    cout << "BOARD " << k << ", Numhits " << mmhits[k] << endl; 
   for (int i=0; i<mmhits[k]; i++) {
     if (i>clust_end && mm_array[k][i][1]>= seed_thr  && (mm_array[k][i][2]-0.5*pad_at+120.) <= tdo_cut) { //loop through all hits that aren't already a part of a cluster
       nclus++; // nclus indexes the found clusters
@@ -66,8 +68,9 @@ inline void pacman::forward(vector< vector<double> >  mm_array[NUMBOARD], int mm
 	  clust_end = j; // clust_end is the last strip in the cluster
 	}	
       }
-      mm_array[k][i][5] = clust_mult; 
-      cout << "FORWARD CLUSTER NUMBER: " << nclus << " MULT: " << clust_mult << " END: " << clust_end << " CHA: " << clust_cha << " TIME: " << clust_time << endl;
+      mm_array[k][i][5] = clust_mult;
+      if (PR==1)
+	cout << "FORWARD CLUSTER NUMBER: " << nclus << " MULT: " << clust_mult << " END: " << clust_end << " CHA: " << clust_cha << " TIME: " << clust_time << endl;
       mm_array[k][i][6] = clust_end;
       mm_array[k][i][7] = clust_cha;
       mm_array[k][i][8] = clust_time/float(clust_mult); //avg TDO?
@@ -82,7 +85,8 @@ inline void pacman::backward(vector< vector<double> >  mm_array[NUMBOARD], int m
   int ind1_temp;
     for(int i=0; i<mmhits[k]; i++) {
       if(mm_array[k][i][4]> run_clus_temp) { //if part of a cluster
-	cout << "CLUSTER RUN: " << run_clus_temp << endl;
+	if (PR==1)
+	  cout << "CLUSTER RUN: " << run_clus_temp << endl;
 	clust_mult = mm_array[k][i][5];
 	run_clus_temp = mm_array[k][i][4];
 	ind = mm_array[k][i][0]; //channel
@@ -90,7 +94,7 @@ inline void pacman::backward(vector< vector<double> >  mm_array[NUMBOARD], int m
 	clust_beg = i; //hit #
 	for(int j=i-1; j>-1 ; j--) {
 	  if( ( mm_array[k][j][0]>=mm_array[k][clust_beg][0]- clust_range) //in range of the cluster
-	      &&  mm_array[k][j][3]==0 && mm_array[k][j][1] >= thr && //not already part of a cluster
+	      &&  mm_array[k][j][4]==0 && mm_array[k][j][1] >= thr && //not already part of a cluster
 	      (mm_array[k][j][2]-0.5*pad_at+120.) <= tdo_cut ) {
 	    mm_array[k][j][4]=run_clus_temp; //add to that cluster
 	    // push the cluster multiplicity, end, charge, and TDO information to the new cluster beginnnig
