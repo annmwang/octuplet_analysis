@@ -16,6 +16,11 @@ using namespace std;
 class TDOToTime {
 
 public:
+  TDOToTime(){
+    m_Cdef = 12.;
+    m_Sdef = 1.3;
+  }
+  
   TDOToTime(const string& TDOcalib_filename){
 
     TChain tree("TDO_calib");
@@ -58,18 +63,22 @@ public:
   double GetTime(double TDO, int MMFE8, int VMM, int CH) const {
     pair<int,int> key(MMFE8,VMM);
     if(m_MMFE8VMM_to_index.count(key) == 0){
-      PrintError(MMFE8,VMM,CH);
-      return 0.;
+      //PrintError(MMFE8,VMM,CH);
+      return GetTimeDefault(TDO);
     }
     int i = m_MMFE8VMM_to_index[key];
 
     if(m_CH_to_index[i].count(CH) == 0){
-      PrintError(MMFE8,VMM,CH);
-      return 0.;
+      //PrintError(MMFE8,VMM,CH);
+      return GetTimeDefault(TDO);
     }
     int c = m_CH_to_index[i][CH];
 
     return (TDO-m_C[c])/m_S[c];
+  }
+
+  double GetTimeDefault(double TDO) const {
+    return (TDO-m_Cdef)/m_Sdef;
   }
 
   // returns chi2 from PDO v charge fit
@@ -109,6 +118,9 @@ public:
 private:
   mutable map<pair<int,int>, int> m_MMFE8VMM_to_index;
   mutable vector<map<int,int> > m_CH_to_index;
+
+  double m_Cdef;
+  double m_Sdef;
   
   vector<double> m_C;
   vector<double> m_S;

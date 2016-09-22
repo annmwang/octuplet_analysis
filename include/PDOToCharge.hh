@@ -16,6 +16,7 @@ using namespace std;
 class PDOToCharge {
 
 public:
+  PDOToCharge() {}
   PDOToCharge(const string& PDOcalib_filename){
 
     TChain tree("PDO_calib");
@@ -63,13 +64,13 @@ public:
     pair<int,int> key(MMFE8,VMM);
     if(m_MMFE8VMM_to_index.count(key) == 0){
       PrintError(MMFE8,VMM,CH);
-      return 0.;
+      return -1;
     }
     int i = m_MMFE8VMM_to_index[key];
 
     if(m_CH_to_index[i].count(CH) == 0){
       PrintError(MMFE8,VMM,CH);
-      return 0.;
+      return -1;
     }
     int c = m_CH_to_index[i][CH];
 

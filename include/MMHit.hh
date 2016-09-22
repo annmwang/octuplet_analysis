@@ -32,15 +32,14 @@ public:
   double Time() const;
 
   void SetMMFE8(int mmfe8);
-  void SetMMFE8(int mmfe8);
-  void SetMMFE8(int mmfe8);
-  void SetMMFE8(int mmfe8);
-  void SetMMFE8(int mmfe8);
-  void SetMMFE8(int mmfe8);
-  void SetMMFE8(int mmfe8);
-  void SetMMFE8(int mmfe8);
-  void SetMMFE8(int mmfe8);
-  void SetMMFE8(int mmfe8);
+  void SetVMM(int vmm);
+  void SetChannel(int ch);
+  void SetPDO(int pdo);
+  void SetTDO(int tdo);
+  void SetBCID(int bcid);
+  void SetFIFOcount(int fifo);
+  void SetCharge(int q);
+  void SetTime(int t);
   
 private:
   int m_MMFE8;
@@ -65,9 +64,20 @@ inline MMHit::MMHit(){
   m_TDO = -1;
   m_BCID = -1;
   m_FIFOcount = -1;
+  m_charge = -1;
+  m_time = -1; 
+}
 
-  m_charge;
-  m_time; 
+inline MMHit::MMHit(int mmfe8, int vmm, int ch){
+  m_MMFE8 = mmfe8;
+  m_VMM = vmm;
+  m_CH = ch;
+  m_PDO = -1;
+  m_TDO = -1;
+  m_BCID = -1;
+  m_FIFOcount = -1;
+  m_charge = -1;
+  m_time = -1; 
 }
 
 inline MMHit::MMHit(const MMHit& hit){
@@ -125,5 +135,41 @@ inline double MMHit::Charge() const {
 
 inline double MMHit::Time() const {
   return m_time;
+}
+
+inline void MMHit::SetMMFE8(int mmfe8){
+  m_MMFE8 = mmfe8;
+}
+
+inline void MMHit::SetVMM(int vmm){
+  m_VMM = vmm;
+}
+
+inline void MMHit::SetChannel(int ch){
+  m_CH = ch;
+}
+
+inline void MMHit::SetPDO(int pdo){
+  m_PDO = pdo;
+}
+
+inline void MMHit::SetTDO(int tdo){
+  m_TDO = tdo;
+}
+
+inline void MMHit::SetBCID(int bcid){
+  m_BCID = bcid;
+}
+
+inline void MMHit::SetFIFOcount(int fifo){
+  m_FIFOcount = fifo;
+}
+
+inline void MMHit::SetCharge(int q){
+  m_charge = q;
+}
+
+inline void MMHit::SetTime(int t){
+  m_time = t;
 }
 

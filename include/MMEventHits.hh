@@ -44,11 +44,6 @@ private:
 
 };
 
-MMFE8Hits operator + (const MMEventHits& evt_hits, const MMFE8Hits& hits);
-MMFE8Hits operator + (const MMEventHits& evt_hits, const MMHit& hit);
-MMFE8Hits operator + (const MMFE8Hits& hits, const MMEventHits& evt_hits);
-MMFE8Hits operator + (const MMHit& hit, const MMEventHits& evt_hits);
-
 #endif
 
 inline MMEventHits::MMEventHits() {}
@@ -71,7 +66,7 @@ inline MMEventHits::~MMEventHits() {}
 inline bool MMEventHits::AddHit(const MMHit& hit){
   int Nboard = GetNBoards();
   for(int i = 0; i < Nboard; i++)
-    if(m_boards.AddHit(hit))
+    if(m_boards[i].AddHit(hit))
       return true;
 
   m_boards.push_back(MMFE8Hits(hit));
@@ -81,7 +76,7 @@ inline bool MMEventHits::AddHit(const MMHit& hit){
 inline bool MMEventHits::AddLinkedHit(const MMLinkedHit& hit){
   int Nboard = GetNBoards();
   for(int i = 0; i < Nboard; i++)
-    if(m_boards.AddLinkedHit(hit))
+    if(m_boards[i].AddLinkedHit(hit))
       return true;
   
   m_boards.push_back(MMFE8Hits(hit));
@@ -125,7 +120,7 @@ inline const MMFE8Hits* MMEventHits::Get(int iboard) const {
 }
 
 inline const MMFE8Hits* MMEventHits::operator [] (int iboard) const {
-  return Get(ihit);
+  return Get(iboard);
 }
 
 inline int MMEventHits::GetNDuplicates() const {

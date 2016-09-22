@@ -26,7 +26,7 @@ public:
   const MMLinkedHit* GetNext() const;
 
   void AddHit(const MMHit& hit);
-  void AddLinkedHit(const MMHit& hit);
+  void AddLinkedHit(const MMLinkedHit& hit);
   
 private:
   MMLinkedHit* m_next;
