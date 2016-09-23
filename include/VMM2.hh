@@ -104,6 +104,7 @@ double gettrans (const int i) {
 //function to be minimized
 double minfunc(const double *xx) {
   double sum = 0;
+  // this currently assumes 8 points, need to fix
   for (int i=0; i < xpos.size() ; i++) {
     double magfx = xx[0] + xx[1]*zpos[i];
     //cout << "magfx= " << magfx << endl;
@@ -111,19 +112,9 @@ double minfunc(const double *xx) {
     //cout << "magfy= " << magfy << endl;
     double a = getalpha(i);
     //cout << "a= " << a << endl;
-    double a1 = TMath::Cos(a); //a is measured in radians
-    //cout << "a1= " << a1 << endl;
-    double a2 = TMath::Sin(-a);
-    //cout << "a2= " << a2 << endl;
-    double sigma = 0.4; //TODO
-    TVector3 fxy(magfx,magfy,0);
-    TVector3 xpo(xpos[i],0,0);
-    TVector3 uperp(a1, a2, 0);
-    double d1 = fxy.Dot(uperp);
-    //cout << "d1= " << d1 << endl;
-    double d2 = xpo.Dot(uperp);
-    //cout << "d2= " << d2 << endl;
-    double d = (d1-d2)/sigma;
+    double dx = TMath::Tan(a)*magfy;
+    //cout << "dx= " << dx << endl;
+    double d = (magfx + dx - xpos[i])/sigma;
     //cout << "d= " << d << endl;
     double dsquared = TMath::Power(d, 2);
     //cout << "dsquared= " << dsquared << endl;
@@ -134,6 +125,41 @@ double minfunc(const double *xx) {
   //cout << "totsum= " << totsum << endl;
   return totsum;
 }
+
+
+// double minfunc(const double *xx) {
+//   double sum = 0;
+//   for (int i=0; i < xpos.size() ; i++) {
+//     double magfx = xx[0] + xx[1]*zpos[i];
+//     //cout << "magfx= " << magfx << endl;
+//     double magfy = xx[2] + xx[3]*zpos[i]+gettrans(i);
+//     //cout << "magfy= " << magfy << endl;
+//     double a = getalpha(i);
+//     //cout << "a= " << a << endl;
+//     double a1 = TMath::Cos(a); //a is measured in radians
+//     //cout << "a1= " << a1 << endl;
+//     double a2 = TMath::Sin(-a);
+//     //cout << "a2= " << a2 << endl;
+//     double sigma = 0.4; //TODO
+//     TVector3 fxy(magfx,magfy,0);
+//     TVector3 xpo(xpos[i],0,0);
+//     TVector3 uperp(a1, a2, 0);
+//     double d1 = fxy.Dot(uperp);
+//     //cout << "d1= " << d1 << endl;
+//     double d2 = xpo.Dot(uperp);
+//     //cout << "d2= " << d2 << endl;
+//     double d = (d1-d2)/sigma;
+//     //cout << "d= " << d << endl;
+//     double dsquared = TMath::Power(d, 2);
+//     //cout << "dsquared= " << dsquared << endl;
+//     sum = sum + dsquared;
+//     //cout << "sum= " << sum << endl;
+//   }
+//   double totsum = sum;
+//   //cout << "totsum= " << totsum << endl;
+//   return totsum;
+// }
+
 //getx
 double getx(int mmfe8, double chword) {
 	double x;
