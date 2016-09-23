@@ -95,21 +95,33 @@ int main(int argc, char* argv[]){
   for(int evt = 0; evt < Nevent; evt++){
     DATA->GetEntry(evt);
 
+    // Calibrate PDO -> Charge
     PDOCalibrator->Calibrate(DATA->mm_EventHits);
+    // Calibrate TDO -> Time
     TDOCalibrator->Calibrate(DATA->mm_EventHits);
   
     int Nboard = DATA->mm_EventHits.GetNBoards();
-    cout << "N boards with hits: " << Nboard << endl;
+    if(DATA->mm_EventHits.GetNDuplicates() > 0)
+      cout << "N boards with hits: " << Nboard << endl;
 
     for(int i = 0; i < Nboard; i++){
-      int Nhit = DATA->mm_EventHits[i]->GetNHits();
-      cout << "board " << i << "(" << DATA->mm_EventHits[i]->MMFE8() << ") ";
-      cout << "has " << Nhit << " hits" << endl;
-      for(int j = 0; j < Nhit; j++){
-	cout << "(" << DATA->mm_EventHits[i]->Get(j)->Charge() << ", " << DATA->mm_EventHits[i]->Get(j)->Time() << ") ";
+      int Ndup = DATA->mm_EventHits[i]->GetNDuplicates();
+      if(Ndup > 0){
+	int Nhit = DATA->mm_EventHits[i]->GetNHits();
+	for(int j = 0; j < Nhit; j++){
+	  if(DATA->mm_EventHits[i]->Get(j)->GetNHits() > 1){
+	    cout << DATA->mm_EventHits[i]->Get(j)->MMFE8() << " ";
+	    cout << DATA->mm_EventHits[i]->Get(j)->VMM() << " ";
+	    cout << DATA->mm_EventHits[i]->Get(j)->VMMChannel() << " ";
+	    cout << DATA->mm_EventHits[i]->Get(j)->GetNHits() << " ";
+	    cout << DATA->mm_EventHits[i]->Get(j)->FIFOcount() << endl;
+	  }
+	}
+	for(int j = 0; j < Nhit; j++){
+	  cout << DATA->mm_EventHits[i]->Get(j)->Channel() << " ";
+	}
+	cout << endl;
       }
-      cout << endl;
     }
-    cout << endl << endl;
   }
 }

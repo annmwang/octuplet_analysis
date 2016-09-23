@@ -31,6 +31,9 @@ public:
   double Charge() const;
   double Time() const;
 
+  bool IsChargeCalib() const;
+  bool IsTimeCalib() const;
+  
   void SetMMFE8(int mmfe8);
   void SetVMM(int vmm);
   void SetChannel(int ch);
@@ -53,6 +56,9 @@ private:
   double m_charge;
   double m_time;
 
+  bool m_charge_calib;
+  bool m_time_calib;
+
   friend class PDOToCharge;
   friend class TDOToTime;
 };
@@ -68,7 +74,10 @@ inline MMHit::MMHit(){
   m_BCID = -1;
   m_FIFOcount = -1;
   m_charge = -1;
-  m_time = -1; 
+  m_time = -1;
+
+  m_charge_calib = false;
+  m_time_calib = false;
 }
 
 inline MMHit::MMHit(int mmfe8, int vmm, int ch){
@@ -80,7 +89,10 @@ inline MMHit::MMHit(int mmfe8, int vmm, int ch){
   m_BCID = -1;
   m_FIFOcount = -1;
   m_charge = -1;
-  m_time = -1; 
+  m_time = -1;
+
+  m_charge_calib = false;
+  m_time_calib = false;
 }
 
 inline MMHit::MMHit(const MMHit& hit){
@@ -93,7 +105,10 @@ inline MMHit::MMHit(const MMHit& hit){
   m_FIFOcount = hit.FIFOcount();
 
   m_charge = hit.Charge();
-  m_time = hit.Time(); 
+  m_time = hit.Time();
+
+  m_charge_calib = hit.IsChargeCalib();
+  m_time_calib = hit.IsTimeCalib();
 }
   
 inline MMHit::~MMHit(){
@@ -140,6 +155,14 @@ inline double MMHit::Time() const {
   return m_time;
 }
 
+inline bool MMHit::IsChargeCalib() const {
+  return m_charge_calib;
+}
+
+inline bool MMHit::IsTimeCalib() const {
+  return m_time_calib;
+}
+
 inline void MMHit::SetMMFE8(int mmfe8){
   m_MMFE8 = mmfe8;
 }
@@ -154,10 +177,14 @@ inline void MMHit::SetChannel(int ch){
 
 inline void MMHit::SetPDO(int pdo){
   m_PDO = pdo;
+  m_charge = -1;
+  m_charge_calib = false;
 }
 
 inline void MMHit::SetTDO(int tdo){
   m_TDO = tdo;
+  m_time = -1;
+  m_time_calib = false;
 }
 
 inline void MMHit::SetBCID(int bcid){
@@ -170,9 +197,11 @@ inline void MMHit::SetFIFOcount(int fifo){
 
 inline void MMHit::SetCharge(double q){
   m_charge = q;
+  m_charge_calib = true;
 }
 
 inline void MMHit::SetTime(double t){
   m_time = t;
+  m_time_calib = true;
 }
 
