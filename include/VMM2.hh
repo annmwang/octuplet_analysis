@@ -30,6 +30,7 @@ using namespace std;
 std::vector <double> param;
 std::vector <double> xpos;
 std::vector <double> zpos;
+std::vector <int> boardsHit;
 
 //the array of parameters
 double *cx, *mx, *cy, *my;
@@ -104,26 +105,19 @@ double gettrans (const int i) {
 //function to be minimized
 double minfunc(const double *xx) {
   double sum = 0;
+  // this currently assumes 8 points, need to fix
   for (int i=0; i < xpos.size() ; i++) {
     double magfx = xx[0] + xx[1]*zpos[i];
     //cout << "magfx= " << magfx << endl;
-    double magfy = xx[2] + xx[3]*zpos[i]+gettrans(i);
+    double magfy = xx[2] + xx[3]*zpos[i]+gettrans(boardsHit[i]);
+    cout << "Board Hit: " << boardsHit[i] << " TRANS: " << gettrans(boardsHit[i]) << endl;
     //cout << "magfy= " << magfy << endl;
-    double a = getalpha(i);
+    double a = getalpha(boardsHit[i]);
     //cout << "a= " << a << endl;
-    double a1 = TMath::Cos(a); //a is measured in radians
-    //cout << "a1= " << a1 << endl;
-    double a2 = TMath::Sin(-a);
-    //cout << "a2= " << a2 << endl;
-    double sigma = 0.4; //TODO
-    TVector3 fxy(magfx,magfy,0);
-    TVector3 xpo(xpos[i],0,0);
-    TVector3 uperp(a1, a2, 0);
-    double d1 = fxy.Dot(uperp);
-    //cout << "d1= " << d1 << endl;
-    double d2 = xpo.Dot(uperp);
-    //cout << "d2= " << d2 << endl;
-    double d = (d1-d2)/sigma;
+    double dx = TMath::Tan(a)*magfy;
+    //cout << "dx= " << dx << endl;
+    double sigma = 1.;
+    double d = (magfx + dx - xpos[i])/sigma;
     //cout << "d= " << d << endl;
     double dsquared = TMath::Power(d, 2);
     //cout << "dsquared= " << dsquared << endl;
@@ -134,6 +128,41 @@ double minfunc(const double *xx) {
   //cout << "totsum= " << totsum << endl;
   return totsum;
 }
+
+
+// double minfunc(const double *xx) {
+//   double sum = 0;
+//   for (int i=0; i < xpos.size() ; i++) {
+//     double magfx = xx[0] + xx[1]*zpos[i];
+//     //cout << "magfx= " << magfx << endl;
+//     double magfy = xx[2] + xx[3]*zpos[i]+gettrans(i);
+//     //cout << "magfy= " << magfy << endl;
+//     double a = getalpha(i);
+//     //cout << "a= " << a << endl;
+//     double a1 = TMath::Cos(a); //a is measured in radians
+//     //cout << "a1= " << a1 << endl;
+//     double a2 = TMath::Sin(-a);
+//     //cout << "a2= " << a2 << endl;
+//     double sigma = 0.4; //TODO
+//     TVector3 fxy(magfx,magfy,0);
+//     TVector3 xpo(xpos[i],0,0);
+//     TVector3 uperp(a1, a2, 0);
+//     double d1 = fxy.Dot(uperp);
+//     //cout << "d1= " << d1 << endl;
+//     double d2 = xpo.Dot(uperp);
+//     //cout << "d2= " << d2 << endl;
+//     double d = (d1-d2)/sigma;
+//     //cout << "d= " << d << endl;
+//     double dsquared = TMath::Power(d, 2);
+//     //cout << "dsquared= " << dsquared << endl;
+//     sum = sum + dsquared;
+//     //cout << "sum= " << sum << endl;
+//   }
+//   double totsum = sum;
+//   //cout << "totsum= " << totsum << endl;
+//   return totsum;
+// }
+
 //getx
 double getx(int mmfe8, double chword) {
 	double x;
@@ -161,6 +190,34 @@ double getx(int mmfe8, double chword) {
 	return x;
 } 
 
+//getx @ y=37.9
+double getx_yend(int mmfe8, double chword) {
+	double x;
+	if (mmfe8 ==1 | mmfe8 == 7)
+	{
+		cout << "BOARD: " << mmfe8 << " channel " << chword << endl;
+		x = (chword - 1)*.4 + .1; 
+		cout << "POS: " << x << endl;
+	}
+	if (mmfe8==2 | mmfe8 == 4)
+	{
+		cout << "BOARD: " << mmfe8 << " channel " << chword << endl;
+		x = (chword - 1)*.4 + .1; 
+	}
+	if (mmfe8==3 | mmfe8 ==5)
+	{
+		cout << "BOARD: " << mmfe8 << " channel " << chword << endl;
+		x = 204.6 - ((chword - 1)*.4 + .1); 
+	}
+	if (mmfe8==0 | mmfe8==6)
+	{		
+		cout << "BOARD: " << mmfe8 << " channel " << chword << endl;
+		x = 204.6 - ((chword - 1)*.4 + .1); 
+	}
+	return x;
+} 
+
+
 int NumericalMinimization(const char * minName = "Minuit2",
 			  const char *algoName = "" ,
 			  int randomSeed = -1)
@@ -171,13 +228,13 @@ int NumericalMinimization(const char * minName = "Minuit2",
   // set tolerance , etc...
   min->SetMaxFunctionCalls(100000000); // for Minuit/Minuit2
   min->SetMaxIterations(10000);  // for GSL
-  min->SetTolerance(0.001);
-  min->SetPrintLevel(1);
+  min->SetTolerance(1);
+  min->SetPrintLevel(2);
 
   // create function wrapper for minmizer
   // a IMultiGenFunction type
   ROOT::Math::Functor f(&minfunc,4);
-  double step[4] = {0.01,0.01,0.01,0.01}; //TODO
+  double step[4] = {0.01,0.0001,0.01,0.0001}; //TODO
   //  double step[4] = {0.01,0.01,0.01,0.01}; //TODO
   // starting point
 
