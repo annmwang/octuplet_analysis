@@ -39,6 +39,7 @@ analyze combined mm+scint data files
 #include "TString.h"
 #include "TLine.h"
 #include "TMath.h"
+#include "TMultiGraph.h"
 
 using namespace std;
 
@@ -762,7 +763,9 @@ int main()
      int go_on;
      int bloop = 0;
      int bxloop = 0;
-     double board_x[NUMBOARD][2]; //to draw lines corresponding to chambers
+
+     // arrays to draw lines corresponding to chambers
+     double board_x[NUMBOARD][2];
      double board_z[NUMBOARD][2];
      for (int k=0; k<NUMBOARD; k++){
        board_x[k][0] = 0.;
@@ -772,12 +775,13 @@ int main()
      }
 
      double barycenter_x[nBoardsHit];
+     double barycenter_x_yend[nBoardsHit];
      double barycenter_y[nBoardsHit] ;
      double barycenter_z[nBoardsHit];
      double barycenterX_x[nXBoardsHit];
      double barycenterX_z[nXBoardsHit];
-     int boards_hit[NUMBOARD] = {-1,-1,-1,-1,-1,-1,-1,-1};
-     //    if(true) {
+
+     
      if(display_on==1) {
        des->cd(0);
        for (int k=0; k < NUMBOARD; k++) {
@@ -785,16 +789,20 @@ int main()
 	   cout << "BOARD: " << k << endl;
 	 for (int i=0; i < mmhits[k]; i++) {
 	   if (mm_array[k][i][10] == 1.) { //highest charge loop
+	     // arrays for TGraph
 	     barycenter_x[bloop] = getx(k, mm_array[k][i][9]);
+	     barycenter_x_yend[bloop] = getx_yend(k, mm_array[k][i][9]);
 	     barycenter_z[bloop] = getz(k);
-	     cout << "X: " << barycenter_x[bloop] << "Z: " << barycenter_z[bloop] << endl;
+
+	     //xpos, zpos, boardsHit are the vectors needed for fitting
 	     xpos.push_back(getx(k,mm_array[k][i][9]));
 	     zpos.push_back(getz(k));
-	     boards_hit[k] = bloop; //save bloop
+	     boardsHit.push_back(k);
 	     bloop++;
 	   }
 	 }
        }
+
        cout << "Beginning track reconstruction...\n" << endl;
        NumericalMinimization("Minuit2","",-1);
        if (PR == 1) {
@@ -803,50 +811,60 @@ int main()
 	   cout << "Z: " << barycenter_z[i] << endl;
 	 }
        }
-       TGraph *gr  = new TGraph(nBoardsHit, barycenter_x, barycenter_z);
-       TLine *fitxz = new TLine(param[0],0.,param[0]+param[1]*getz(7),getz(7));
 
-       // TGraph *grx  = new TGraph(nXBoardsHit, barycenterX_x, barycenterX_z);
-       // 	 gr->Fit(fttr);
-       // 	 double c0 = fttr->GetParameter(0);
-       // 	 double c1 = fttr->GetParameter(1);
-	 
-       // 	 double delta_x = 0.;
-       // 	 double ytemp = 0.;
-       // 	 for (int j=2; j < 6; j++) { //only loop through u-v boards
-       // 	   cout << "UV board: " << j << endl;
-       // 	   if (boards_hit[j]>= 0){ //a u-v board was hit
-       // 	     cout << "X:VALUE: " <<barycenter_x[boards_hit[j]] << " GUESSED: " << (barycenter_z[boards_hit[j]]-c0)/c1 << endl;
-       // 	     delta_x = fabs(barycenter_x[boards_hit[j]]-(barycenter_z[boards_hit[j]]-c0)/c1);
-       // 	     cout << "DELTA X: " << delta_x << endl;
-       // 	     ytemp = gettrans(j) + 200.-delta_x/TMath::Tan(fabs(getalpha(j)));
-       // 	     barycenter_y[boards_hit[j]] = ytemp;
-       // 	     cout << "Y-VALUE: " << ytemp << endl;
-       // 	   }
-       // 	 }
-       //}
-       // if (uv board)
-       // y = gettranslation in y + 20-(deltax/tan(1.5degrees))
-       // if we have more than two uv points, then fit uv and extrapolate for y-positions of x boards
-       
+       // XZ PLOTS
+       TGraph *gr  = new TGraph(nBoardsHit, barycenter_x, barycenter_z);
+       TGraph *gr1  = new TGraph(nBoardsHit, barycenter_x_yend, barycenter_z);
+       TLine *fitxz = new TLine(param[0],0.,param[0]+param[1]*getz(7),getz(7));
+       TLine *fityz = new TLine(param[2],0.,param[2]+param[3]*getz(7),getz(7));
+
+       TMultiGraph *mg = new TMultiGraph();
+
        gr->SetTitle("Highest charge barycenter cluster locations");
-       gr->GetXaxis()->SetLimits(-0.1,204.6);
-       gr->GetXaxis()->SetTitle("x position (mm)");
-       gr->GetYaxis()->SetRangeUser(-0.1,158.);
-       gr->GetYaxis()->SetTitle("z position (mm)");
        gr->SetMarkerColor(46);
        gr->SetMarkerStyle(20);
        gr->SetMarkerSize(1);
-       gr->SetLineColor(kBlack);
-       gr -> Draw("PA");
+
+       gr1->SetMarkerColor(48);
+       gr1->SetMarkerStyle(20);
+       gr1->SetMarkerSize(1);
+
        TGraph *grb[NUMBOARD];
        for (int k=0; k<NUMBOARD; k++){
        	 grb[k] = new TGraph(2, board_x[k], board_z[k]);
        	 grb[k]->SetLineColor(kBlue);
-       	 grb[k]->Draw("L same");
        }
-       fitxz->Draw("");
-   
+       mg->Add(gr,"p");
+       mg->Add(gr1, "p");
+       for (int k=0; k<NUMBOARD;k++){
+	 mg->Add(grb[k],"L");
+       }
+       mg->Draw("a");
+       gPad->Modified();
+       mg->GetXaxis()->SetLimits(-0.1,204.6);
+       mg->GetXaxis()->SetTitle("x position (mm)");
+       mg->GetYaxis()->SetRangeUser(-0.1,158.);
+       mg->GetYaxis()->SetTitle("z position (mm)");
+       fitxz->Draw("same");
+       
+       des->Print(Form("barycenter_plts/barycenter_XZ_%i.png",nev));
+
+       des->Clear();
+
+       //YZ PLOTS
+       TMultiGraph *mgy = new TMultiGraph();
+       for (int k=0; k<NUMBOARD; k++){
+	 mgy->Add(grb[k], "L");
+       }
+       mgy->Draw("a");
+       gPad->Modified();
+       mgy->GetXaxis()->SetLimits(-0.1,204.6);
+       mgy->GetXaxis()->SetTitle("y position (mm)");
+       mgy->GetYaxis()->SetRangeUser(-0.1,158.);
+       mgy->GetYaxis()->SetTitle("z position (mm)");
+       fityz->Draw("same");
+       des->Print(Form("barycenter_plts/barycenter_YZ_%i.png",nev));
+
        // clear arrays + vectors
        for (int i=0; i < nBoardsHit; i++){
 	 barycenter_x[i] = 0;
@@ -855,6 +873,7 @@ int main()
        param.clear();
        xpos.clear();
        zpos.clear();
+       boardsHit.clear();
 
        des->Update();
        printf("write 2 to print + continue, 0 to end\n");

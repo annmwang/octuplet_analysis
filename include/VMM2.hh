@@ -30,6 +30,7 @@ using namespace std;
 std::vector <double> param;
 std::vector <double> xpos;
 std::vector <double> zpos;
+std::vector <int> boardsHit;
 
 //the array of parameters
 double *cx, *mx, *cy, *my;
@@ -108,12 +109,14 @@ double minfunc(const double *xx) {
   for (int i=0; i < xpos.size() ; i++) {
     double magfx = xx[0] + xx[1]*zpos[i];
     //cout << "magfx= " << magfx << endl;
-    double magfy = xx[2] + xx[3]*zpos[i]+gettrans(i);
+    double magfy = xx[2] + xx[3]*zpos[i]+gettrans(boardsHit[i]);
+    cout << "Board Hit: " << boardsHit[i] << " TRANS: " << gettrans(boardsHit[i]) << endl;
     //cout << "magfy= " << magfy << endl;
-    double a = getalpha(i);
+    double a = getalpha(boardsHit[i]);
     //cout << "a= " << a << endl;
     double dx = TMath::Tan(a)*magfy;
     //cout << "dx= " << dx << endl;
+    double sigma = 1.;
     double d = (magfx + dx - xpos[i])/sigma;
     //cout << "d= " << d << endl;
     double dsquared = TMath::Power(d, 2);
@@ -187,6 +190,34 @@ double getx(int mmfe8, double chword) {
 	return x;
 } 
 
+//getx @ y=37.9
+double getx_yend(int mmfe8, double chword) {
+	double x;
+	if (mmfe8 ==1 | mmfe8 == 7)
+	{
+		cout << "BOARD: " << mmfe8 << " channel " << chword << endl;
+		x = (chword - 1)*.4 + .1; 
+		cout << "POS: " << x << endl;
+	}
+	if (mmfe8==2 | mmfe8 == 4)
+	{
+		cout << "BOARD: " << mmfe8 << " channel " << chword << endl;
+		x = (chword - 1)*.4 + .1; 
+	}
+	if (mmfe8==3 | mmfe8 ==5)
+	{
+		cout << "BOARD: " << mmfe8 << " channel " << chword << endl;
+		x = 204.6 - ((chword - 1)*.4 + .1); 
+	}
+	if (mmfe8==0 | mmfe8==6)
+	{		
+		cout << "BOARD: " << mmfe8 << " channel " << chword << endl;
+		x = 204.6 - ((chword - 1)*.4 + .1); 
+	}
+	return x;
+} 
+
+
 int NumericalMinimization(const char * minName = "Minuit2",
 			  const char *algoName = "" ,
 			  int randomSeed = -1)
@@ -197,13 +228,13 @@ int NumericalMinimization(const char * minName = "Minuit2",
   // set tolerance , etc...
   min->SetMaxFunctionCalls(100000000); // for Minuit/Minuit2
   min->SetMaxIterations(10000);  // for GSL
-  min->SetTolerance(0.001);
-  min->SetPrintLevel(1);
+  min->SetTolerance(1);
+  min->SetPrintLevel(2);
 
   // create function wrapper for minmizer
   // a IMultiGenFunction type
   ROOT::Math::Functor f(&minfunc,4);
-  double step[4] = {0.01,0.01,0.01,0.01}; //TODO
+  double step[4] = {0.01,0.0001,0.01,0.0001}; //TODO
   //  double step[4] = {0.01,0.01,0.01,0.01}; //TODO
   // starting point
 
