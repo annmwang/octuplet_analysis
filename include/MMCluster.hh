@@ -1,5 +1,5 @@
 ///
-///  \file   MMFE8Hits.hh
+///  \file   MMCluster.hh
 ///
 ///  \author Christopher Rogan
 ///          (crogan@cern.ch)
@@ -54,7 +54,7 @@ inline double MMCluster::Channel() const {
   double ch = 0;
   int Nhit = GetNHits();
   for(int i = 0; i < Nhit; i++)
-    ch += double(Get(i)->Channel())*Get(i)->Charge();
+    ch += double(Get(i).Channel())*Get(i).Charge();
   ch /= Charge();
   return ch;
 }
@@ -63,7 +63,7 @@ inline double MMCluster::Charge() const {
   double Q = 0;
   int Nhit = GetNHits();
   for(int i = 0; i < Nhit; i++)
-    Q += double(Get(i)->Charge());
+    Q += double(Get(i).Charge());
  
   return Q;
 }
@@ -75,7 +75,7 @@ inline double MMCluster::Time() const {
   
 inline int MMCluster::NHoles() const {
   int Nhit = GetNHits();
-  int clus_size = Get(Nhit-1)->Channel()-Get(0)->Channel()+1;
+  int clus_size = Get(Nhit-1).Channel()-Get(0).Channel()+1;
 
   return clus_size - Nhit;
 }

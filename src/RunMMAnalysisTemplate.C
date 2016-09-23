@@ -12,6 +12,7 @@
 #include "include/PDOToCharge.hh"
 #include "include/TDOToTime.hh"
 #include "include/MMDataAnalysis.hh"
+#include "include/MMPacmanAlgo.hh"
 
 using namespace std;
 
@@ -76,6 +77,8 @@ int main(int argc, char* argv[]){
   else
     TDOCalibrator = new TDOToTime();
 
+  MMPacmanAlgo* PACMAN = new MMPacmanAlgo();
+
   MMDataAnalysis* DATA;
   TFile* f = new TFile(inputFileName, "READ");
   if(!f){
@@ -100,28 +103,52 @@ int main(int argc, char* argv[]){
     // Calibrate TDO -> Time
     TDOCalibrator->Calibrate(DATA->mm_EventHits);
   
+    // initialize PACMAN info for this event
+    PACMAN->SetEventTrigBCID(DATA->trig_BCID);
+    PACMAN->SetEventPadTime(0); // add this
+
     int Nboard = DATA->mm_EventHits.GetNBoards();
     if(DATA->mm_EventHits.GetNDuplicates() > 0)
       cout << "N boards with hits: " << Nboard << endl;
 
     for(int i = 0; i < Nboard; i++){
-      int Ndup = DATA->mm_EventHits[i]->GetNDuplicates();
+      int Ndup = DATA->mm_EventHits[i].GetNDuplicates();
       if(Ndup > 0){
-	int Nhit = DATA->mm_EventHits[i]->GetNHits();
+	int Nhit = DATA->mm_EventHits[i].GetNHits();
 	for(int j = 0; j < Nhit; j++){
-	  if(DATA->mm_EventHits[i]->Get(j)->GetNHits() > 1){
-	    cout << DATA->mm_EventHits[i]->Get(j)->MMFE8() << " ";
-	    cout << DATA->mm_EventHits[i]->Get(j)->VMM() << " ";
-	    cout << DATA->mm_EventHits[i]->Get(j)->VMMChannel() << " ";
-	    cout << DATA->mm_EventHits[i]->Get(j)->GetNHits() << " ";
-	    cout << DATA->mm_EventHits[i]->Get(j)->FIFOcount() << endl;
+	  if(DATA->mm_EventHits[i][j].GetNHits() > 1){
+	    cout << DATA->mm_EventHits[i][j].MMFE8() << " ";
+	    cout << DATA->mm_EventHits[i][j].VMM() << " ";
+	    cout << DATA->mm_EventHits[i][j].VMMChannel() << " ";
+	    cout << DATA->mm_EventHits[i][j].Charge() << " ";
+	    cout << DATA->mm_EventHits[i][j].GetNHits() << " ";
+	    cout << DATA->mm_EventHits[i][j].FIFOcount() << endl;
 	  }
 	}
 	for(int j = 0; j < Nhit; j++){
-	  cout << DATA->mm_EventHits[i]->Get(j)->Channel() << " ";
+	  cout << DATA->mm_EventHits[i][j].Channel() << " ";
 	}
 	cout << endl;
       }
+    }
+
+    vector<MMClusterList> all_clusters;
+    for(int i = 0; i < Nboard; i++){
+      if(DATA->mm_EventHits[i].GetNHits() == 0)
+	continue;
+
+      MMClusterList clusters = PACMAN->Cluster(DATA->mm_EventHits[i]);
+      if(clusters.GetNCluster() > 0)
+	all_clusters.push_back(clusters);
+    }
+
+    int Nclus_list = all_clusters.size();
+    if(Nclus_list > 0){
+      cout << "There are " << Nclus_list << " cluster lists" << endl;
+      for(int i = 0; i < Nclus_list; i++){
+	cout << "board " << all_clusters[i][0].MMFE8() << " " << all_clusters[i][0].Charge() << " " << all_clusters[i][0].GetNDuplicates() << endl;
+      }
+      cout << endl;
     }
   }
 }

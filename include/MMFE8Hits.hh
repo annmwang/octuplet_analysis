@@ -33,11 +33,14 @@ public:
   bool operator += (const MMHit& hit);
   bool operator += (const MMFE8Hits& hits);
   
+  bool Contains(const MMHit& hit) const;
+  int GetIndex(const MMHit& hit) const;
+
   int MMFE8() const;
 
   int GetNHits() const;
-  const MMLinkedHit* Get(int ihit) const;
-  const MMLinkedHit* operator [] (int ihit) const;
+  MMLinkedHit const& Get(int ihit) const;
+  MMLinkedHit const& operator [] (int ihit) const;
 
   int GetNDuplicates() const;
 
@@ -55,9 +58,7 @@ MMFE8Hits operator + (const MMFE8Hits& hits, const MMHit& hit);
 MMFE8Hits operator + (const MMHit& hit, const MMFE8Hits& hits);
 MMFE8Hits operator + (const MMHit& hit_a, const MMHit& hit_b);
 
-#endif
-
-inline MMFE8Hits::MMFE8Hits(){ }
+inline MMFE8Hits::MMFE8Hits() {}
 
 inline MMFE8Hits::MMFE8Hits(const MMHit& hit){
   AddHit(hit);
@@ -133,13 +134,36 @@ inline bool MMFE8Hits::AddHits(const MMFE8Hits& hits){
   int N = hits.GetNHits();
   double ret = true;
   for(int i = 0; i < N; i++)
-    ret = AddLinkedHit(*hits[i]) && ret;
+    ret = AddLinkedHit(hits[i]) && ret;
   return ret;
+}
+
+inline bool MMFE8Hits::Contains(const MMHit& hit) const {
+  if(!IsSameMMFE8(hit))
+    return false;
+  int Nhit = GetNHits();
+  for(int i = 0; i < Nhit; i++){
+    if(Get(i).Channel() == hit.Channel())
+      return true;
+  }
+  return false;
+}
+
+inline int MMFE8Hits::GetIndex(const MMHit& hit) const {
+  if(!IsSameMMFE8(hit))
+    return -1;
+  int Nhit = GetNHits();
+  for(int i = 0; i < Nhit; i++){
+    if(Get(i).Channel() == hit.Channel())
+      return i;
+  }
+  return -1;
 }
 
 inline bool MMFE8Hits::operator += (const MMHit& hit){
   return AddHit(hit);
 }
+
 inline bool MMFE8Hits::operator += (const MMFE8Hits& hits){
   return AddHits(hits);
 }
@@ -155,14 +179,11 @@ inline int MMFE8Hits::GetNHits() const {
   return int(m_hits.size());
 }
 
-inline const MMLinkedHit* MMFE8Hits::Get(int ihit) const {
-  if(ihit < 0 || ihit >= GetNHits())
-    return nullptr;
-
-  return &m_hits[ihit];
+inline MMLinkedHit const& MMFE8Hits::Get(int ihit) const {
+  return m_hits[ihit];
 }
 
-inline const MMLinkedHit* MMFE8Hits::operator [] (int ihit) const {
+inline MMLinkedHit const& MMFE8Hits::operator [] (int ihit) const {
   return Get(ihit);
 }
 
@@ -210,3 +231,5 @@ inline MMFE8Hits operator + (const MMHit& hit_a,
   ret += hit_b;
   return ret;
 }
+
+#endif

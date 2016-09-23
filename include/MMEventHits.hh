@@ -32,8 +32,8 @@ public:
   
   int GetNBoards() const;
   int MMFE8(int iboard) const;
-  const MMFE8Hits* Get(int iboard) const;
-  const MMFE8Hits* operator [] (int iboard) const;
+  MMFE8Hits const& Get(int iboard) const;
+  MMFE8Hits const& operator [] (int iboard) const;
 
   int GetNDuplicates() const;
 
@@ -59,7 +59,7 @@ inline MMEventHits::MMEventHits(const MMFE8Hits& hits){
 inline MMEventHits::MMEventHits(const MMEventHits& evt_hits){
   int Nboard = evt_hits.GetNBoards();
   for(int i = 0; i < Nboard; i++)
-    AddHits(*evt_hits[i]);
+    AddHits(evt_hits[i]);
 }
   
 inline MMEventHits::~MMEventHits() {}
@@ -113,14 +113,11 @@ inline int MMEventHits::GetNBoards() const {
   return int(m_boards.size());
 }
 
-inline const MMFE8Hits* MMEventHits::Get(int iboard) const {
-  if(iboard < 0 || iboard >= GetNBoards())
-    return nullptr;
-
-  return &m_boards[iboard];
+inline MMFE8Hits const& MMEventHits::Get(int iboard) const {
+  return m_boards[iboard];
 }
 
-inline const MMFE8Hits* MMEventHits::operator [] (int iboard) const {
+inline MMFE8Hits const& MMEventHits::operator [] (int iboard) const {
   return Get(iboard);
 }
 
