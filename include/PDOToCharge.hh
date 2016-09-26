@@ -73,6 +73,18 @@ public:
     }
     int c = m_CH_to_index[i][CH];
 
+    // Pedestal unrealistic value                                                                                                                          
+    if (m_c0[c]-m_A2[c]*m_d21[c]*(m_d21[c]+2.*m_t02[c]) > 200.){
+      PrintError(MMFE8,VMM,CH);
+      return 0.;
+    }
+
+    // Gain unrealistic value                                                                                                                              
+    if ((2.*m_A2[c]*m_d21[c] > 20.) | (2.*m_A2[c]*m_d21[c] < 5.)){
+      PrintError(MMFE8,VMM,CH);
+      return 0.;
+    }
+
     // PDO above fit saturation
     if(PDO >= m_c0[c])
       return m_t02[c];
