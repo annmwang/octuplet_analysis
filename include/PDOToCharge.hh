@@ -102,30 +102,42 @@ inline PDOToCharge::~PDOToCharge(){}
 
 // returns charge in fC
 inline double PDOToCharge::GetCharge(double PDO, int MMFE8, int VMM, int CH) const {
-  pair<int,int> key(MMFE8,VMM);
-  if(m_MMFE8VMM_to_index.count(key) == 0){
-    //PrintError(MMFE8,VMM,CH);
-    return -1;
+    pair<int,int> key(MMFE8,VMM);
+    if(m_MMFE8VMM_to_index.count(key) == 0){
+      //PrintError(MMFE8,VMM,CH);
+      return -1.;
+    }
+    int i = m_MMFE8VMM_to_index[key];
+
+    if(m_CH_to_index[i].count(CH) == 0){
+      //PrintError(MMFE8,VMM,CH);
+      return -1.;
+    }
+    int c = m_CH_to_index[i][CH];
+
+    // Pedestal unrealistic value                                                                                                                          
+    if (m_c0[c]-m_A2[c]*m_d21[c]*(m_d21[c]+2.*m_t02[c]) > 200.){
+      //PrintError(MMFE8,VMM,CH);
+      return -1.;
+    }
+
+    // Gain unrealistic value                                                                                                                              
+    if ((2.*m_A2[c]*m_d21[c] > 20.) | (2.*m_A2[c]*m_d21[c] < 5.)){
+      PrintError(MMFE8,VMM,CH);
+      return -1.;
+    }
+
+    // PDO above fit saturation
+    if(PDO >= m_c0[c])
+      return m_t02[c];
+
+    // PDO in quadratic part
+    if(PDO > m_c0[c] + m_A2[c]*m_d21[c]*m_d21[c])
+      return -1.*sqrt(max(0., (PDO-m_c0[c])/m_A2[c])) + m_t02[c];
+
+    // linear part
+    return 0.5*( (PDO-m_c0[c])/m_A2[c]/m_d21[c] + m_d21[c] + 2.*m_t02[c] );
   }
-  int i = m_MMFE8VMM_to_index[key];
- 
-  if(m_CH_to_index[i].count(CH) == 0){
-    //PrintError(MMFE8,VMM,CH);
-    return -1;
-  }
-  int c = m_CH_to_index[i][CH];
-
-  // PDO above fit saturation
-  if(PDO >= m_c0[c])
-    return m_t02[c];
-
-  // PDO in quadratic part
-  if(PDO > m_c0[c] + m_A2[c]*m_d21[c]*m_d21[c])
-    return -1.*sqrt(max(0., (PDO-m_c0[c])/m_A2[c])) + m_t02[c];
-
-  // linear part
-  return 0.5*( (PDO-m_c0[c])/m_A2[c]/m_d21[c] + m_d21[c] + 2.*m_t02[c] );
-}
 
 // returns chi2 from PDO v charge fit
 inline double PDOToCharge::GetFitChi2(int MMFE8, int VMM, int CH) const {

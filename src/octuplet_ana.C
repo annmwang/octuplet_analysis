@@ -52,6 +52,7 @@ int main()
 #define MAX_TRIG_DELAY 40 //max diff in BCID between trigger + event
 #define MIN_TRIG_DELAY 15 //min diff in BCID between trigger + event
 #define PR 0 //print flag
+#define PL 0 //plot flag
   //initialize calibration
   PDOToCharge PDO2Charge("AllBoards_PDOcalib.root");
   
@@ -91,6 +92,8 @@ int main()
   TH1F ** hClusterChargeMult2 = new TH1F*[8];
   TH1F ** hClusterMult = new TH1F*[8];
   TH1F ** hClusterHoles = new TH1F*[8];
+  TH1F * hFit;
+  TH1F * hAngle;
   /////////////////////////////////
   
   ////////////////////
@@ -184,7 +187,7 @@ int main()
   hTVSBOTX= new TH2F("TVSBOTX ","TVSBOTX ",26,-130,130.,150,150.,300.);
   hTVSTOPX= new TH2F("TVSTOPX ","TVSTOPX ",26,-130,130.,100,150.,300.);
   hPadMult=new TH2F("padmult","padmult",10,0.,10.,10,0.,10.);
-  hEventvsPDO = new TH2F("PDO hits binned in event number","PDO hits binned in event number",1000,0.,160000.,1000,-0.5,1600.5);
+  hEventvsPDO = new TH2F("PDO hits binned in event number","PDO hits binned in event number",1000,0.,180000.,1000,-0.5,1600.5);
    //////////////// micromega histos
   for (int k=0; k < NUMBOARD; k++){
     hPDO[k] = new TH1F(Form("Board %d PDO",k), Form("Board %d PDO",k) ,500,-0.5,1000.5);
@@ -197,31 +200,26 @@ int main()
     hClusterMult[k] = new TH1F(Form("Board %d Strip Multiplicity of clusters",k), Form("Board %d Strip Multiplicity of clusters",k) ,21,-0.5,20.5);
     hClusterHoles[k] = new TH1F(Form("Board %d Hole Multiplicity of clusters",k), Form("Board %d Hole Multiplicity of clusters",k) ,21,-0.5,20.5);
   }
+  hFit = new TH1F("Fit values", "Fit values", 100,-2.,10);
+  hAngle = new TH1F("Angular distribution", "Angular distribution", 100,-1.,1.);
   /////////////////////////////////////////
   TCanvas *des = new TCanvas("des","des",635,490);
-  TCanvas *prun = new TCanvas("prun","prun",635,490); 
-  TCanvas *fixsl = new TCanvas("fixsl","fixsl",635,490);
   /////////////////////////////////
   int  nrun, nev, nhit, channel, cont,an_nev,sel_ev,ret_ev,ch_ev;
   int last_nev; //holds last event trig number
   int mm_nev, mm_hit,mm_trig,mm_vmm, mm_bcid,mm_board,mm_hits,mm_ch,mm_pdo,mm_tdo; 
   int sc_sec,sc_nsec,mm_sec,mm_nsec;
-  int nch,mm_flag,time_flag;
+  int mm_flag,time_flag;
   //   int numstrip;
-  double ped, val,pdo_curr,tdo_curr,t0_off; 
-  char mm[2],strg1[5],strg2[6],strg3[9],strg4[1];
+  double pdo_curr,tdo_curr; 
+  char mm[2],strg1[5],strg2[6],strg3[9];
   double pdo_cal[NUMBOARD][NUMVMM][64][2];
   double tdo_cal[NUMBOARD][NUMVMM][64][2];
-  double tcorr[130];
-  double eped,egain;
-  double pi=3.1416;
   FILE* fileout;
   int display_on;
   // corrections to  equalize west and east TOF 
   double time_cut=20.;
   double atdc_corr[12];     //correction for W+E
-  const int oversampling = 1;
-  const double samplingtime = 0.250 + oversampling*0.500;
 
   // corrections for scint stuff
   
@@ -330,7 +328,7 @@ int main()
     vector< vector<double> > mm_array[NUMBOARD]; 
     double tdcav[12],tdcdiff[12],topxy[2][6],botxy[2][6];
     double length,dtime,botxpos,botypos,topxpos,topypos;
-    double mu_phi,mu_stheta,tdo_upcut; 
+    double mu_phi,mu_stheta; 
 
     mm_flag=0;
     last_nev = nev;
@@ -353,10 +351,6 @@ int main()
     // if the scint timestamp and micromega timestamp aren't similar, flag
     if( abs(sc_sec-mm_sec) >=2) time_flag=0;
 
-    // set tdo upper cut
-    //    tdo_upcut=999999;
-    t0_off=19.6;
-    
     ///////////////////////////////////
       printf ("EVENT HEADER: %d %d %d %d %d \n", nrun, nev,mm_nev, nhit,mm_hit);
 
@@ -407,12 +401,9 @@ int main()
     ////////////////////////////////////////////////
     // read micromega if any
 
-    int numprch[2];
     int bID = -1;
     int totHits = 0;
     int mmhits[NUMBOARD];
-    numprch[0]=0;
-    numprch[1]=0;
     for (int i=0 ; i < mm_hit; i++) {
       
       fscanf(fileout, "%s %d %d %d %d %d %d %d", mm, &mm_vmm,&mm_ch, &mm_pdo,&mm_tdo,&mm_bcid,&mm_board,&mm_hits);
@@ -429,8 +420,8 @@ int main()
       // 	  | (mm_board == 107 && (mm_ch + mm_vmm*64)==512) ) continue;
 
       // // BCID cuts
-      if (fabs(mm_trig-mm_bcid) > MAX_TRIG_DELAY) continue; 
-      if (fabs(mm_trig-mm_bcid) < MIN_TRIG_DELAY) continue; 
+      // if (fabs(mm_trig-mm_bcid) > MAX_TRIG_DELAY) continue; 
+      // if (fabs(mm_trig-mm_bcid) < MIN_TRIG_DELAY) continue; 
 
       if (PR==1)
 	printf("cutting on BCID %d, %d\n",MIN_TRIG_DELAY, MAX_TRIG_DELAY);
@@ -439,18 +430,26 @@ int main()
       pdo_curr=float(mm_pdo);
       if (bID == -1)
 	cout << "bID PROBLEM!"<< endl;
-      hDeltaBCID[bID]->Fill(fabs(mm_trig-mm_bcid));
-      hPDO[bID]->Fill(pdo_curr);
-      hCHvsPDOraw[bID]->Fill((mm_ch + mm_vmm*64),mm_pdo);
       tdo_curr=float(mm_tdo);
+
+      hDeltaBCID[bID]->Fill(fabs(mm_trig-mm_bcid));
+
+      // // BCID cuts
+      if (fabs(mm_trig-mm_bcid) > MAX_TRIG_DELAY) continue; 
+      if (fabs(mm_trig-mm_bcid) < MIN_TRIG_DELAY) continue; 
 
       //double pc= pdo_cal[bID][mm_vmm][mm_ch][0]; 
       //double gc= pdo_cal[bID][mm_vmm][mm_ch][1];
+
       double pt= tdo_cal[bID][mm_vmm][mm_ch][0];
       double gt= tdo_cal[bID][mm_vmm][mm_ch][1];
 
       pdo_curr=PDO2Charge.GetCharge(mm_pdo, mm_board, mm_vmm, mm_ch);
+      if (pdo_curr == 0.)
+	continue;
 
+      hPDO[bID]->Fill(pdo_curr);
+      hCHvsPDOraw[bID]->Fill((mm_ch + mm_vmm*64),mm_pdo);
       hEventvsPDO->Fill(nev,pdo_curr+200*bID);
       
       tdo_curr=(tdo_curr-pt)/gt;
@@ -627,10 +626,8 @@ int main()
 	   hSTDC[13]->Fill(time_diff, av_time);
 	   hSOLANG->Fill(mu_phi,mu_stheta);
 	   hTVSTOPX->Fill(topxpos,top_time);
-	   
+	      
 	   hTVSBOTX->Fill(botxpos,bot_time);
-	   
-	   
 	 } //end ot top-bottom dt
        } // end of outofbound
      } // end of pad requirement
@@ -640,18 +637,8 @@ int main()
  //////////////// micromega study
  ///////////////////////////////////////////
 
-   int left=0;
-
    if(totHits>0 && mm_flag==1 && time_flag==1) {
-     //   if(totHits>0 && mm_flag==1 && time_flag==1) {
      ch_ev++; 
-     double totchal=0.;
-     double totchar=0.;  
-     double tcharge=0.;
-     int nstrips=0;
-     double art0=100.;
-     double art1=100.;
-     double art=100.;
 
      // count channel hits for each board
      for(int k=0; k<NUMBOARD; k++) {
@@ -668,27 +655,13 @@ int main()
      //PACMAN CLUSTERING//
 
      // chomp forwards
-     int nclus = 0;
-     int clust_start, clust_beg, clust_mult;
-     int clust_end = -1;
-     double clust_cha,clust_time, clust_range;
-     int irep=0;
-     // cout << "having fun" << endl;
-     //   for(int i=0; i<mmhits; i++) {
      for(int k=0; k<NUMBOARD; k++){
-       //p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,4.,2.5); 
-       //       p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,10.,2.5); //used to be 6.
        p.forward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,15.,10.); //used to be 6.
      } // end cluster search
-     
-     //hnclus->Fill(nclus);
-     //   hnclus->Fill(nclus+10*(1-left));
      
      // chomp backwards
      for (int k=0; k<NUMBOARD; k++) {
        p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,10.);
-       //       p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,2.5);
-       //       p.backward(mm_array,mmhits,5,TDO_UPPER,k,pad_at,2.5);
      }
 
      // calculate average strip for each cluster, saved in mm_array[k][i][9]
@@ -762,7 +735,6 @@ int main()
      // event display of barycenter positions
      int go_on;
      int bloop = 0;
-     int bxloop = 0;
 
      // arrays to draw lines corresponding to chambers
      double board_x[NUMBOARD][2];
@@ -778,10 +750,7 @@ int main()
      double barycenter_x_yend[nBoardsHit];
      double barycenter_y[nBoardsHit] ;
      double barycenter_z[nBoardsHit];
-     double barycenterX_x[nXBoardsHit];
-     double barycenterX_z[nXBoardsHit];
-
-     
+     double fitvalue = -1.;
      if(display_on==1) {
        des->cd(0);
        for (int k=0; k < NUMBOARD; k++) {
@@ -804,67 +773,78 @@ int main()
        }
 
        cout << "Beginning track reconstruction...\n" << endl;
-       NumericalMinimization("Minuit2","",-1);
+       fitvalue = NumericalMinimization("Minuit2","",-1);
+       hFit->Fill(fitvalue);
+
        if (PR == 1) {
 	 for (int i=0; i < nBoardsHit; i++){
 	   cout << "X: " << barycenter_x[i] << endl;
 	   cout << "Z: " << barycenter_z[i] << endl;
 	 }
        }
-
-       // XZ PLOTS
-       TGraph *gr  = new TGraph(nBoardsHit, barycenter_x, barycenter_z);
-       TGraph *gr1  = new TGraph(nBoardsHit, barycenter_x_yend, barycenter_z);
-       TLine *fitxz = new TLine(param[0],0.,param[0]+param[1]*getz(7),getz(7));
-       TLine *fityz = new TLine(param[2],0.,param[2]+param[3]*getz(7),getz(7));
-
-       TMultiGraph *mg = new TMultiGraph();
-
-       gr->SetTitle("Highest charge barycenter cluster locations");
-       gr->SetMarkerColor(46);
-       gr->SetMarkerStyle(20);
-       gr->SetMarkerSize(1);
-
-       gr1->SetMarkerColor(48);
-       gr1->SetMarkerStyle(20);
-       gr1->SetMarkerSize(1);
-
-       TGraph *grb[NUMBOARD];
-       for (int k=0; k<NUMBOARD; k++){
-       	 grb[k] = new TGraph(2, board_x[k], board_z[k]);
-       	 grb[k]->SetLineColor(kBlue);
-       }
-       mg->Add(gr,"p");
-       mg->Add(gr1, "p");
-       for (int k=0; k<NUMBOARD;k++){
-	 mg->Add(grb[k],"L");
-       }
-       mg->Draw("a");
-       gPad->Modified();
-       mg->GetXaxis()->SetLimits(-0.1,204.6);
-       mg->GetXaxis()->SetTitle("x position (mm)");
-       mg->GetYaxis()->SetRangeUser(-0.1,158.);
-       mg->GetYaxis()->SetTitle("z position (mm)");
-       fitxz->Draw("same");
+       double theta = TMath::ATan(param[1]);
+       hAngle->Fill(TMath::Cos(theta));
        
-       des->Print(Form("barycenter_plts/barycenter_XZ_%i.png",nev));
-
-       des->Clear();
-
-       //YZ PLOTS
-       TMultiGraph *mgy = new TMultiGraph();
-       for (int k=0; k<NUMBOARD; k++){
-	 mgy->Add(grb[k], "L");
+       
+       if (PL == 1) {
+	 // XZ PLOTS
+	 TGraph *gr  = new TGraph(nBoardsHit, barycenter_x, barycenter_z);
+	 TGraph *gr1  = new TGraph(nBoardsHit, barycenter_x_yend, barycenter_z);
+	 TLine *fitxz = new TLine(param[0],0.,param[0]+param[1]*getz(7),getz(7));
+	 TLine *fityz = new TLine(param[2],0.,param[2]+param[3]*getz(7),getz(7));
+	 
+	 TMultiGraph *mg = new TMultiGraph();
+	 
+	 gr->SetTitle("Highest charge barycenter cluster locations");
+	 gr->SetMarkerColor(46);
+	 gr->SetMarkerStyle(20);
+	 gr->SetMarkerSize(1);
+	 
+	 gr1->SetMarkerColor(48);
+	 gr1->SetMarkerStyle(20);
+	 gr1->SetMarkerSize(1);
+	 gr1->SetMarkerColor(48);
+	 gr1->SetMarkerStyle(20);
+	 gr1->SetMarkerSize(1);
+	 
+	 TGraph *grb[NUMBOARD];
+	 for (int k=0; k<NUMBOARD; k++){
+	   grb[k] = new TGraph(2, board_x[k], board_z[k]);
+	   grb[k]->SetLineColor(kBlue);
+	 }
+	 mg->Add(gr,"p");
+	 mg->Add(gr1, "p");
+	 for (int k=0; k<NUMBOARD;k++){
+	   mg->Add(grb[k],"L");
+	 }
+	 mg->Draw("a");
+	 gPad->Modified();
+	 mg->GetXaxis()->SetLimits(-0.1,204.6);
+	 mg->GetXaxis()->SetTitle("x position (mm)");
+	 mg->GetYaxis()->SetRangeUser(-0.1,158.);
+	 mg->GetYaxis()->SetTitle("z position (mm)");
+	 fitxz->Draw("same");
+	 
+	 des->Print(Form("barycenter_plts/barycenter_XZ_%i.png",nev));
+	 
+	 des->Clear();
+	 
+	 //YZ PLOTS
+	 
+	 TMultiGraph *mgy = new TMultiGraph();
+	 for (int k=0; k<NUMBOARD; k++){
+	   mgy->Add(grb[k], "L");
+	 }
+	 mgy->Draw("a");
+	 gPad->Modified();
+	 mgy->GetXaxis()->SetLimits(-0.1,204.6);
+	 mgy->GetXaxis()->SetTitle("y position (mm)");
+	 mgy->GetYaxis()->SetRangeUser(-0.1,158.);
+	 mgy->GetYaxis()->SetTitle("z position (mm)");
+	 fityz->Draw("same");
+	 des->Print(Form("barycenter_plts/barycenter_YZ_%i.png",nev));
+	 des->Update();
        }
-       mgy->Draw("a");
-       gPad->Modified();
-       mgy->GetXaxis()->SetLimits(-0.1,204.6);
-       mgy->GetXaxis()->SetTitle("y position (mm)");
-       mgy->GetYaxis()->SetRangeUser(-0.1,158.);
-       mgy->GetYaxis()->SetTitle("z position (mm)");
-       fityz->Draw("same");
-       des->Print(Form("barycenter_plts/barycenter_YZ_%i.png",nev));
-
        // clear arrays + vectors
        for (int i=0; i < nBoardsHit; i++){
 	 barycenter_x[i] = 0;
@@ -875,12 +855,9 @@ int main()
        zpos.clear();
        boardsHit.clear();
 
-       des->Update();
-       printf("write 2 to print + continue, 0 to end\n");
-       scanf("%d", &go_on);
-       if (go_on==2) {
-	 des->Print(Form("barycenter_plts/barycenter_%i.png",nev));
-       }
+       printf("write 2 to continue, 0 to end\n");
+       go_on = 2;
+       //       scanf("%d", &go_on);
        if (go_on == 0)
 	 return 0;
      }
@@ -932,45 +909,49 @@ int main()
    hClusterMult[k]->Write();
    hClusterHoles[k]->Write();
     }
- TCanvas *c1 = new TCanvas("c1","Root Canvas 1");
- c1->cd();
- for (int k=0; k<NUMBOARD; k++) {
-   c1->SetLogy(1);
-   hPDO[k]->Draw("");
-   c1->Print(Form("Board_%d_PDO.pdf",k));
-   c1->Clear();
-   c1->SetLogy(0);
-   channel_hits[k]->Draw();
-   c1->Print(Form("Board_%d_ChannelHits.pdf",k));
-   c1->Clear();
-   c1->SetLogy(1);
-   hDeltaBCID[k]->Draw("");
-   c1->Print(Form("Board_%d_BCID.pdf",k));
-   c1->Clear();
-   c1->SetLogy(0);
-   c1->SetLogz(1);
-   hCHvsPDOraw[k]->Draw("colz");
-   c1->Print(Form("Board_%d_PDOraw.pdf",k));
-   c1->Clear();
-   c1->SetLogy(0);
-   c1->SetLogz(1);
-   hCHvsPDO[k]->Draw("colz");
-   c1->Print(Form("Board_%d_PDO.pdf",k));
-   c1->Clear();
-   c1->SetLogy(0);
-   c1->SetLogz(0);
-   hClusterCharge[k]->Draw();
-   c1->Print(Form("Board_%d_ClusterCharge.pdf",k));
-   c1->Clear();
-   hClusterChargeMult2[k]->Draw();
-   c1->Print(Form("Board_%d_ClusterChargeMult2.pdf",k));
-   c1->Clear();
-   hClusterMult[k]->Draw();
-   c1->Print(Form("Board_%d_ClusterMult.pdf",k));
-   c1->Clear();
-   hClusterHoles[k]->Draw();
-   c1->Print(Form("Board_%d_ClusterHoles.pdf",k));
-   c1->Clear();
+ hFit->Write();
+ hAngle->Write();
+ if (PL == 1) { 
+   TCanvas *c1 = new TCanvas("c1","Root Canvas 1");
+   c1->cd();
+   for (int k=0; k<NUMBOARD; k++) {
+     c1->SetLogy(1);
+     hPDO[k]->Draw("");
+     c1->Print(Form("Board_%d_PDO.pdf",k));
+     c1->Clear();
+     c1->SetLogy(0);
+     channel_hits[k]->Draw();
+     c1->Print(Form("Board_%d_ChannelHits.pdf",k));
+     c1->Clear();
+     c1->SetLogy(1);
+     hDeltaBCID[k]->Draw("");
+     c1->Print(Form("Board_%d_BCID.pdf",k));
+     c1->Clear();
+     c1->SetLogy(0);
+     c1->SetLogz(1);
+     hCHvsPDOraw[k]->Draw("colz");
+     c1->Print(Form("Board_%d_PDOraw.pdf",k));
+     c1->Clear();
+     c1->SetLogy(0);
+     c1->SetLogz(1);
+     hCHvsPDO[k]->Draw("colz");
+     c1->Print(Form("Board_%d_PDO.pdf",k));
+     c1->Clear();
+     c1->SetLogy(0);
+     c1->SetLogz(0);
+     hClusterCharge[k]->Draw();
+     c1->Print(Form("Board_%d_ClusterCharge.pdf",k));
+     c1->Clear();
+     hClusterChargeMult2[k]->Draw();
+     c1->Print(Form("Board_%d_ClusterChargeMult2.pdf",k));
+     c1->Clear();
+     hClusterMult[k]->Draw();
+     c1->Print(Form("Board_%d_ClusterMult.pdf",k));
+     c1->Clear();
+     hClusterHoles[k]->Draw();
+     c1->Print(Form("Board_%d_ClusterHoles.pdf",k));
+     c1->Clear();
+   }
  }
  fout->Close();
 

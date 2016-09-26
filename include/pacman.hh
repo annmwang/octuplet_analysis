@@ -29,14 +29,12 @@ public:
 	 //mm_array[a][b][4] is cluster number
 inline void pacman::forward(vector< vector<double> >  mm_array[NUMBOARD], int mmhits[NUMBOARD], double clust_range, int tdo_cut, int iboard, double pad_at, double seed_thr, double thr){
   int nclus = 0;
-  int clust_start, clust_mult;
+  int clust_mult, clust_start;
   int clust_end = -1;
   double clust_cha,clust_time;
   int irep=0;
   int k = iboard;
   clust_end = -1;
-  if (PR==1)
-    cout << "BOARD " << k << ", Numhits " << mmhits[k] << endl; 
   for (int i=0; i<mmhits[k]; i++) {
     if (i>clust_end && mm_array[k][i][1]>= seed_thr  && (mm_array[k][i][2]-0.5*pad_at+120.) <= tdo_cut) { //loop through all hits that aren't already a part of a cluster
       nclus++; // nclus indexes the found clusters

@@ -39,7 +39,7 @@ inline int Octuplet::getBoardIndex(int boardid, int run_num) {
     else if (boardid == 105) return 7;
     else return -1;
   }
-  if (run_num == 3508){
+  if (run_num == (3508)){
     if (boardid == 111) return 0;
     else if (boardid == 116) return 1;
     else if (boardid == 101) return 2;

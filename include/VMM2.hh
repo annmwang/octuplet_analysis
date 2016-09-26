@@ -110,7 +110,7 @@ double minfunc(const double *xx) {
     double magfx = xx[0] + xx[1]*zpos[i];
     //cout << "magfx= " << magfx << endl;
     double magfy = xx[2] + xx[3]*zpos[i]+gettrans(boardsHit[i]);
-    cout << "Board Hit: " << boardsHit[i] << " TRANS: " << gettrans(boardsHit[i]) << endl;
+    //cout << "Board Hit: " << boardsHit[i] << " TRANS: " << gettrans(boardsHit[i]) << endl;
     //cout << "magfy= " << magfy << endl;
     double a = getalpha(boardsHit[i]);
     //cout << "a= " << a << endl;
@@ -128,40 +128,6 @@ double minfunc(const double *xx) {
   //cout << "totsum= " << totsum << endl;
   return totsum;
 }
-
-
-// double minfunc(const double *xx) {
-//   double sum = 0;
-//   for (int i=0; i < xpos.size() ; i++) {
-//     double magfx = xx[0] + xx[1]*zpos[i];
-//     //cout << "magfx= " << magfx << endl;
-//     double magfy = xx[2] + xx[3]*zpos[i]+gettrans(i);
-//     //cout << "magfy= " << magfy << endl;
-//     double a = getalpha(i);
-//     //cout << "a= " << a << endl;
-//     double a1 = TMath::Cos(a); //a is measured in radians
-//     //cout << "a1= " << a1 << endl;
-//     double a2 = TMath::Sin(-a);
-//     //cout << "a2= " << a2 << endl;
-//     double sigma = 0.4; //TODO
-//     TVector3 fxy(magfx,magfy,0);
-//     TVector3 xpo(xpos[i],0,0);
-//     TVector3 uperp(a1, a2, 0);
-//     double d1 = fxy.Dot(uperp);
-//     //cout << "d1= " << d1 << endl;
-//     double d2 = xpo.Dot(uperp);
-//     //cout << "d2= " << d2 << endl;
-//     double d = (d1-d2)/sigma;
-//     //cout << "d= " << d << endl;
-//     double dsquared = TMath::Power(d, 2);
-//     //cout << "dsquared= " << dsquared << endl;
-//     sum = sum + dsquared;
-//     //cout << "sum= " << sum << endl;
-//   }
-//   double totsum = sum;
-//   //cout << "totsum= " << totsum << endl;
-//   return totsum;
-// }
 
 //getx
 double getx(int mmfe8, double chword) {
@@ -229,7 +195,7 @@ int NumericalMinimization(const char * minName = "Minuit2",
   min->SetMaxFunctionCalls(100000000); // for Minuit/Minuit2
   min->SetMaxIterations(10000);  // for GSL
   min->SetTolerance(1);
-  min->SetPrintLevel(2);
+  min->SetPrintLevel(0);
 
   // create function wrapper for minmizer
   // a IMultiGenFunction type
@@ -259,27 +225,18 @@ int NumericalMinimization(const char * minName = "Minuit2",
   min->Minimize();
 
   const double *xs = min->X();
-  std::cout << "Minimum: f(" << xs[0] << "," << xs[1] << "," << xs[2] << "," << xs[3] << "): " << min->MinValue()  << std::endl;
+  //  std::cout << "Minimum: f(" << xs[0] << "," << xs[1] << "," << xs[2] << "," << xs[3] << "): " << min->MinValue()  << std::endl;
   for (int j = 0; j<4; j++)
     param.push_back(xs[j]);
   ofstream myfile;
-  myfile.open ("dump1_vec.dat");
-  myfile << "param" << "\n";
-  for(std::vector<double>::const_iterator l = param.begin(); l != param.end(); ++l)
-    myfile << *l << "\n";
-  myfile.close();
-  std::cout << "Parameters: f(" << param[0] << "," << param[1] << "," << param[2] << "," << param[3] << ") " << std::endl;
-  std::cout << "MINVALUE: " << min->MinValue() << " f(xs): " << f(xs) << endl;
-  // expected minimum is 0
-  // if ( min->MinValue()  < 1.E-2  && f(xs) < 1.E-2)
-  //   std::cout << "Minimizer " << minName << " - " << algoName
-  // 	      << "   converged to the right minimum" << std::endl;
-  // else {
-  //   std::cout << "Minimizer " << minName << " - " << algoName
-  // 	      << "   failed to converge !!!" << std::endl;
-  //   Error("NumericalMinimization","fail to converge");
-  // }
-  return -1;
+  //  myfile.open ("dump1_vec.dat");
+  //  myfile << "param" << "\n";
+  //  for(std::vector<double>::const_iterator l = param.begin(); l != param.end(); ++l)
+  //    myfile << *l << "\n";
+  //  myfile.close();
+  //  std::cout << "Parameters: f(" << param[0] << "," << param[1] << "," << param[2] << "," << param[3] << ") " << std::endl;
+  //  std::cout << "MINVALUE: " << min->MinValue() << " f(xs): " << f(xs) << endl;
+  return min->MinValue();
   //minfunc->Draw();
 
 }
