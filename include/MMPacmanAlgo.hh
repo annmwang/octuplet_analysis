@@ -47,21 +47,22 @@ inline MMPacmanAlgo::MMPacmanAlgo(int clus_size,
 
 inline MMClusterList MMPacmanAlgo::Cluster(const MMFE8Hits& hits){
   MMClusterList cluster_list;
-
+  
   // forward step
   int Nhit = hits.GetNHits();
   for(int i = 0; i < Nhit; i++){
     if(!IsGoodHit(hits[i]))
       continue;
-    
+   
     // new cluster if seed above thresh
     if(hits[i].Charge() > m_seed_thresh){
       MMCluster cluster(hits[i]);
       int last_channel = hits[i].Channel();
       // look for additional hits forward
       for(int j = i+1; j < Nhit; j++){
-	if(!IsGoodHit(hits[j]))
+	if(!IsGoodHit(hits[j])){
 	  continue;
+	}
 	if(hits[j].Channel() <= last_channel+m_clus_size){
 	  i = j; // move index so we don't look for seeds in this channel
 	  if(hits[j].Charge() > m_hit_thresh){
@@ -75,7 +76,7 @@ inline MMClusterList MMPacmanAlgo::Cluster(const MMFE8Hits& hits){
       cluster_list.AddCluster(cluster);
     }
   }
-
+  
   // backward step
   int Nclus = cluster_list.GetNCluster();
 
@@ -98,7 +99,7 @@ inline MMClusterList MMPacmanAlgo::Cluster(const MMFE8Hits& hits){
       }
     }
   }
-
+  
   return cluster_list;
 }
 

@@ -123,7 +123,7 @@ inline double PDOToCharge::GetCharge(double PDO, int MMFE8, int VMM, int CH) con
 
     // Gain unrealistic value                                                                                                                              
     if ((2.*m_A2[c]*m_d21[c] > 20.) | (2.*m_A2[c]*m_d21[c] < 5.)){
-      PrintError(MMFE8,VMM,CH);
+      //PrintError(MMFE8,VMM,CH);
       return -1.;
     }
 

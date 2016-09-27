@@ -72,7 +72,7 @@ inline MMFE8Hits::MMFE8Hits(const MMLinkedHit& hit){
   AddLinkedHit(hit);
 }
   
-inline MMFE8Hits::~MMFE8Hits(){ }
+inline MMFE8Hits::~MMFE8Hits() {}
 
 inline bool MMFE8Hits::IsSameMMFE8(const MMHit& hit) const {
   if(GetNHits() == 0)
@@ -97,7 +97,7 @@ inline bool MMFE8Hits::AddHit(const MMHit& hit){
     int N = GetNHits();
     for(int i = 0; i < N; i++){
       if(hit.Channel() < m_hits[i].Channel()){
-	m_hits.insert(m_hits.begin()+i, MMLinkedHit(hit));
+	m_hits.insert(m_hits.begin()+i, hit);
 	return true;
       }
       if(hit.Channel() == m_hits[i].Channel()){
@@ -116,7 +116,7 @@ inline bool MMFE8Hits::AddLinkedHit(const MMLinkedHit& hit){
     int N = GetNHits();
     for(int i = 0; i < N; i++){
       if(hit.Channel() < m_hits[i].Channel()){
-	m_hits.insert(m_hits.begin()+i, MMLinkedHit(hit));
+	m_hits.insert(m_hits.begin()+i, hit);
 	return true;
       }
       if(hit.Channel() == m_hits[i].Channel()){

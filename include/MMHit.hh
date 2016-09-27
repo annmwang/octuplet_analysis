@@ -15,7 +15,7 @@ class MMHit {
 
 public:
   MMHit();
-  MMHit(int mmfe8 = -1, int vmm = -1, int ch = -1);
+  MMHit(int mmfe8, int vmm = -1, int ch = -1);
   MMHit(const MMHit& hit);
   ~MMHit();
 

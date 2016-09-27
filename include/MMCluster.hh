@@ -31,8 +31,6 @@ public:
   int NHoles() const;
 };
 
-#endif
-
 inline MMCluster::MMCluster()
   : MMFE8Hits() {}
 
@@ -80,4 +78,4 @@ inline int MMCluster::NHoles() const {
   return clus_size - Nhit;
 }
 
-
+#endif
