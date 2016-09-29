@@ -257,6 +257,8 @@ int main(int argc, char* argv[]){
     if(evt%1 == 0)
       cout << "Processing event # " << evt << " | " << Nevent << endl;
 
+    cout << DATA->sc_EventHits.IsGoodEvent() << endl;
+    
     // Calibrate PDO -> Charge
     PDOCalibrator->Calibrate(DATA->mm_EventHits);
     // Calibrate TDO -> Time

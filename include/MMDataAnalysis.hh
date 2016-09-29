@@ -12,6 +12,7 @@
 #define MMDataAnalysis_HH
 
 #include "include/MMDataBase.hh"
+#include "include/SCEventHits.hh"
 #include "include/MMEventHits.hh"
 
 class MMDataAnalysis : public MMDataBase {
@@ -24,6 +25,7 @@ public:
   virtual Int_t GetEntry(Long64_t entry);
 
   MMEventHits mm_EventHits;
+  SCEventHits sc_EventHits;
 
 private:
   int m_Nentry;
@@ -67,6 +69,17 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
     hit.SetFIFOcount(mm_FIFOcount->at(i));
 
     mm_EventHits += hit;
+  }
+
+  // clear previous event scintillator hits
+  sc_EventHits = SCEventHits();
+
+  // fill event hits
+  for(int i = 0; i < N_sci; i++){
+    SCHit hit(sci_CH->at(i),
+	      sci_count->at(i));
+
+    sc_EventHits += hit;
   }
 
   return ret;
