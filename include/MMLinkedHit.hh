@@ -23,10 +23,10 @@ public:
 
   int GetNHits() const;
 
-  const MMLinkedHit* GetNext() const;
-
   void AddHit(const MMHit& hit);
   void AddLinkedHit(const MMLinkedHit& hit);
+
+  const MMLinkedHit* GetNext() const;
   
 private:
   MMLinkedHit* m_next;
@@ -54,6 +54,7 @@ inline MMLinkedHit::MMLinkedHit(const MMLinkedHit& hit)
   
 inline MMLinkedHit::~MMLinkedHit(){
   if(m_next){
+    cout << GetNHits() << endl;
     delete m_next;
   }
 }

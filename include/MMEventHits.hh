@@ -43,7 +43,7 @@ public:
   friend class TDOToTime;
   
 private:
-  std::vector<MMFE8Hits> m_boards;
+  std::vector<MMFE8Hits*> m_boards;
 
 };
 
@@ -62,36 +62,39 @@ inline MMEventHits::MMEventHits(const MMEventHits& evt_hits){
     AddHits(evt_hits[i]);
 }
   
-inline MMEventHits::~MMEventHits() {}
+inline MMEventHits::~MMEventHits(){
+  int N = GetNBoards();
+  for(int i = 0; i < N; i++)
+    delete m_boards[i];
+}
 
 inline bool MMEventHits::AddHit(const MMHit& hit){
   int Nboard = GetNBoards();
   for(int i = 0; i < Nboard; i++)
-    if(m_boards[i].AddHit(hit))
+    if(m_boards[i]->AddHit(hit))
       return true;
 
-  m_boards.push_back(MMFE8Hits(hit));
+  m_boards.push_back(new MMFE8Hits(hit));
   return true;
 }
 
 inline bool MMEventHits::AddLinkedHit(const MMLinkedHit& hit){
   int Nboard = GetNBoards();
   for(int i = 0; i < Nboard; i++)
-    if(m_boards[i].AddLinkedHit(hit))
+    if(m_boards[i]->AddLinkedHit(hit))
       return true;
   
-  m_boards.push_back(MMFE8Hits(hit));
+  m_boards.push_back(new MMFE8Hits(hit));
   return true;
 }
 
 inline bool MMEventHits::AddHits(const MMFE8Hits& hits){
   int Nboard = GetNBoards();
   for(int i = 0; i < Nboard; i++)
-    if(m_boards[i].IsSameMMFE8(hits))
-      if(!m_boards[i].AddHits(hits))
-	 return true;
-	 
-  m_boards.push_back(hits);
+    if(m_boards[i]->IsSameMMFE8(hits))
+      if(m_boards[i]->AddHits(hits))
+	return true;
+  m_boards.push_back(new MMFE8Hits(hits));
   return true;
 }
 
@@ -106,7 +109,7 @@ inline int MMEventHits::MMFE8(int iboard) const {
   if(iboard < 0 || iboard >= GetNBoards())
     return -1;
 
-  return m_boards[0].MMFE8();
+  return m_boards[0]->MMFE8();
 }
 
 inline int MMEventHits::GetNBoards() const {
@@ -114,7 +117,7 @@ inline int MMEventHits::GetNBoards() const {
 }
 
 inline MMFE8Hits const& MMEventHits::Get(int iboard) const {
-  return m_boards[iboard];
+  return *m_boards[iboard];
 }
 
 inline MMFE8Hits const& MMEventHits::operator [] (int iboard) const {
@@ -125,7 +128,7 @@ inline int MMEventHits::GetNDuplicates() const {
   int Ndup = 0;
   int N = GetNBoards();
   for(int i = 0; i < N; i++)
-    Ndup += m_boards[i].GetNDuplicates();
+    Ndup += m_boards[i]->GetNDuplicates();
   
   return Ndup;
 }
@@ -134,7 +137,7 @@ inline MMEventHits MMEventHits::GetDuplicates() const {
   MMEventHits dups;
   int N = GetNBoards();
   for(int i = 0; i < N; i++)
-    dups += m_boards[i].GetDuplicates();
+    dups += m_boards[i]->GetDuplicates();
   
   return dups;
 }

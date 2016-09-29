@@ -35,7 +35,7 @@ public:
   bool Contains(const MMHit& hit) const;
 
 private:
-  std::vector<MMCluster> m_clusters;
+  std::vector<MMCluster*> m_clusters;
   
 };
 
@@ -51,31 +51,35 @@ inline MMClusterList::MMClusterList(const MMClusterList& cl){
     AddCluster(cl[i]);
 }
   
-inline MMClusterList::~MMClusterList() {}
+inline MMClusterList::~MMClusterList(){
+  int N = GetNCluster();
+  for(int i = 0; i < N; i++)
+    delete m_clusters[i];
+}
 
 inline void MMClusterList::AddCluster(const MMCluster& clus){
   int N = GetNCluster();
   for(int i = 0; i < N; i++){
-    if(clus.Charge() > m_clusters[i].Charge()){
-      m_clusters.insert(m_clusters.begin()+i, MMCluster(clus));
+    if(clus.Charge() > m_clusters[i]->Charge()){
+      m_clusters.insert(m_clusters.begin()+i, new MMCluster(clus));
       return;
     }
   }
-  m_clusters.push_back(clus);
+  m_clusters.push_back(new MMCluster(clus));
 }
 
 inline void MMClusterList::AddHit(const MMHit& hit, int iclus){
   if(iclus < 0 || iclus >= GetNCluster())
     return;
 
-  m_clusters[iclus].AddHit(hit);
+  m_clusters[iclus]->AddHit(hit);
 }
 
 inline void MMClusterList::AddLinkedHit(const MMLinkedHit& hit, int iclus){
   if(iclus < 0 || iclus >= GetNCluster())
     return;
 
-  m_clusters[iclus].AddLinkedHit(hit);
+  m_clusters[iclus]->AddLinkedHit(hit);
 }
   
 inline int MMClusterList::GetNCluster() const {
@@ -83,7 +87,7 @@ inline int MMClusterList::GetNCluster() const {
 }
 
 inline MMCluster const& MMClusterList::Get(int i) const {
-  return m_clusters[i];
+  return *m_clusters[i];
 }
 
 inline MMCluster const& MMClusterList::operator [] (int i) const {
@@ -94,7 +98,7 @@ int MMClusterList::GetNDuplicates() const {
   int Ndup = 0;
   int Nclus = GetNCluster();
   for(int i = 0; i < Nclus; i++)
-    if(m_clusters[i].GetNDuplicates() > 0)
+    if(m_clusters[i]->GetNDuplicates() > 0)
       Ndup++;
   return Ndup;
 }
@@ -102,7 +106,7 @@ int MMClusterList::GetNDuplicates() const {
 inline bool MMClusterList::Contains(const MMHit& hit) const {
   int Nclus = GetNCluster();
   for(int i = 0; i < Nclus; i++)
-    if(Get(i).Contains(hit))
+    if(m_clusters[i]->Contains(hit))
       return true;
   return false;
 }

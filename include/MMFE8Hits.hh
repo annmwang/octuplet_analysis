@@ -47,7 +47,7 @@ public:
   MMFE8Hits GetDuplicates() const;
   
 private:
-  std::vector<MMLinkedHit> m_hits;
+  std::vector<MMLinkedHit*> m_hits;
 
   friend class PDOToCharge;
   friend class TDOToTime;
@@ -72,7 +72,11 @@ inline MMFE8Hits::MMFE8Hits(const MMLinkedHit& hit){
   AddLinkedHit(hit);
 }
   
-inline MMFE8Hits::~MMFE8Hits() {}
+inline MMFE8Hits::~MMFE8Hits(){
+  int N = GetNHits();
+  for(int i = 0; i < N; i++)
+    delete m_hits[i];
+}
 
 inline bool MMFE8Hits::IsSameMMFE8(const MMHit& hit) const {
   if(GetNHits() == 0)
@@ -80,6 +84,7 @@ inline bool MMFE8Hits::IsSameMMFE8(const MMHit& hit) const {
 
   if(MMFE8() == hit.MMFE8() && hit.MMFE8() > 0)
     return true;
+  
   return false;
 }
 
@@ -89,6 +94,7 @@ inline bool MMFE8Hits::IsSameMMFE8(const MMFE8Hits& hits) const {
   
   if(MMFE8() == hits.MMFE8() && hits.MMFE8() > 0)
     return true;
+  
   return false;
 }
 
@@ -96,16 +102,16 @@ inline bool MMFE8Hits::AddHit(const MMHit& hit){
   if(IsSameMMFE8(hit)){
     int N = GetNHits();
     for(int i = 0; i < N; i++){
-      if(hit.Channel() < m_hits[i].Channel()){
-	m_hits.insert(m_hits.begin()+i, hit);
+      if(hit.Channel() < m_hits[i]->Channel()){
+	m_hits.insert(m_hits.begin()+i, new MMLinkedHit(hit));
 	return true;
       }
-      if(hit.Channel() == m_hits[i].Channel()){
-	m_hits[i].AddHit(hit);
+      if(hit.Channel() == m_hits[i]->Channel()){
+	m_hits[i]->AddHit(hit);
 	return true;
       }	
     }
-    m_hits.push_back(MMLinkedHit(hit));
+    m_hits.push_back(new MMLinkedHit(hit));
     return true;
   }
   return false;
@@ -115,16 +121,16 @@ inline bool MMFE8Hits::AddLinkedHit(const MMLinkedHit& hit){
   if(IsSameMMFE8(hit)){
     int N = GetNHits();
     for(int i = 0; i < N; i++){
-      if(hit.Channel() < m_hits[i].Channel()){
-	m_hits.insert(m_hits.begin()+i, hit);
+      if(hit.Channel() < m_hits[i]->Channel()){
+	m_hits.insert(m_hits.begin()+i, new MMLinkedHit(hit));
 	return true;
       }
-      if(hit.Channel() == m_hits[i].Channel()){
-	m_hits[i].AddLinkedHit(hit);
+      if(hit.Channel() == m_hits[i]->Channel()){
+	m_hits[i]->AddLinkedHit(hit);
 	return true;
       }	
     }
-    m_hits.push_back(MMLinkedHit(hit));
+    m_hits.push_back(new MMLinkedHit(hit));
     return true;
   }
   return false;
@@ -172,7 +178,7 @@ inline int MMFE8Hits::MMFE8() const {
   if(GetNHits() == 0)
     return -1;
 
-  return m_hits[0].MMFE8();
+  return m_hits[0]->MMFE8();
 }
 
 inline int MMFE8Hits::GetNHits() const {
@@ -180,7 +186,7 @@ inline int MMFE8Hits::GetNHits() const {
 }
 
 inline MMLinkedHit const& MMFE8Hits::Get(int ihit) const {
-  return m_hits[ihit];
+  return *m_hits[ihit];
 }
 
 inline MMLinkedHit const& MMFE8Hits::operator [] (int ihit) const {
@@ -191,7 +197,7 @@ inline int MMFE8Hits::GetNDuplicates() const {
   int Ndup = 0;
   int N = GetNHits();
   for(int i = 0; i < N; i++)
-    if(m_hits[i].GetNHits() > 1)
+    if(m_hits[i]->GetNHits() > 1)
       Ndup++;
   return Ndup;
 }
@@ -199,8 +205,8 @@ inline MMFE8Hits MMFE8Hits::GetDuplicates() const {
   MMFE8Hits dups;
   int N = GetNHits();
   for(int i = 0; i < N; i++)
-    if(m_hits[i].GetNHits() > 1)
-      dups.AddLinkedHit(m_hits[i]);
+    if(m_hits[i]->GetNHits() > 1)
+      dups.AddLinkedHit(*m_hits[i]);
   return dups;
 }
 

@@ -165,13 +165,13 @@ inline double TDOToTime::GetFitProb(int MMFE8, int VMM, int CH) const {
 inline void TDOToTime::Calibrate(MMEventHits& evt_hits) const {
   int NBoards = evt_hits.GetNBoards();
   for(int i = 0; i < NBoards; i++)
-    Calibrate(evt_hits.m_boards[i]);
+    Calibrate(*evt_hits.m_boards[i]);
 }
 
 inline void TDOToTime::Calibrate(MMFE8Hits& hits) const {
   int NHits = hits.GetNHits();
   for(int i = 0; i < NHits; i++){
-    MMLinkedHit* hit_ptr = &hits.m_hits[i];
+    MMLinkedHit* hit_ptr = hits.m_hits[i];
     int Ndup = hit_ptr->GetNHits();
     while(Ndup > 0){
       Calibrate(*hit_ptr);
