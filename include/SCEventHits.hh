@@ -138,7 +138,7 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
 		     sc_top_corr[newhit->Channel()-16]);
     if(newhit->Count() > 180. &&
        newhit->Count() < 240.){
-      int Ntop = m_bothits.size();
+      int Ntop = m_tophits.size();
       for(int i = 0; i < Ntop; i++){
 	if(abs(newhit->Channel()-m_tophits[i]->Channel()) == 6){
 	  if(newhit->Channel() < m_tophits[i]->Channel())
@@ -158,16 +158,18 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
 inline bool SCEventHits::IsGoodEvent(){
   if(!m_padw || !m_pade)
     return false;
-
+  
   if(m_padw->Count() < 200. ||
-     m_padw->Count() < 250. ||
+     m_padw->Count() > 250. ||
      m_pade->Count() < 200. ||
-     m_pade->Count() < 250.)
+     m_pade->Count() > 250.)
     return false;
 
   if(NBotPair() != 1 ||
-     NTopPair() != 1)
+     NTopPair() != 1){
     return false;
+  }
+    
 
   double topx, topy, botx, boty;
   BotXY(botx,boty);
@@ -179,12 +181,12 @@ inline bool SCEventHits::IsGoodEvent(){
 
   double length = sqrt(274.3*274.3 +
 		       (botx-topx)*(botx-topx)+
-		       (boty-topy)*(boty-topy));
+		       (boty-topy)*(boty-topy))/100.;
   double timediff = TopTDC() - BotTDC() - length*2.*3.3;
 
   if(fabs(timediff) > 20.)
     return false;
-  
+
   return true;
 }
 

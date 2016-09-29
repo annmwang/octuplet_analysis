@@ -76,10 +76,11 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
 
   // fill event hits
   for(int i = 0; i < N_sci; i++){
+   
     SCHit hit(sci_CH->at(i),
 	      sci_count->at(i));
-
     sc_EventHits += hit;
+    
   }
 
   return ret;

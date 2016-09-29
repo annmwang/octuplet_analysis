@@ -252,12 +252,12 @@ int main(int argc, char* argv[]){
   }
   
   for(int evt = 0; evt < Nevent; evt++){
-  //for(int evt = 28439; evt < Nevent; evt++){
        DATA->GetEntry(evt);
-    if(evt%1 == 0)
+    if(evt%1 == 10000)
       cout << "Processing event # " << evt << " | " << Nevent << endl;
 
-    cout << DATA->sc_EventHits.IsGoodEvent() << endl;
+    if(!DATA->sc_EventHits.IsGoodEvent())
+      continue;
     
     // Calibrate PDO -> Charge
     PDOCalibrator->Calibrate(DATA->mm_EventHits);

@@ -54,7 +54,6 @@ inline MMLinkedHit::MMLinkedHit(const MMLinkedHit& hit)
   
 inline MMLinkedHit::~MMLinkedHit(){
   if(m_next){
-    cout << GetNHits() << endl;
     delete m_next;
   }
 }
