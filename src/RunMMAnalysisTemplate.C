@@ -16,6 +16,7 @@
 #include "include/TDOToTime.hh"
 #include "include/MMDataAnalysis.hh"
 #include "include/MMPacmanAlgo.hh"
+#include "include/GeoOctuplet.hh"
 
 using namespace std;
 
@@ -101,6 +102,8 @@ int main(int argc, char* argv[]){
     TDOCalibrator = new TDOToTime();
 
   MMPacmanAlgo* PACMAN = new MMPacmanAlgo();
+
+  GeoOctuplet* GEOMETRY = new GeoOctuplet();
 
   MMDataAnalysis* DATA;
   TFile* f = new TFile(inputFileName, "READ");
@@ -253,8 +256,11 @@ int main(int argc, char* argv[]){
   
   for(int evt = 0; evt < Nevent; evt++){
        DATA->GetEntry(evt);
-    if(evt%1 == 10000)
+    if(evt%10000 == 0)
       cout << "Processing event # " << evt << " | " << Nevent << endl;
+
+    if(GEOMETRY->RunNumber() < 0)
+      GEOMETRY->SetRunNumber(DATA->RunNum);
 
     if(!DATA->sc_EventHits.IsGoodEvent())
       continue;
