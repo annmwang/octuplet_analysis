@@ -11,7 +11,12 @@
 #ifndef GeoOctuplet_HH
 #define GeoOctuplet_HH
 
+#include <map>
+
+#include "TGraphErrors.h"
+
 #include "include/GeoPlane.hh"
+#include "include/MMClusterList.hh"
 
 class GeoOctuplet {
 
@@ -31,10 +36,14 @@ public:
   int RunNumber() const;
   void SetRunNumber(int RunNumber);
 
+  TGraph* GetXZGraph(const MMClusterList& clusters) const;
+  TGraphErrors* GetXZGraphErrors(const MMClusterList& clusters) const;
+  TGraph* GetXZGraph(const MMTrack& track) const;
+
 private:
   void Init();
 
-  vector<GeoPlane*> m_planes;
+  std::vector<GeoPlane*> m_planes;
 
   int m_RunNum;
   mutable std::map<int,int> m_MMFE82Index;
@@ -82,7 +91,7 @@ inline void GeoOctuplet::Init(){
   m_planes.push_back(new GeoPlane());
   origin.SetXYZ(102.3, 100., 11.2);
   m_planes[i]->SetOrigin(origin);
-  m_planes[i]->SetStripAlpha(0.);
+  ;  m_planes[i]->SetStripAlpha(0.);
   m_planes[i]->SetSignChannel(1);
 
   i++;
@@ -99,7 +108,7 @@ inline void GeoOctuplet::Init(){
   origin.SetXYZ(102.3, 100.-17.9, 43.6);
   m_planes[i]->SetOrigin(origin);
   m_planes[i]->SetStripAlpha(0.0261799);
-  m_planes[i]->SetSignChannel(1);
+  m_planes[i]->SetSignChannel(-1);
 
   i++;
   // plane 4
@@ -115,7 +124,7 @@ inline void GeoOctuplet::Init(){
   origin.SetXYZ(102.3, 100.-17.9, 124.8);
   m_planes[i]->SetOrigin(origin);
   m_planes[i]->SetStripAlpha(0.0261799);
-  m_planes[i]->SetSignChannel(1);
+  m_planes[i]->SetSignChannel(-1);
 
   i++;
   // plane 6
@@ -123,7 +132,7 @@ inline void GeoOctuplet::Init(){
   origin.SetXYZ(102.3, 100., 146.0);
   m_planes[i]->SetOrigin(origin);
   m_planes[i]->SetStripAlpha(0.);
-  m_planes[i]->SetSignChannel(1);
+  m_planes[i]->SetSignChannel(-1);
 
   i++;
   // plane 7
@@ -211,6 +220,123 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
 
     m_RunNum = RunNumber;
   }
+}
+
+inline TGraph* GeoOctuplet::GetXZGraph(const MMClusterList& clusters) const {
+  std::vector<double> vx;
+  std::vector<double> vz;
+  int Nclus = clusters.GetNCluster();
+  for(int i = 0; i < Nclus; i++){
+    int index = Index(clusters[i].MMFE8());
+    if(index < 0)
+      continue;
+    double ch = clusters[i].Channel();
+    GeoPlane& plane = *m_planes[index];
+    TVector3 p = plane.Origin() + plane.LocalXatYbegin(ch)*plane.nX();
+    vx.push_back(p.X());
+    vz.push_back(p.Z());
+  }
+
+  int N = vx.size();
+  double x[N];
+  double z[N];
+  for(int i = 0; i < N; i++){
+    x[i] = vx[i];
+    z[i] = vz[i];
+  }
+  TGraph* gr = new TGraph(N,x,z);
+  gr->SetMarkerSize(1);
+  gr->SetMarkerColor(kBlack);
+
+  return gr;
+}
+
+inline TGraphErrors* GeoOctuplet::GetXZGraphErrors(const MMClusterList& clusters) const {
+  std::vector<double> vx;
+  std::vector<double> vdx;
+  std::vector<double> vz;
+  int Nclus = clusters.GetNCluster();
+  for(int i = 0; i < Nclus; i++){
+    int index = Index(clusters[i].MMFE8());
+    if(index < 0)
+      continue;
+    double ch = clusters[i].Channel();
+    GeoPlane& plane = *m_planes[index];
+    TVector3 p1 = plane.Origin() + plane.LocalXatYend(ch)*plane.nX();
+    TVector3 p2 = plane.Origin() + plane.LocalXatYbegin(ch)*plane.nX();
+    vx.push_back((p1.X()+p2.X())/2.);
+    vz.push_back((p1.Z()+p2.Z())/2.);
+    vdx.push_back(fabs(p1.X()-p2.X())/2.);
+  }
+
+  int N = vx.size();
+  double x[N];
+  double dx[N];
+  double z[N];
+  for(int i = 0; i < N; i++){
+    x[i]  = vx[i];
+    z[i]  = vz[i];
+    dx[i] = vdx[i];
+  }
+  TGraphErrors* gr = new TGraphErrors(N,x,z,dx,0);
+  gr->SetMarkerSize(1);
+  gr->SetMarkerColor(kBlack);
+  gr->SetLineWidth(2);
+
+
+  return gr;
+}
+
+inline TGraph* GeoOctuplet::GetXZGraph(const MMTrack& track) const {
+  std::vector<double> vx;
+  std::vector<double> vz;
+
+  TVector3 p, ip;
+  p = track.PointZ(-5.);
+  vx.push_back(p.X());
+  vz.push_back(p.Z());
+
+  int Nplane = GetNPlanes();
+  for(int i = 0; i < Nplane; i++){
+    GeoPlane& plane = *m_planes[i];
+    ip = plane.Intersection(track, -5.6);
+    p = track.PointZ(ip.Z());
+    vx.push_back(p.X());
+    vz.push_back(p.Z());
+    
+    p = plane.Origin() - 5.6*plane.nZ() + 
+      plane.LocalXatYbegin(track,-5.6)*plane.nX();
+    vx.push_back(p.X());
+    vz.push_back(p.Z());
+
+    p = plane.Origin() + 5.6*plane.nZ() + 
+      plane.LocalXatYbegin(track, 5.6)*plane.nX();
+    vx.push_back(p.X());
+    vz.push_back(p.Z());
+
+    ip = plane.Intersection(track, 5.6);
+    p = track.PointZ(ip.Z());
+    vx.push_back(p.X());
+    vz.push_back(p.Z());
+  }
+
+  p = track.PointZ(165.);
+  vx.push_back(p.X());
+  vz.push_back(p.Z());
+
+  int N = vx.size();
+  double x[N];
+  double z[N];
+  for(int i = 0; i < N; i++){
+    x[i] = vx[i];
+    z[i] = vz[i];
+  }
+  TGraph* gr = new TGraph(N,x,z);
+  gr->SetLineColor(kRed+2);
+  gr->SetMarkerSize(0.);
+  gr->SetMarkerColor(kRed+2);
+  gr->SetLineWidth(2);
+  return gr;
 }
 
 

@@ -17,6 +17,7 @@
 #include "include/MMDataAnalysis.hh"
 #include "include/MMPacmanAlgo.hh"
 #include "include/GeoOctuplet.hh"
+#include "include/SimpleTrackFitter.hh"
 
 using namespace std;
 
@@ -104,6 +105,8 @@ int main(int argc, char* argv[]){
   MMPacmanAlgo* PACMAN = new MMPacmanAlgo();
 
   GeoOctuplet* GEOMETRY = new GeoOctuplet();
+
+  SimpleTrackFitter* FITTER = new SimpleTrackFitter();
 
   MMDataAnalysis* DATA;
   TFile* f = new TFile(inputFileName, "READ");
@@ -254,6 +257,9 @@ int main(int argc, char* argv[]){
 					    128,0.,250.));
   }
   
+  TFile* fout = new TFile(outputFileName, "RECREATE");
+  MMPlot();
+
   for(int evt = 0; evt < Nevent; evt++){
        DATA->GetEntry(evt);
     if(evt%10000 == 0)
@@ -343,12 +349,32 @@ int main(int argc, char* argv[]){
 	}
       }
     }
+
+    // track fitting
+    MMClusterList fit_clusters;
+    for(int i = 0; i < Ncl; i++){
+      // add highest charge cluster from each board;
+      if(all_clusters[i].GetNCluster() > 0)
+	fit_clusters.AddCluster(all_clusters[i][0]);
+    }
+
+    if(fit_clusters.GetNCluster() < 8)
+      continue;
+
+    MMTrack track = FITTER->Fit(fit_clusters, *GEOMETRY);
+
+    TCanvas* can = Plot_Track2D(Form("track2D_%d",DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters); 
+    fout->cd();
+    can->Write();
+    delete can;
+    TCanvas* canY = Plot_Track2DY(Form("track2DY_%d",DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters); 
+    fout->cd();
+    canY->Write();
+    delete canY;
+
   }
 
-  TFile* fout = new TFile(outputFileName, "RECREATE");
   fout->cd();
-
-  setstyle();
   
   TCanvas* can;
   can = Plot_Octuplet1D("test", board_hit_PDO, "PDO", "Number of hits",

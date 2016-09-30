@@ -17,9 +17,12 @@
 #include <TList.h>
 #include <TF1.h>
 
+#include "include/GeoOctuplet.hh"
+#include "include/MMClusterList.hh"
+
 using namespace std;
 
-void setstyle(){
+void MMPlot(){
 
   // For the canvas:
   gStyle->SetCanvasBorderMode(0);
@@ -69,7 +72,7 @@ void setstyle(){
   gStyle->SetLineStyleString(2,"[12 12]"); // postscript dashes
 	
   //..Get rid of X error bars
-  gStyle->SetErrorX(0.001);
+  gStyle->SetErrorX(1.);
     
   // do not display any of the standard histogram decorations
   gStyle->SetOptTitle(0);
@@ -360,6 +363,81 @@ TCanvas* Plot_1D(string can, vector<TH1D*>& histo, string X, string Y,
   l.SetTextFont(42);
   l.DrawLatex(0.02,0.94,"#bf{#it{ATLAS}} Internal - MMFE8+VMM2");
 
+  return c1;
+}
+
+TCanvas* Plot_Track2D(string can, const MMTrack& track, const GeoOctuplet& geo, 
+		      const MMClusterList* clusters = 0){
+  TCanvas *c1 = new TCanvas(can.c_str(),can.c_str(),700,700);
+  c1->SetRightMargin(0.05);
+  c1->SetTopMargin(0.05);
+  c1->SetBottomMargin(0.14);
+  c1->SetLeftMargin(0.14);
+
+  TMultiGraph* mg = new TMultiGraph();
+
+  TGraph* gr_track = track.GetXZGraph(-5., 165.);
+  mg->Add(gr_track);
+
+  vector<TGraph*> gr_planes;
+  int Nplane = geo.GetNPlanes();
+  for(int i = 0; i < Nplane; i++){
+    gr_planes.push_back(geo[i].GetXZGraph());
+    mg->Add(gr_planes[i]);
+  }
+
+  c1->Draw();
+  c1->cd();
+  mg->Draw("ACP");
+  mg->GetXaxis()->SetTitle("x position [mm]");
+  mg->GetXaxis()->CenterTitle();
+  mg->GetYaxis()->SetTitle("z position [mm]");
+  mg->GetYaxis()->CenterTitle();
+  mg->GetYaxis()->SetTitleOffset(1.15);
+
+  if(clusters){
+    TGraphErrors* gr_clusters = geo.GetXZGraphErrors(*clusters);
+    gr_clusters->Draw("P same");
+    gr_clusters->Draw("e1 same");
+  }
+  
+  return c1;
+}
+
+TCanvas* Plot_Track2DY(string can, const MMTrack& track, const GeoOctuplet& geo, 
+		       const MMClusterList* clusters = 0){
+  TCanvas *c1 = new TCanvas(can.c_str(),can.c_str(),700,700);
+  c1->SetRightMargin(0.05);
+  c1->SetTopMargin(0.05);
+  c1->SetBottomMargin(0.14);
+  c1->SetLeftMargin(0.14);
+
+  TMultiGraph* mg = new TMultiGraph();
+  
+  TGraph* gr_track = geo.GetXZGraph(track);
+  mg->Add(gr_track);
+
+  vector<TGraph*> gr_planes;
+  int Nplane = geo.GetNPlanes();
+  for(int i = 0; i < Nplane; i++){
+    gr_planes.push_back(geo[i].GetXZGraph());
+    mg->Add(gr_planes[i]);
+  }
+
+  c1->Draw();
+  c1->cd();
+  mg->Draw("ALP");
+  mg->GetXaxis()->SetTitle("x position [mm]");
+  mg->GetXaxis()->CenterTitle();
+  mg->GetYaxis()->SetTitle("z position [mm]");
+  mg->GetYaxis()->CenterTitle();
+  mg->GetYaxis()->SetTitleOffset(1.15);
+
+  if(clusters){
+    TGraph* gr_clusters = geo.GetXZGraph(*clusters);
+    gr_clusters->Draw("P same");
+  }
+  
   return c1;
 }
 
