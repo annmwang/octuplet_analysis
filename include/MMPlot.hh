@@ -457,13 +457,13 @@ TCanvas* Plot_Track3D(string can, const MMTrack& track, const GeoOctuplet& geo,
   double y[3];
   double z[3];
   x[0] = 215.;
-  y[0] = -20.;
+  y[0] = -5.;
   z[0] = -5.;
   x[1] = -15.;
-  y[1] = 210.;
+  y[1] = 225.;
   z[1] = -5.;
   x[2] = -15.;
-  y[2] = -20.;
+  y[2] = -5.;
   z[2] = 165.;
 
   TGraph2D* gr_frame = new TGraph2D(3,x,y,z);
@@ -472,7 +472,7 @@ TCanvas* Plot_Track3D(string can, const MMTrack& track, const GeoOctuplet& geo,
   gr_frame->SetMarkerSize(0);
   gr_frame->Draw("P");
   gr_frame->GetXaxis()->SetRangeUser(-15.,215.);
-  gr_frame->GetYaxis()->SetRangeUser(-20.,210.);
+  gr_frame->GetYaxis()->SetRangeUser(-5.,225.);
   gr_frame->GetZaxis()->SetRangeUser(-5.,165.);
   gr_frame->GetXaxis()->SetTitle("x position [mm]");
   gr_frame->GetXaxis()->CenterTitle();
