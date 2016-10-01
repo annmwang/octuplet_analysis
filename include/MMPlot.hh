@@ -446,13 +446,13 @@ TCanvas* Plot_Track2DY(string can, const MMTrack& track, const GeoOctuplet& geo,
 TCanvas* Plot_Track3D(string can, const MMTrack& track, const GeoOctuplet& geo, 
 		       const MMClusterList* clusters = 0){
   TCanvas *c1 = new TCanvas(can.c_str(),can.c_str(),700,700);
-  c1->SetRightMargin(0.05);
+  c1->SetRightMargin(0.12);
   c1->SetTopMargin(0.05);
-  c1->SetBottomMargin(0.14);
-  c1->SetLeftMargin(0.14);
+  c1->SetBottomMargin(0.13);
+  c1->SetLeftMargin(0.12);
   c1->Draw();
   c1->cd();
-
+  
   double x[3];
   double y[3];
   double z[3];
@@ -466,6 +466,7 @@ TCanvas* Plot_Track3D(string can, const MMTrack& track, const GeoOctuplet& geo,
   y[2] = -5.;
   z[2] = 165.;
 
+  /*
   TGraph2D* gr_frame = new TGraph2D(3,x,y,z);
   gr_frame->SetName(Form("g2D_%d",g_2Dcount++));
   gr_frame->SetTitle("");
@@ -479,7 +480,34 @@ TCanvas* Plot_Track3D(string can, const MMTrack& track, const GeoOctuplet& geo,
   gr_frame->GetZaxis()->SetTitle("z position [mm]");
   gr_frame->GetZaxis()->CenterTitle();
   gr_frame->GetZaxis()->SetTitleOffset(1.15);
-  
+  */
+
+  TH2D* h_frame = new TH2D(Form("h2D_%d",g_2Dcount++),"",
+			   2, -15., 215.,
+			   2,-5.,225.);
+  h_frame->SetStats(false);
+  h_frame->Fill(0.,0.);
+  h_frame->SetMarkerColor(kWhite);
+  h_frame->SetMarkerSize(0);
+  h_frame->SetLineColor(kWhite);
+  h_frame->SetLineWidth(0);
+  h_frame->Draw("LEGO");
+  h_frame->GetXaxis()->SetLabelSize(0.04);
+  h_frame->GetXaxis()->SetTitleSize(0.04);
+  h_frame->GetYaxis()->SetLabelSize(0.04);
+  h_frame->GetYaxis()->SetTitleSize(0.04);
+  h_frame->GetZaxis()->SetLabelSize(0.04);
+  h_frame->GetZaxis()->SetTitleSize(0.04);
+  h_frame->GetZaxis()->SetRangeUser(-5.,160.);
+  h_frame->GetXaxis()->SetTitle("x [mm]");
+  h_frame->GetXaxis()->CenterTitle();
+  h_frame->GetXaxis()->SetTitleOffset(2.);
+  h_frame->GetYaxis()->SetTitle("y [mm]");
+  h_frame->GetYaxis()->CenterTitle();
+  h_frame->GetYaxis()->SetTitleOffset(2.);
+  h_frame->GetZaxis()->SetTitle("z [mm]");
+  h_frame->GetZaxis()->CenterTitle();
+  h_frame->GetZaxis()->SetTitleOffset(1.55);
   
   TGraph2D* gr_track = track.Get2DGraph(-5., 165.);
   gr_track->SetName(Form("g2D_%d",g_2Dcount++));
