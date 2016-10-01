@@ -44,7 +44,9 @@ public:
   void SetStripAlpha(double alpha);
   void SetSignChannel(int sign);
 
-  TGraph* GetXZGraph() const;
+  TGraph*   GetXZGraph() const;
+  TGraph2D* Get2DGraph() const;
+  TGraph2D* GetChannelGraph(double channel) const;
   
 private:
   TVector3 m_Origin;
@@ -176,6 +178,143 @@ inline TGraph* GeoPlane::GetXZGraph() const {
   gr->SetLineColor(kBlue+2);
   gr->SetMarkerSize(0.);
   gr->SetMarkerColor(kBlue+2);
+  return gr;
+}
+
+inline TGraph2D* GeoPlane::Get2DGraph() const {
+  double x[5], y[5], z[5];
+  TVector3 p0 = m_Origin +
+    LocalXatYend(0)*m_nX +
+    100.*m_nY;
+  TVector3 p1 = m_Origin +
+    LocalXatYend(513)*m_nX +
+    100.*m_nY;
+  TVector3 p2 = m_Origin +
+    LocalXatYbegin(513)*m_nX +
+    -100.*m_nY;
+  TVector3 p3 = m_Origin +
+    LocalXatYbegin(0)*m_nX +
+    -100.*m_nY;
+  
+  x[0] = p0.X();
+  y[0] = p0.Y();
+  z[0] = p0.Z();
+  x[1] = p1.X();
+  y[1] = p1.Y();
+  z[1] = p1.Z();
+  x[2] = p2.X();
+  y[2] = p2.Y();
+  z[2] = p2.Z();
+  x[3] = p3.X();
+  y[3] = p3.Y();
+  z[3] = p3.Z();
+  x[4] = p0.X();
+  y[4] = p0.Y();
+  z[4] = p0.Z();
+
+  TGraph2D* gr = new TGraph2D(5,x,y,z);
+  gr->SetLineColor(kBlue+2);
+  gr->SetMarkerSize(0.);
+  gr->SetMarkerColor(kBlue+2);
+  return gr;
+}
+
+
+/*
+inline TGraph2D* GeoPlane::Get2DGraph() const {
+  TVector3 p0 = m_Origin +
+    LocalXatYend(0)*m_nX +
+    100.*m_nY;
+  TVector3 p1 = m_Origin +
+    LocalXatYend(513)*m_nX +
+    100.*m_nY;
+  TVector3 p2 = m_Origin +
+    LocalXatYbegin(513)*m_nX +
+    -100.*m_nY;
+  TVector3 p3 = m_Origin +
+    LocalXatYbegin(0)*m_nX +
+    -100.*m_nY;
+  
+  double x[29], y[29], z[29];
+  x[0] = p0.X();
+  y[0] = p0.Y();
+  z[0] = p0.Z();
+  x[1] = p1.X();
+  y[1] = p1.Y();
+  z[1] = p1.Z();
+  x[2] = p2.X();
+  y[2] = p2.Y();
+  z[2] = p2.Z();
+  x[3] = p3.X();
+  y[3] = p3.Y();
+  z[3] = p3.Z();
+  x[4] = p0.X();
+  y[4] = p0.Y();
+  z[4] = p0.Z();
+  
+  for(int i = 0; i < 8; i++){
+    TVector3 s0 = m_Origin +
+      LocalXatYbegin(i*64+1)*m_nX +
+      -100.*m_nY;
+    TVector3 s1 = m_Origin +
+      LocalXatYend(i*64+1)*m_nX +
+      100.*m_nY;
+
+    if(i%2 == 0){
+      x[i*3+5] = s0.X();
+      y[i*3+5] = s0.Y();
+      z[i*3+5] = s0.Z();
+      x[i*3+1+5] = s1.X();
+      y[i*3+1+5] = s1.Y();
+      z[i*3+1+5] = s1.Z();
+    } else {
+      x[i*3+5] = s1.X();
+      y[i*3+5] = s1.Y();
+      z[i*3+5] = s1.Z();
+      x[i*3+1+5] = s0.X();
+      y[i*3+1+5] = s0.Y();
+      z[i*3+1+5] = s0.Z();
+    }
+    if(i > 0){
+      x[i*3+2+5] = x[i*3-3+5];
+      y[i*3+2+5] = y[i*3-3+5];
+      z[i*3+2+5] = z[i*3-3+5];
+    } else {
+      x[i*3+2+5] = x[i*3+1+5];
+      y[i*3+2+5] = y[i*3+1+5];
+      z[i*3+2+5] = z[i*3+1+5];
+    }
+  }
+
+  TGraph2D* gr = new TGraph2D(29,x,y,z);
+  gr->SetLineColor(kBlue-9);
+  gr->SetMarkerSize(0.);
+  gr->SetMarkerColor(kBlue-9);
+  return gr;
+}
+*/
+
+inline TGraph2D* GeoPlane::GetChannelGraph(double channel) const {
+  double x[2], y[2], z[2];
+  TVector3 p0 = m_Origin +
+    LocalXatYend(channel)*m_nX +
+    100.*m_nY;
+  TVector3 p1 = m_Origin +
+    LocalXatYbegin(channel)*m_nX +
+    -100.*m_nY;
+  
+  x[0] = p0.X();
+  y[0] = p0.Y();
+  z[0] = p0.Z();
+  x[1] = p1.X();
+  y[1] = p1.Y();
+  z[1] = p1.Z();
+
+  TGraph2D* gr = new TGraph2D(2,x,y,z);
+  gr->SetLineColor(kBlack);
+  gr->SetMarkerSize(0.);
+  gr->SetMarkerColor(kBlack);
+  gr->SetLineWidth(2);
   return gr;
 }
 

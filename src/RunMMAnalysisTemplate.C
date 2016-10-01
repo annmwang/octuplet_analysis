@@ -367,11 +367,16 @@ int main(int argc, char* argv[]){
     fout->cd();
     can->Write();
     delete can;
+    
     TCanvas* canY = Plot_Track2DY(Form("track2DY_%d",DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters); 
     fout->cd();
     canY->Write();
     delete canY;
-
+    
+    TCanvas* can3D = Plot_Track3D(Form("track3D_%d",DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters); 
+    fout->cd();
+    can3D->Write();
+    delete can3D;
   }
 
   fout->cd();

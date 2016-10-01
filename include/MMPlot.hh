@@ -22,6 +22,8 @@
 
 using namespace std;
 
+static int g_2Dcount = 0;
+
 void MMPlot(){
 
   // For the canvas:
@@ -437,6 +439,82 @@ TCanvas* Plot_Track2DY(string can, const MMTrack& track, const GeoOctuplet& geo,
     TGraph* gr_clusters = geo.GetXZGraph(*clusters);
     gr_clusters->Draw("P same");
   }
+  
+  return c1;
+}
+
+TCanvas* Plot_Track3D(string can, const MMTrack& track, const GeoOctuplet& geo, 
+		       const MMClusterList* clusters = 0){
+  TCanvas *c1 = new TCanvas(can.c_str(),can.c_str(),700,700);
+  c1->SetRightMargin(0.05);
+  c1->SetTopMargin(0.05);
+  c1->SetBottomMargin(0.14);
+  c1->SetLeftMargin(0.14);
+  c1->Draw();
+  c1->cd();
+
+  double x[3];
+  double y[3];
+  double z[3];
+  x[0] = 215.;
+  y[0] = -20.;
+  z[0] = -5.;
+  x[1] = -15.;
+  y[1] = 210.;
+  z[1] = -5.;
+  x[2] = -15.;
+  y[2] = -20.;
+  z[2] = 165.;
+
+  TGraph2D* gr_frame = new TGraph2D(3,x,y,z);
+  gr_frame->SetName(Form("g2D_%d",g_2Dcount++));
+  gr_frame->SetTitle("");
+  gr_frame->SetMarkerSize(0);
+  gr_frame->Draw("P");
+  gr_frame->GetXaxis()->SetRangeUser(-15.,215.);
+  gr_frame->GetYaxis()->SetRangeUser(-20.,210.);
+  gr_frame->GetZaxis()->SetRangeUser(-5.,165.);
+  gr_frame->GetXaxis()->SetTitle("x position [mm]");
+  gr_frame->GetXaxis()->CenterTitle();
+  gr_frame->GetZaxis()->SetTitle("z position [mm]");
+  gr_frame->GetZaxis()->CenterTitle();
+  gr_frame->GetZaxis()->SetTitleOffset(1.15);
+  
+  
+  TGraph2D* gr_track = track.Get2DGraph(-5., 165.);
+  gr_track->SetName(Form("g2D_%d",g_2Dcount++));
+  gr_track->SetTitle("");
+  gr_track->Draw("LINE same");
+
+  TGraph2D* gr_trackhits = geo.Get2DGraph(track);
+  gr_trackhits->SetName(Form("g2D_%d",g_2Dcount++));
+  gr_trackhits->SetTitle("");
+  gr_trackhits->Draw("P same");
+
+  vector<TGraph2D*> gr_planes;
+  int Nplane = geo.GetNPlanes();
+  for(int i = 0; i < Nplane; i++){
+    gr_planes.push_back(geo[i].Get2DGraph());
+    gr_planes[i]->SetName(Form("g2D_%d",g_2Dcount++));
+    gr_planes[i]->SetTitle("");
+    gr_planes[i]->Draw("LINE same");
+  }
+
+  vector<TGraph2D*> gr_clus;
+  if(clusters){
+    int Nclus = clusters->GetNCluster();
+    for(int i = 0; i < Nclus; i++){
+      int index = geo.Index(clusters->Get(i).MMFE8());
+      if(index < 0)
+	continue;
+      TGraph2D* gr = geo[index].GetChannelGraph(clusters->Get(i).Channel());
+      gr_clus.push_back(gr);
+      gr->SetName(Form("g2D_%d",g_2Dcount++));
+      gr->SetTitle("");
+      gr->Draw("LINE same");
+    }
+  }
+  
   
   return c1;
 }

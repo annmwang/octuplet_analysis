@@ -38,7 +38,8 @@ public:
 
   TGraph* GetXZGraph(const MMClusterList& clusters) const;
   TGraphErrors* GetXZGraphErrors(const MMClusterList& clusters) const;
-  TGraph* GetXZGraph(const MMTrack& track) const;
+  TGraph*   GetXZGraph(const MMTrack& track) const;
+  TGraph2D* Get2DGraph(const MMTrack& track) const;
 
 private:
   void Init();
@@ -339,6 +340,38 @@ inline TGraph* GeoOctuplet::GetXZGraph(const MMTrack& track) const {
   return gr;
 }
 
+inline TGraph2D* GeoOctuplet::Get2DGraph(const MMTrack& track) const {
+  std::vector<double> vx;
+  std::vector<double> vy;
+  std::vector<double> vz;
+
+  TVector3 p;
+  
+  int Nplane = GetNPlanes();
+  for(int i = 0; i < Nplane; i++){
+    GeoPlane& plane = *m_planes[i];
+    p = plane.Intersection(track);  
+    vx.push_back(p.X());
+    vy.push_back(p.Y());
+    vz.push_back(p.Z());
+  }
+
+  int N = vx.size();
+  double x[N];
+  double y[N];
+  double z[N];
+  for(int i = 0; i < N; i++){
+    x[i] = vx[i];
+    y[i] = vy[i];
+    z[i] = vz[i];
+  }
+  TGraph2D* gr = new TGraph2D(N,x,y,z);
+  gr->SetLineColor(kRed+2);
+  gr->SetMarkerSize(1);
+  gr->SetMarkerColor(kRed+2);
+  gr->SetLineWidth(2);
+  return gr;
+}
 
 #endif
 

@@ -13,6 +13,7 @@
 
 #include "TVector3.h"
 #include "TGraph.h"
+#include "TGraph2D.h"
 
 class MMTrack {
 
@@ -35,7 +36,8 @@ public:
   void SetSlopeX(double SX);
   void SetSlopeY(double SY);
   
-  TGraph* GetXZGraph(double zmin, double zmax) const;
+  TGraph*   GetXZGraph(double zmin, double zmax) const;
+  TGraph2D* Get2DGraph(double zmin, double zmax) const;
 
 private:
   double m_CX;
@@ -138,6 +140,23 @@ inline TGraph* MMTrack::GetXZGraph(double zmin, double zmax) const {
   z[1] = zmax;
 
   TGraph* gr = new TGraph(2,x,z);
+  gr->SetLineColor(kRed+2);
+  gr->SetMarkerSize(0.);
+  gr->SetMarkerColor(kRed+2);
+  gr->SetLineWidth(2);
+  return gr;
+}
+
+inline TGraph2D* MMTrack::Get2DGraph(double zmin, double zmax) const {
+  double x[2], y[2], z[2];
+  x[0] = m_CX + m_SX*zmin;
+  x[1] = m_CX + m_SX*zmax;
+  y[0] = m_CY + m_SY*zmin;
+  y[1] = m_CY + m_SY*zmax;
+  z[0] = zmin;
+  z[1] = zmax;
+
+  TGraph2D* gr = new TGraph2D(2,x,y,z);
   gr->SetLineColor(kRed+2);
   gr->SetMarkerSize(0.);
   gr->SetMarkerColor(kRed+2);
