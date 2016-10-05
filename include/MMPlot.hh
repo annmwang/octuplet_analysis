@@ -91,10 +91,10 @@ void MMPlot(){
  double zcolor_g[5] = { 0.00, 0.61, 0.82, 0.70, 1.00 };
  double zcolor_b[5] = { 0.31, 0.73, 0.08, 0.00, 1.00 };
 
- //TColor::CreateGradientColorTable(5, zcolor_s, zcolor_r,
- //				  zcolor_g, zcolor_b, NZPalette);
+ TColor::CreateGradientColorTable(5, zcolor_s, zcolor_r,
+ 				  zcolor_g, zcolor_b, NZPalette);
 
-  gStyle->cd();
+ gStyle->cd();
 }
 
 const TColor blue0(7000,0.749,0.78,0.933);
@@ -188,7 +188,7 @@ TCanvas* Plot_Graph(string scan, TGraph* graph, string X, string Y, string title
   l.DrawLatex(0.5,0.94,title.c_str());
   l.SetTextSize(0.045);
   l.SetTextFont(42);
-  l.DrawLatex(0.02,0.94,"#bf{#it{ATLAS}} Internal - MMFE8+VMM2");
+  l.DrawLatex(0.02,0.94,"#bf{#it{ATLAS}} Internal - MM Octuplet");
 
   TF1* func = (TF1*) graph->GetListOfFunctions()->First();
   if(func){
@@ -236,7 +236,7 @@ TCanvas* Plot_2D(string scan, TH2D* histo, string X, string Y, string Z, string 
   l.DrawLatex(0.5,0.94,title.c_str());
   l.SetTextSize(0.045);
   l.SetTextFont(42);
-  l.DrawLatex(0.02,0.94,"#bf{#it{ATLAS}} Internal - MMFE8+VMM2");
+  l.DrawLatex(0.02,0.94,"#bf{#it{ATLAS}} Internal - MM Octuplet");
 	
   return c1;
 }
@@ -271,7 +271,7 @@ TCanvas* Plot_1D(string can, TH1D* hist, string X, string Y, string title = ""){
   l.DrawLatex(0.5,0.94,title.c_str());
   l.SetTextSize(0.045);
   l.SetTextFont(42);
-  l.DrawLatex(0.02,0.94,"#bf{#it{ATLAS}} Internal - MMFE8+VMM2");
+  l.DrawLatex(0.02,0.94,"#bf{#it{ATLAS}} Internal - MM Octuplet");
 
   TF1* func = (TF1*) hist->GetListOfFunctions()->First();
   if(func){
@@ -363,7 +363,7 @@ TCanvas* Plot_1D(string can, vector<TH1D*>& histo, string X, string Y,
   l.DrawLatex(0.5,0.94,title.c_str());
   l.SetTextSize(0.045);
   l.SetTextFont(42);
-  l.DrawLatex(0.02,0.94,"#bf{#it{ATLAS}} Internal - MMFE8+VMM2");
+  l.DrawLatex(0.02,0.94,"#bf{#it{ATLAS}} Internal - MM Octuplet");
 
   return c1;
 }
@@ -466,22 +466,6 @@ TCanvas* Plot_Track3D(string can, const MMTrack& track, const GeoOctuplet& geo,
   y[2] = -5.;
   z[2] = 165.;
 
-  /*
-  TGraph2D* gr_frame = new TGraph2D(3,x,y,z);
-  gr_frame->SetName(Form("g2D_%d",g_2Dcount++));
-  gr_frame->SetTitle("");
-  gr_frame->SetMarkerSize(0);
-  gr_frame->Draw("P");
-  gr_frame->GetXaxis()->SetRangeUser(-15.,215.);
-  gr_frame->GetYaxis()->SetRangeUser(-5.,225.);
-  gr_frame->GetZaxis()->SetRangeUser(-5.,165.);
-  gr_frame->GetXaxis()->SetTitle("x position [mm]");
-  gr_frame->GetXaxis()->CenterTitle();
-  gr_frame->GetZaxis()->SetTitle("z position [mm]");
-  gr_frame->GetZaxis()->CenterTitle();
-  gr_frame->GetZaxis()->SetTitleOffset(1.15);
-  */
-
   TH2D* h_frame = new TH2D(Form("h2D_%d",g_2Dcount++),"",
 			   2, -15., 215.,
 			   2,-5.,225.);
@@ -547,81 +531,205 @@ TCanvas* Plot_Track3D(string can, const MMTrack& track, const GeoOctuplet& geo,
   return c1;
 }
 
-TCanvas* Plot_Octuplet1D(string can, vector<TH1D*>& histo, string X, string Y,
-			 vector<int>& iboard, string title = ""){
-  TCanvas *c1 = new TCanvas(can.c_str(),can.c_str(),700,500);
-  c1->SetRightMargin(0.05);
+TCanvas* Plot_Octuplet(string can, vector<TH1D*>& histo, string X, string Y,
+		       vector<int>& iboard, string title = "", bool log_scale = false){
+  TCanvas *c1 = new TCanvas(can.c_str(),can.c_str(),600,900);
+  c1->SetRightMargin(0.0);
+  c1->SetLeftMargin(0.0);
+  c1->SetTopMargin(0.0);
+  c1->SetBottomMargin(0.0);
   c1->Draw();
-  c1->Divide(1,8,0.,0.);
-  c1->SetGridx();
-  c1->SetGridy();
+  TPad* pad = new TPad((can+"_pad").c_str(),"",
+		       0.08, 0.06, 0.99, 0.96);
+  pad->SetRightMargin(0.0);
+  pad->SetLeftMargin(0.0);
+  pad->SetTopMargin(0.0);
+  pad->SetBottomMargin(0.0);
+  c1->cd();
+  pad->Draw();		       
+  pad->Divide(1,8,0.,0.);
+  
+  TLatex l;
+  l.SetNDC();
 
   int Nh = histo.size();
   for(int i = 0; i < Nh; i++){
-    TVirtualPad* pad = c1->GetPad(i+1);
-    pad->SetRightMargin(0.0);
-    pad->SetLeftMargin(0.0);
-    pad->SetTopMargin(0.0);
-    pad->SetBottomMargin(0.0);
-    c1->cd(i+1);
+    TVirtualPad* ipad = pad->GetPad(8-i);
+    if(i == 0){
+      TPad* botpad = new TPad((can+"_bpad").c_str(),"",
+			      0.08, 0.03, 0.99, 0.172);
+      ipad = botpad;
+    }
+
+    ipad->SetRightMargin(0.0);
+    ipad->SetLeftMargin(0.08);
+    ipad->SetTopMargin(0.02);
+    ipad->SetBottomMargin(0.02);
+    ipad->SetGridx();
+    ipad->SetGridy();
+    if(log_scale)
+      ipad->SetLogy();
+    ipad->cd();
+
+    histo[i]->GetXaxis()->SetTitleSize(0.);
+    histo[i]->GetXaxis()->SetLabelSize(0.);
+
+    histo[i]->GetYaxis()->SetNdivisions(3,5,0);
+    histo[i]->GetYaxis()->SetTitleSize(0.);
+    histo[i]->GetYaxis()->SetLabelSize(0.20);
+    histo[i]->SetTitle("");
+    histo[i]->SetStats(false);
+
+    if(i == 0){
+      ipad->SetBottomMargin(0.23);
+      c1->cd();
+      ipad->Draw();
+      ipad->cd();
+      
+      histo[i]->GetYaxis()->SetLabelSize(0.14);
+      histo[i]->GetXaxis()->SetLabelSize(0.15);
+    }
+    histo[i]->SetLineWidth(2);
+    histo[i]->SetLineColor(7003);
+    histo[i]->SetFillColor(7000);
+    histo[i]->SetFillStyle(3002);
+    histo[i]->SetMarkerColor(7003);
+    histo[i]->SetMarkerSize(0);
     histo[i]->Draw();
+    
+    if(i == 0){
+      l.SetTextFont(132);
+      l.SetTextSize(0.16);
+      l.DrawLatex(0.83, 0.8, Form("Board %d",iboard[7-i]));
+    } else {
+      l.SetTextFont(132);
+      l.SetTextSize(0.2);
+      l.DrawLatex(0.83, 0.8, Form("Board %d",iboard[7-i]));
+    }
   }
   
- 
+  c1->cd();
 
-  // histo[imax]->Draw();
-  // histo[imax]->GetXaxis()->SetTitle(X.c_str());
-  // histo[imax]->GetXaxis()->SetTitleOffset(1.08);
-  // histo[imax]->GetXaxis()->CenterTitle();
-  // histo[imax]->GetYaxis()->SetTitle(Y.c_str());
-  // histo[imax]->GetYaxis()->SetTitleOffset(1.13);
-  // histo[imax]->GetYaxis()->CenterTitle();
-  // histo[imax]->GetYaxis()->SetRangeUser(0.9*min,1.1*max);
+  l.SetTextFont(132);		
+  l.SetTextSize(0.05);
+  l.SetTextFont(132);
+  l.DrawLatex(0.54,0.97,title.c_str());
+  l.SetTextSize(0.04);
+  l.SetTextFont(42);
+  l.DrawLatex(0.01,0.97,"#bf{#it{ATLAS}} Internal - MM Octuplet");
 
-  // for(int i = 0; i < Nh; i++){
-  //   histo[i]->SetLineColor(7003 + (i%8)*10);
-  //   histo[i]->SetLineWidth(3);
-  //   histo[i]->SetMarkerColor(7003 + (i%8)*10);
-  //   histo[i]->SetMarkerSize(0);
-  //   histo[i]->SetFillColor(7000 + (i%8)*10);
-  //   histo[i]->SetFillStyle(3002);
-  //   histo[i]->Draw("SAME");
-  //   TF1* func = (TF1*) histo[i]->GetListOfFunctions()->First();
-  //   if(func){
-  //     //func->SetLineColorAlpha(kWhite, 0);
-  //     func->SetLineWidth(0);
-  //     func->SetNpx(50000);
-  //     TH1F* hfunc = (TH1F*)func->GetHistogram();
-  //     hfunc->SetLineColor(7002 + ((i+1)%8)*10);
-  //     hfunc->SetLineWidth(3);
-  //     hfunc->Draw("SAME");
-  //   }
-  // }
+  l.SetTextAlign(21);
+  l.SetTextFont(132);
+  l.SetTextSize(0.045);
+  l.DrawLatex(0.59,0.01, X.c_str());
+  l.SetTextAngle(90.);
+  l.DrawLatex(0.05,0.52, Y.c_str());
 
-  // TLegend* leg = new TLegend(0.688,0.22,0.93,0.42);
-  // if(label.size() == histo.size()){
-  //   leg->SetTextFont(132);
-  //   leg->SetTextSize(0.045);
-  //   leg->SetFillColor(kWhite);
-  //   leg->SetLineColor(kWhite);
-  //   leg->SetShadowColor(kWhite);
-  //   for(int i = 0; i < Nh; i++)
-  //     leg->AddEntry(histo[i],label[i].c_str());
-  //   leg->SetLineColor(kWhite);
-  //   leg->SetFillColor(kWhite);
-  //   leg->SetShadowColor(kWhite);
-  //   leg->Draw("SAME");
-  // }
+  return c1;
+}
 
-  // TLatex l;
-  // l.SetTextFont(132);	
-  // l.SetNDC();	
-  // l.SetTextSize(0.05);
-  // l.SetTextFont(132);
-  // l.DrawLatex(0.5,0.94,title.c_str());
-  // l.SetTextSize(0.045);
-  // l.SetTextFont(42);
-  // l.DrawLatex(0.02,0.94,"#bf{#it{ATLAS}} Internal - MMFE8+VMM2");
+TCanvas* Plot_Octuplet(string can, vector<TH2D*>& histo, string X, string Y, string Z,
+		       vector<int>& iboard, string title = "", bool log_scale = false){
+  TCanvas *c1 = new TCanvas(can.c_str(),can.c_str(),600,900);
+  c1->SetRightMargin(0.0);
+  c1->SetLeftMargin(0.0);
+  c1->SetTopMargin(0.0);
+  c1->SetBottomMargin(0.0);
+  c1->Draw();
+  TPad* pad = new TPad((can+"_pad").c_str(),"",
+		       0.08, 0.06, 0.94, 0.96);
+  pad->SetRightMargin(0.0);
+  pad->SetLeftMargin(0.0);
+  pad->SetTopMargin(0.0);
+  pad->SetBottomMargin(0.0);
+  c1->cd();
+  pad->Draw();		       
+  pad->Divide(1,8,0.,0.);
+  
+  TLatex l;
+  l.SetNDC();
+
+  int Nh = histo.size();
+  for(int i = 0; i < Nh; i++){
+    TVirtualPad* ipad = pad->GetPad(8-i);
+    if(i == 0){
+      TPad* botpad = new TPad((can+"_bpad").c_str(),"",
+			      0.08, 0.03, 0.94, 0.172);
+      ipad = botpad;
+    }
+
+    ipad->SetRightMargin(0.14);
+    ipad->SetLeftMargin(0.08);
+    ipad->SetTopMargin(0.02);
+    ipad->SetBottomMargin(0.02);
+    ipad->SetGridx();
+    ipad->SetGridy();
+    if(log_scale)
+      ipad->SetLogz();
+    ipad->cd();
+
+    histo[i]->SetTitle("");
+    histo[i]->SetStats(false);
+
+    histo[i]->GetXaxis()->SetTitleSize(0.);
+    histo[i]->GetXaxis()->SetLabelSize(0.);
+
+    histo[i]->GetYaxis()->SetNdivisions(3,5,0);
+    histo[i]->GetYaxis()->SetTitleSize(0.);
+    histo[i]->GetYaxis()->SetLabelSize(0.20);
+
+    histo[i]->GetZaxis()->SetNdivisions(3,5,0);
+    histo[i]->GetZaxis()->SetTitleSize(0.);
+    histo[i]->GetZaxis()->SetLabelSize(0.20);
+
+    if(i == 0){
+      ipad->SetBottomMargin(0.23);
+      c1->cd();
+      ipad->Draw();
+      ipad->cd();
+      
+      histo[i]->GetZaxis()->SetLabelSize(0.14);
+      histo[i]->GetYaxis()->SetLabelSize(0.14);
+      histo[i]->GetXaxis()->SetLabelSize(0.15);
+    }
+    histo[i]->SetLineWidth(2);
+    histo[i]->SetLineColor(7003);
+    histo[i]->SetFillColor(7000);
+    histo[i]->SetFillStyle(3002);
+    histo[i]->SetMarkerColor(7003);
+    histo[i]->SetMarkerSize(0);
+    histo[i]->Draw("COLZ");
+    
+    if(i == 0){
+      l.SetTextFont(132);
+      l.SetTextSize(0.16);
+      l.DrawLatex(0.68, 0.8, Form("Board %d",iboard[7-i]));
+    } else {
+      l.SetTextFont(132);
+      l.SetTextSize(0.2);
+      l.DrawLatex(0.68, 0.8, Form("Board %d",iboard[7-i]));
+    }
+  }
+  
+  c1->cd();
+
+  l.SetTextFont(132);		
+  l.SetTextSize(0.05);
+  l.SetTextFont(132);
+  l.DrawLatex(0.54,0.97,title.c_str());
+  l.SetTextSize(0.04);
+  l.SetTextFont(42);
+  l.DrawLatex(0.01,0.97,"#bf{#it{ATLAS}} Internal - MM Octuplet");
+
+  l.SetTextAlign(21);
+
+  l.SetTextFont(132);
+  l.SetTextSize(0.045);
+  l.DrawLatex(0.59,0.01, X.c_str());
+  l.SetTextAngle(90.);
+  l.DrawLatex(0.05,0.52, Y.c_str());
+  l.SetTextAngle(90.);
+  l.DrawLatex(0.985,0.52, Z.c_str());
 
   return c1;
 }

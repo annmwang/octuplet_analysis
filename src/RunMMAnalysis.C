@@ -10,6 +10,7 @@
 #include "TH1D.h"
 #include "TH2D.h"
 #include <iostream>
+#include <stdlib.h>
 
 #include "include/MMPlot.hh"
 #include "include/PDOToCharge.hh"
@@ -72,23 +73,7 @@ int main(int argc, char* argv[]){
 
   // board ID's for run 3508
   map<int,int> ib;
-  ib[111] = 0;
-  ib[116] = 1;
-  ib[101] = 2;
-  ib[109] = 3;
-  ib[112] = 4;
-  ib[102] = 5;
-  ib[107] = 6;
-  ib[105] = 7;
   vector<int> iboards;
-  iboards.push_back(111);
-  iboards.push_back(116);
-  iboards.push_back(101);
-  iboards.push_back(109);
-  iboards.push_back(112);
-  iboards.push_back(102);
-  iboards.push_back(107);
-  iboards.push_back(105);
   
   PDOToCharge* PDOCalibrator;
   if(b_pdo)
@@ -161,7 +146,7 @@ int main(int argc, char* argv[]){
   for(int i = 0; i < 8; i++){
     board_hit_PDO.push_back(new TH1D(Form("b_h_PDO_%d",i),
 				     Form("b_h_PDO_%d",i),
-				     1028,0.,1028.));
+				     1024,0.,1028.));
     board_hit_CH.push_back(new TH1D(Form("b_h_CH_%d",i),
 				    Form("b_h_CH_%d",i),
 				    512,0.5,512.5));
@@ -171,7 +156,7 @@ int main(int argc, char* argv[]){
     board_hit_PDO_v_CH.push_back(new TH2D(Form("b_h_PDOvCH_%d",i),
 					  Form("b_h_PDOvCH_%d",i),
 					  512,0.5,512.5,
-					  1028,0.,1028.));
+					  128,0.,1028.));
     board_hit_Q_v_CH.push_back(new TH2D(Form("b_h_QvCH_%d",i),
 					Form("b_h_QvCH_%d",i),
 					512,0.5,512.5,
@@ -179,7 +164,7 @@ int main(int argc, char* argv[]){
     
     board_duphit_PDO.push_back(new TH1D(Form("b_dh_PDO_%d",i),
 					Form("b_dh_PDO_%d",i),
-					1028,0.0,1028));;
+					1024,.0,1028));;
     board_duphit_NCH.push_back(new TH1D(Form("b_dh_NCH_%d",i),
 					Form("b_dh_NCH_%d",i),
 					512,0.5,512.5));;
@@ -236,7 +221,7 @@ int main(int argc, char* argv[]){
     board_clus_Q_v_CH.push_back(new TH2D(Form("b_c_QvCH_%d",i),
 					 Form("b_c_QvCH_%d",i),
 					 512,0.5,512.5,
-					 128,0.,128.));
+					 128,0.,250.));
     board_clusN_Q_v_CH.push_back(new TH2D(Form("b_cN_QvCH_%d",i),
 					  Form("b_cN_QvCH_%d",i),
 					  512,0.5,512.5,
@@ -258,6 +243,7 @@ int main(int argc, char* argv[]){
   }
   
   TFile* fout = new TFile(outputFileName, "RECREATE");
+  fout->mkdir("event_displays");
   MMPlot();
 
   for(int evt = 0; evt < Nevent; evt++){
@@ -265,8 +251,13 @@ int main(int argc, char* argv[]){
     if(evt%10000 == 0)
       cout << "Processing event # " << evt << " | " << Nevent << endl;
 
-    if(GEOMETRY->RunNumber() < 0)
+    if(GEOMETRY->RunNumber() < 0){
       GEOMETRY->SetRunNumber(DATA->RunNum);
+
+      iboards = GEOMETRY->MMFE8list();
+      for(int i = 0; i < iboards.size(); i++)
+	ib[iboards[i]] = i;
+    }
 
     if(!DATA->sc_EventHits.IsGoodEvent())
       continue;
@@ -360,34 +351,150 @@ int main(int argc, char* argv[]){
 
     if(fit_clusters.GetNCluster() < 8)
       continue;
-
+ 
     MMTrack track = FITTER->Fit(fit_clusters, *GEOMETRY);
 
     TCanvas* can = Plot_Track2D(Form("track2D_%d",DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters); 
-    fout->cd();
+    fout->cd("event_displays");
     can->Write();
     delete can;
     
     TCanvas* canY = Plot_Track2DY(Form("track2DY_%d",DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters); 
-    fout->cd();
+    fout->cd("event_displays");
     canY->Write();
     delete canY;
     
     TCanvas* can3D = Plot_Track3D(Form("track3D_%d",DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters); 
-    fout->cd();
+    fout->cd("event_displays");
     can3D->Write();
     delete can3D;
   }
 
   fout->cd();
+  fout->mkdir("plots");
+  fout->cd("plots");
   
+  string title = "               Run "+string(Form("%d",DATA->RunNum));
   TCanvas* can;
-  can = Plot_Octuplet1D("test", board_hit_PDO, "PDO", "Number of hits",
-			iboards, "Title");
+
+  can = Plot_Octuplet("c_board_PDO", board_hit_PDO, "PDO [counts]", "Number of hits",
+		      iboards, title, true);
   can->Write();
   delete can;
+  can = Plot_Octuplet("c_board_CH", board_hit_CH, "Channel", "Number of hits",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_Q", board_hit_Q, "PDO [fC]", "Number of hits",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_PDO_v_CH", board_hit_PDO_v_CH, "Channel", "PDO [counts]", "Number of hits",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_Q_v_CH", board_hit_Q_v_CH, "Channel", "PDO [fC]", "Number of hits",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_duphit_PDO", board_duphit_PDO, "PDO [counts]", "Number of duplicate hits",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_duphit_NCH", board_duphit_NCH, "Channel", "Number of duplicate hits",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_duphit_CH", board_duphit_CH, "Channel", "Number of events with duplicate hit",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_duphit_Q", board_duphit_Q, "PDO [counts]", "Number of duplicate hits",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_duphit_PDO_v_CH", board_duphit_PDO_v_CH, "Channel", "PDO [counts]", "Number of duplicate hits",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_duphit_Q_v_CH", board_duphit_Q_v_CH, "Channel", "PDO [fC]", "Number of duplicate hits",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_NHit", board_NHit, "Number of Hits", "Number of events",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_Ndup", board_Ndup, "Number of channels with duplicate hits", "Number of events",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_Nclus", board_Nclus, "Number of clusters", "Number of events",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_Nclusdup", board_Nclusdup, "Number of clusters with duplicates", "Number of events",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clus_CH", board_clus_CH, "Channel", "Number of clusters",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clus_Q", board_clus_Q, "Charge [fC]", "Number of clusters",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clusN_CH", board_clusN_CH, "Channel", "Number of clusters",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clusN_Q", board_clusN_Q, "Charge [fC]", "Number of clusters",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clus_NHit", board_clus_NHit, "Number of hits", "Number of clusters",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clus_Ndup", board_clus_Ndup, "Number of duplicate hits", "Number of clusters",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clusN_Ndup", board_clusN_Ndup, "Number of duplicate hits", "Number of clusters",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clus_Q_v_CH", board_clus_Q_v_CH, "Channel", "Charge [fC]", "Number of clusters",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clusN_Q_v_CH", board_clusN_Q_v_CH, "Channel", "Charge [fC]", "Number of clusters",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clusdup_CH", board_clusdup_CH, "Channel", "Number of clusters",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clusdup_Q", board_clusdup_Q, "Charge [fC]", "Number of clusters",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clusdup_NHit", board_clusdup_NHit, "Number of hits", "Number of clusters",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_clusdup_Q_v_CH", board_clusdup_Q_v_CH, "Channel", "Charge [fC]", "Number of clusters",
+		      iboards, title);
+  can->Write();
+  delete can;
+ 
   
+  fout->cd();
+  fout->mkdir("histograms");
   for(int i = 0; i < 8; i++){
+    fout->cd("histograms");
     board_hit_PDO[i]->Write();
     board_hit_CH[i]->Write();
     board_hit_Q[i]->Write();

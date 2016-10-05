@@ -32,6 +32,8 @@ public:
 
   int Index(int mmfe8) const;
   int MMFE8(int index) const;
+
+  std::vector<int> MMFE8list() const;
   
   int RunNumber() const;
   void SetRunNumber(int RunNumber);
@@ -168,13 +170,21 @@ inline int GeoOctuplet::MMFE8(int index) const {
   return m_Index2MMFE8[index];
 }
 
+inline std::vector<int> GeoOctuplet::MMFE8list() const {
+  int N = m_Index2MMFE8.size();
+  std::vector<int> ret;
+  for(int i = 0; i < N; i++)
+    ret.push_back(m_Index2MMFE8[i]);
+  return ret;
+}
+
 inline int GeoOctuplet::RunNumber() const {
   return m_RunNum;
 }
 
 inline void GeoOctuplet::SetRunNumber(int RunNumber) {
 
-  if(RunNumber == 3505){
+  if(RunNumber >= 3504 && RunNumber <= 3506){
     m_MMFE82Index.clear(); 
     m_MMFE82Index[110] = 0;
     m_MMFE82Index[109] = 1;
@@ -198,7 +208,7 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
     m_RunNum = RunNumber;
   }
 
-  if(RunNumber == 3508){
+  if(RunNumber >= 3507 && RunNumber <= 3512){
     m_MMFE82Index.clear(); 
     m_MMFE82Index[111] = 0;
     m_MMFE82Index[116] = 1;
@@ -215,6 +225,30 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
     m_Index2MMFE8[2] = 101;
     m_Index2MMFE8[3] = 109;
     m_Index2MMFE8[4] = 112;
+    m_Index2MMFE8[5] = 102;
+    m_Index2MMFE8[6] = 107;
+    m_Index2MMFE8[7] = 105;
+
+    m_RunNum = RunNumber;
+  }
+
+  if(RunNumber >= 3513){
+    m_MMFE82Index.clear(); 
+    m_MMFE82Index[111] = 0;
+    m_MMFE82Index[116] = 1;
+    m_MMFE82Index[101] = 2;
+    m_MMFE82Index[109] = 3;
+    m_MMFE82Index[117] = 4;
+    m_MMFE82Index[102] = 5;
+    m_MMFE82Index[107] = 6;
+    m_MMFE82Index[105] = 7;
+
+    m_Index2MMFE8.clear();
+    m_Index2MMFE8[0] = 111;
+    m_Index2MMFE8[1] = 116;
+    m_Index2MMFE8[2] = 101;
+    m_Index2MMFE8[3] = 109;
+    m_Index2MMFE8[4] = 117;
     m_Index2MMFE8[5] = 102;
     m_Index2MMFE8[6] = 107;
     m_Index2MMFE8[7] = 105;

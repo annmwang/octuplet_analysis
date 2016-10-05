@@ -34,7 +34,7 @@ void Hollywood(string filename, string canname){
   }
   //can->Print("hollywood.gif++");
 
-  gSystem->Exec("gifsicle --delay=10 --loop=2 --colors 256 hollywood/h*.gif > hollywood.gif");
+  gSystem->Exec("gifsicle --delay=10 --loop=5 --colors 256 hollywood/h*.gif > hollywood.gif");
   gSystem->Exec("rm -rf hollywood");
   
   delete can;

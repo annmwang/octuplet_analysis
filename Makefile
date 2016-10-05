@@ -17,7 +17,7 @@ CC_FILES := $(wildcard src/*.C)
 HH_FILES := $(wildcard include/*.hh)
 OBJ_FILES := $(addprefix $(OUTOBJ),$(notdir $(CC_FILES:.C=.o)))
 
-all: octuplet.x RunMMAnalysisTemplate.x
+all: octuplet.x RunMMAnalysisTemplate.x RunMMAnalysis.x
 
 octuplet.x:  $(SRCDIR)octuplet_ana.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o octuplet.x $(GLIBS) $ $<
@@ -26,6 +26,10 @@ octuplet.x:  $(SRCDIR)octuplet_ana.C $(HH_FILES)
 RunMMAnalysisTemplate.x:  $(SRCDIR)RunMMAnalysisTemplate.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o RunMMAnalysisTemplate.x $(GLIBS) $ $<
 	touch RunMMAnalysisTemplate.x
+
+RunMMAnalysis.x:  $(SRCDIR)RunMMAnalysis.C $(HH_FILES)
+	$(CXX) $(CXXFLAGS) -o RunMMAnalysis.x $(GLIBS) $ $<
+	touch RunMMAnalysis.x
 clean:
 	rm -f $(OUTOBJ)*.o
 	rm -f *.x

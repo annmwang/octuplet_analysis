@@ -1,4 +1,9 @@
 *.dSYM
 octuplet.x
 RunMMAnalysisTemplate.x
+*.x
 AutoDict*
+*.d
+*.so
+*.root
+.DS_Store
