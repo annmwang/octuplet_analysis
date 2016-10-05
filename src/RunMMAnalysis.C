@@ -402,14 +402,14 @@ int main(int argc, char* argv[]){
   can->Write();
   delete can;
   can = Plot_Octuplet("c_duphit_NCH", board_duphit_NCH, "Channel", "Number of duplicate hits",
-		      iboards, title);
+		      iboards, title, true);
   can->Write();
   delete can;
   can = Plot_Octuplet("c_duphit_CH", board_duphit_CH, "Channel", "Number of events with duplicate hit",
-		      iboards, title);
+		      iboards, title, true);
   can->Write();
   delete can;
-  can = Plot_Octuplet("c_duphit_Q", board_duphit_Q, "PDO [counts]", "Number of duplicate hits",
+  can = Plot_Octuplet("c_duphit_Q", board_duphit_Q, "PDO [fC]", "Number of duplicate hits",
 		      iboards, title);
   can->Write();
   delete can;
@@ -474,7 +474,7 @@ int main(int argc, char* argv[]){
   can->Write();
   delete can;
   can = Plot_Octuplet("c_board_clusdup_CH", board_clusdup_CH, "Channel", "Number of clusters",
-		      iboards, title);
+		      iboards, title, true);
   can->Write();
   delete can;
   can = Plot_Octuplet("c_board_clusdup_Q", board_clusdup_Q, "Charge [fC]", "Number of clusters",
