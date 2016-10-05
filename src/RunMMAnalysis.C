@@ -235,7 +235,7 @@ int main(int argc, char* argv[]){
 				       128,0.0,250));
     board_clusdup_NHit.push_back(new TH1D(Form("b_cd_NHit_%d",i),
 					  Form("b_cd_NHit_%d",i),
-					  128,0.0,128));
+					  15,0.5,15.5));
     board_clusdup_Q_v_CH.push_back(new TH2D(Form("b_cd_QvCH_%d",i),
 					    Form("b_cd_QvCH_%d",i),
 					    512,0.5,512.5,
