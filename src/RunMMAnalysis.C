@@ -1,5 +1,5 @@
 ///
-///  \file   RunMMAnalysisTemplate.C
+///  \file   RunMMAnalysis.C
 ///
 ///  \author Christopher Rogan
 ///          (crogan@cern.ch)
@@ -32,8 +32,8 @@ int main(int argc, char* argv[]){
   if ( argc < 5 ){
     cout << "Error at Input: please specify input/output .root files ";
     cout << " and (optional) PDO/TDO calibration files" << endl;
-    cout << "Example:   ./RunMMAnalysisTemplate.x -i input.root -o output.root" << endl;
-    cout << "Example:   ./RunMMAnalysisTemplate.x -i input.root -o output.root";
+    cout << "Example:   ./RunMMAnalysis.x -i input.root -o output.root" << endl;
+    cout << "Example:   ./RunMMAnalysis.x -i input.root -o output.root";
     cout << " -p PDOcalib.root -t TDOcalib.root" << endl;
     return 0;
   }
@@ -71,7 +71,7 @@ int main(int argc, char* argv[]){
     return 0;
   }
 
-  // board ID's for run 3508
+  // board ID's
   map<int,int> ib;
   vector<int> iboards;
   
