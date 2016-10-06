@@ -109,7 +109,13 @@ int main(int argc, char* argv[]){
 
   int Nevent = DATA->GetNEntries();
 
-  // histograms for analysis
+  // event object counting
+  vector<TH1D*> board_NHit;
+  vector<TH1D*> board_Ndup;
+  vector<TH1D*> board_Nclus;
+  vector<TH1D*> board_Nclusdup;
+
+  // histograms for hit analysis
   vector<TH1D*> board_hit_PDO;
   vector<TH1D*> board_hit_CH;
   vector<TH1D*> board_hit_Q;
@@ -122,12 +128,8 @@ int main(int argc, char* argv[]){
   vector<TH1D*> board_duphit_Q;
   vector<TH2D*> board_duphit_PDO_v_CH;
   vector<TH2D*> board_duphit_Q_v_CH;
-
-  vector<TH1D*> board_NHit;
-  vector<TH1D*> board_Ndup;
-  vector<TH1D*> board_Nclus;
-  vector<TH1D*> board_Nclusdup;
   
+  // histograms for cluster analysis
   vector<TH1D*> board_clus_CH;
   vector<TH1D*> board_clus_Q;
   vector<TH1D*> board_clusN_CH;
@@ -142,6 +144,12 @@ int main(int argc, char* argv[]){
   vector<TH1D*> board_clusdup_Q;
   vector<TH1D*> board_clusdup_NHit;
   vector<TH2D*> board_clusdup_Q_v_CH;
+
+  // histograms for track analysis
+  vector<TH1D*> board_itrack_resX;
+  vector<TH1D*> board_otrack_resX;
+  vector<TH2D*> board_itrack_resX_v_CH;
+  vector<TH2D*> board_otrack_resX_v_CH;
 
   for(int i = 0; i < 8; i++){
     board_hit_PDO.push_back(new TH1D(Form("b_h_PDO_%d",i),
@@ -240,6 +248,21 @@ int main(int argc, char* argv[]){
 					    Form("b_cd_QvCH_%d",i),
 					    512,0.5,512.5,
 					    128,0.,250.));
+
+    board_itrack_resX.push_back(new TH1D(Form("b_it_resX_%d",i),
+					 Form("b_it_resX_%d",i),
+					 1001,-5.,5.));
+    board_otrack_resX.push_back(new TH1D(Form("b_ot_resX_%d",i),
+					 Form("b_ot_resX_%d",i),
+					 1001,-5.,5.));
+    board_itrack_resX_v_CH.push_back(new TH2D(Form("b_it_resXvCH_%d",i),
+					      Form("b_it_resXvCH_%d",i),
+					      512,0.5,512.5,
+					      201,-5.,5.));
+    board_otrack_resX_v_CH.push_back(new TH2D(Form("b_ot_resXvCH_%d",i),
+					      Form("b_ot_resXvCH_%d",i),
+					      512,0.5,512.5,
+					      201,-5.,5.));
   }
   
   TFile* fout = new TFile(outputFileName, "RECREATE");
@@ -349,25 +372,85 @@ int main(int argc, char* argv[]){
 	fit_clusters.AddCluster(all_clusters[i][0]);
     }
 
-    if(fit_clusters.GetNCluster() < 8)
+    int Nclus_all = fit_clusters.GetNCluster();
+    if(Nclus_all < 6)
       continue;
  
-    MMTrack track = FITTER->Fit(fit_clusters, *GEOMETRY);
+    MMTrack track_all = FITTER->Fit(fit_clusters, *GEOMETRY);
 
-    TCanvas* can = Plot_Track2D(Form("track2D_%d",DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters); 
+    for(int c = 0; c < Nclus_all; c++){
+      const MMCluster& clus = fit_clusters[c];
+      int b = ib[clus.MMFE8()];
+      // fill on-track residuals
+      board_itrack_resX[b]->Fill(GEOMETRY->GetResidualX(clus, track_all));
+      board_itrack_resX_v_CH[b]->Fill(clus.Channel(), GEOMETRY->GetResidualX(clus, track_all));
+      // new cluster list without this cluster
+      MMClusterList clus_list;
+      for(int o = 0; o < Nclus_all; o++)
+	if(o != c)
+	  clus_list.AddCluster(fit_clusters[o]);
+	
+      MMTrack track = FITTER->Fit(clus_list, *GEOMETRY);
+
+      board_otrack_resX[b]->Fill(GEOMETRY->GetResidualX(clus, track));
+      board_otrack_resX_v_CH[b]->Fill(clus.Channel(), GEOMETRY->GetResidualX(clus, track));
+    }
+
+    if(Nclus_all < 8)
+      continue;
+
+    TCanvas* can = Plot_Track2D(Form("track2D_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &fit_clusters); 
     fout->cd("event_displays");
     can->Write();
     delete can;
     
-    TCanvas* canY = Plot_Track2DY(Form("track2DY_%d",DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters); 
+    TCanvas* canY = Plot_Track2DY(Form("track2DY_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &fit_clusters); 
     fout->cd("event_displays");
     canY->Write();
     delete canY;
     
-    TCanvas* can3D = Plot_Track3D(Form("track3D_%d",DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters); 
+    TCanvas* can3D = Plot_Track3D(Form("track3D_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &fit_clusters); 
     fout->cd("event_displays");
     can3D->Write();
     delete can3D;
+  }
+
+  fout->cd();
+  fout->mkdir("histograms");
+  for(int i = 0; i < 8; i++){
+    fout->cd("histograms");
+    board_hit_PDO[i]->Write();
+    board_hit_CH[i]->Write();
+    board_hit_Q[i]->Write();
+    board_hit_PDO_v_CH[i]->Write();
+    board_hit_Q_v_CH[i]->Write();
+    board_duphit_PDO[i]->Write();
+    board_duphit_NCH[i]->Write();
+    board_duphit_CH[i]->Write();
+    board_duphit_Q[i]->Write();
+    board_duphit_PDO_v_CH[i]->Write();
+    board_duphit_Q_v_CH[i]->Write();
+    board_NHit[i]->Write();
+    board_Ndup[i]->Write();
+    board_Nclus[i]->Write();
+    board_Nclusdup[i]->Write();
+    board_clus_CH[i]->Write();
+    board_clus_Q[i]->Write();
+    board_clusN_CH[i]->Write();
+    board_clusN_Q[i]->Write();
+    board_clus_NHit[i]->Write();
+    board_clus_Ndup[i]->Write();
+    board_clusN_Ndup[i]->Write();
+    board_clus_Q_v_CH[i]->Write();
+    board_clusN_Q_v_CH[i]->Write();
+    board_clusdup_CH[i]->Write();
+    board_clusdup_Q[i]->Write();
+    board_clusdup_NHit[i]->Write();
+    board_clusdup_Q_v_CH[i]->Write();
+    board_itrack_resX[i]->Write();;
+    board_otrack_resX[i]->Write();;
+    board_itrack_resX_v_CH[i]->Write();;
+    board_otrack_resX_v_CH[i]->Write();;
   }
 
   fout->cd();
@@ -490,40 +573,23 @@ int main(int argc, char* argv[]){
   can->Write();
   delete can;
  
-  
-  fout->cd();
-  fout->mkdir("histograms");
-  for(int i = 0; i < 8; i++){
-    fout->cd("histograms");
-    board_hit_PDO[i]->Write();
-    board_hit_CH[i]->Write();
-    board_hit_Q[i]->Write();
-    board_hit_PDO_v_CH[i]->Write();
-    board_hit_Q_v_CH[i]->Write();
-    board_duphit_PDO[i]->Write();
-    board_duphit_NCH[i]->Write();
-    board_duphit_CH[i]->Write();
-    board_duphit_Q[i]->Write();
-    board_duphit_PDO_v_CH[i]->Write();
-    board_duphit_Q_v_CH[i]->Write();
-    board_NHit[i]->Write();
-    board_Ndup[i]->Write();
-    board_Nclus[i]->Write();
-    board_Nclusdup[i]->Write();
-    board_clus_CH[i]->Write();
-    board_clus_Q[i]->Write();
-    board_clusN_CH[i]->Write();
-    board_clusN_Q[i]->Write();
-    board_clus_NHit[i]->Write();
-    board_clus_Ndup[i]->Write();
-    board_clusN_Ndup[i]->Write();
-    board_clus_Q_v_CH[i]->Write();
-    board_clusN_Q_v_CH[i]->Write();
-    board_clusdup_CH[i]->Write();
-    board_clusdup_Q[i]->Write();
-    board_clusdup_NHit[i]->Write();
-    board_clusdup_Q_v_CH[i]->Write();
-  }
+  can = Plot_Octuplet("c_board_itrack_resX", board_itrack_resX, "X residual [mm]", "Number of clusters",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_otrack_resX", board_otrack_resX, "X residual [mm]", "Number of clusters",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_itrack_resX_v_CH", board_itrack_resX_v_CH, "Channel", "X residual [mm]", "Number of clusters",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_otrack_resX_v_CH", board_otrack_resX_v_CH, "Channel", "X residual [mm]", "Number of clusters",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+
   fout->Close();
     
 }

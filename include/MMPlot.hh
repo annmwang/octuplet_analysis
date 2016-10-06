@@ -658,7 +658,7 @@ TCanvas* Plot_Octuplet(string can, vector<TH2D*>& histo, string X, string Y, str
       ipad = botpad;
     }
 
-    ipad->SetRightMargin(0.14);
+    ipad->SetRightMargin(0.16);
     ipad->SetLeftMargin(0.08);
     ipad->SetTopMargin(0.02);
     ipad->SetBottomMargin(0.02);
@@ -725,7 +725,7 @@ TCanvas* Plot_Octuplet(string can, vector<TH2D*>& histo, string X, string Y, str
 
   l.SetTextFont(132);
   l.SetTextSize(0.045);
-  l.DrawLatex(0.59,0.01, X.c_str());
+  l.DrawLatex(0.47,0.01, X.c_str());
   l.SetTextAngle(90.);
   l.DrawLatex(0.05,0.52, Y.c_str());
   l.SetTextAngle(90.);

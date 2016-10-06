@@ -38,6 +38,9 @@ public:
   int RunNumber() const;
   void SetRunNumber(int RunNumber);
 
+  double GetResidualX(const MMCluster& clus,
+		      const MMTrack& track);
+
   TGraph* GetXZGraph(const MMClusterList& clusters) const;
   TGraphErrors* GetXZGraphErrors(const MMClusterList& clusters) const;
   TGraph*   GetXZGraph(const MMTrack& track) const;
@@ -255,6 +258,15 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
 
     m_RunNum = RunNumber;
   }
+}
+
+inline double GeoOctuplet::GetResidualX(const MMCluster& clus,
+					const MMTrack& track){
+  int iplane = Index(clus.MMFE8());
+  if(iplane < 0)
+    return 0.;
+
+  return m_planes[iplane]->GetResidualX(clus.Channel(), track);
 }
 
 inline TGraph* GeoOctuplet::GetXZGraph(const MMClusterList& clusters) const {

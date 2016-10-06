@@ -35,7 +35,6 @@ public:
 		      double zlocal = 0.) const;
   double LocalXatYbegin(double channel) const;
   double LocalXatYend(double channel) const;
-  
 
   TVector3 Intersection(const MMTrack& track,
 			double zlocal = 0.) const;
@@ -44,9 +43,20 @@ public:
   void SetStripAlpha(double alpha);
   void SetSignChannel(int sign);
 
+  double GetResidualX(double channel,
+		      const MMTrack& track);
+
   TGraph*   GetXZGraph() const;
   TGraph2D* Get2DGraph() const;
   TGraph2D* GetChannelGraph(double channel) const;
+
+  void TranslateX(double x);
+  void TranslateY(double y);
+  void TranslateZ(double z);
+
+  void RotateX(double phix);
+  void RotateY(double phiy);
+  void RotateZ(double phiz);
   
 private:
   TVector3 m_Origin;
@@ -105,23 +115,23 @@ inline int GeoPlane::SignChannel() const {
   return m_SignChannel;
 }
 
-double GeoPlane::LocalXatYbegin(const MMTrack& track,
-				double zlocal) const {
+inline double GeoPlane::LocalXatYbegin(const MMTrack& track,
+				       double zlocal) const {
   TVector3 p = Intersection(track, zlocal) - 
     (m_Origin+zlocal*m_nZ.Unit());
   double x = p.Dot(m_nX.Unit());
   double y = p.Dot(m_nY.Unit());
-
+  
   double dx = tan(m_Alpha)*(y+100.);
 
   return x+dx;
 }
 
-double GeoPlane::LocalXatYbegin(double channel) const {
+inline double GeoPlane::LocalXatYbegin(double channel) const {
   return m_SignChannel*(channel-256.5)*0.4 + tan(m_Alpha)*200.;
 }
 
-double GeoPlane::LocalXatYend(const MMTrack& track,
+inline double GeoPlane::LocalXatYend(const MMTrack& track,
 			      double zlocal) const {
   TVector3 p = Intersection(track, zlocal) - 
     (m_Origin+zlocal*m_nZ.Unit());
@@ -133,8 +143,13 @@ double GeoPlane::LocalXatYend(const MMTrack& track,
   return x+dx;
 }
 
-double GeoPlane::LocalXatYend(double channel) const {
+inline double GeoPlane::LocalXatYend(double channel) const {
   return m_SignChannel*(channel-256.5)*0.4;
+}
+
+inline double GeoPlane::GetResidualX(double channel,
+			      const MMTrack& track){
+  return LocalXatYend(track) - LocalXatYend(channel);
 }
 
 inline TVector3 GeoPlane::Intersection(const MMTrack& track, 
@@ -316,6 +331,45 @@ inline TGraph2D* GeoPlane::GetChannelGraph(double channel) const {
   gr->SetMarkerColor(kBlack);
   gr->SetLineWidth(2);
   return gr;
+}
+
+inline void GeoPlane::TranslateX(double x){
+  m_Origin.SetX(m_Origin.X()+x);
+}
+
+inline void GeoPlane::TranslateY(double y){
+  m_Origin.SetY(m_Origin.Y()+y);
+}
+
+inline void GeoPlane::TranslateZ(double z){
+  m_Origin.SetZ(m_Origin.Z()+z);
+}
+
+inline void GeoPlane::RotateX(double phix){
+  m_nX.RotateX(phix);
+  m_nY.RotateX(phix);
+  m_nZ.RotateX(phix);
+  m_nX = m_nX.Unit();
+  m_nY = m_nY.Unit();
+  m_nZ = m_nZ.Unit();
+}
+
+inline void GeoPlane::RotateY(double phiy){
+  m_nX.RotateY(phiy);
+  m_nY.RotateY(phiy);
+  m_nZ.RotateY(phiy);
+  m_nX = m_nX.Unit();
+  m_nY = m_nY.Unit();
+  m_nZ = m_nZ.Unit();
+}
+
+inline void GeoPlane::RotateZ(double phiz){
+  m_nX.RotateZ(phiz);
+  m_nY.RotateZ(phiz);
+  m_nZ.RotateZ(phiz);
+  m_nX = m_nX.Unit();
+  m_nY = m_nY.Unit();
+  m_nZ = m_nZ.Unit();
 }
 
 #endif
