@@ -49,8 +49,8 @@ int main(int argc, char* argv[]){
     cout << "   --tranY : consider translations in Y" << endl;
     cout << "   --tranZ : consider translations in Z" << endl;
     cout << "   --rotX : consider translations around X axis" << endl;
-    cout << "   --rotY : consider translations around X axis" << endl;
-    cout << "   --rotZ : consider translations around X axis" << endl;
+    cout << "   --rotY : consider translations around Y axis" << endl;
+    cout << "   --rotZ : consider translations around Z axis" << endl;
     return 0;
   }
 
@@ -64,7 +64,7 @@ int main(int argc, char* argv[]){
   g_rotX = false;
   g_rotY = false;
   g_rotZ = false;
-  for (int i=1;i<argc-1;i++){
+  for (int i=1;i<argc;i++){
     if (strncmp(argv[i],"-i",2)==0){
       sscanf(argv[i+1],"%s", inputFileName);
       b_input = true;
