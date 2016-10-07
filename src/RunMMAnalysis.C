@@ -90,6 +90,7 @@ int main(int argc, char* argv[]){
   MMPacmanAlgo* PACMAN = new MMPacmanAlgo();
 
   GeoOctuplet* GEOMETRY = new GeoOctuplet();
+  GEOMETRY->SetAlignment("align_3513.root");
 
   SimpleTrackFitter* FITTER = new SimpleTrackFitter();
 
@@ -105,9 +106,15 @@ int main(int argc, char* argv[]){
     return false;
   }
 
+  int max_EventNum =  T->GetMaximum("mm_EventNum");
+
   DATA = (MMDataAnalysis*) new MMDataAnalysis(T);
 
   int Nevent = DATA->GetNEntries();
+
+  // event num vs. stuff
+  vector<TH2D*> board_PDO_v_EVT;
+  vector<TH2D*> board_Q_v_EVT;
 
   // event object counting
   vector<TH1D*> board_NHit;
@@ -128,6 +135,10 @@ int main(int argc, char* argv[]){
   vector<TH1D*> board_duphit_Q;
   vector<TH2D*> board_duphit_PDO_v_CH;
   vector<TH2D*> board_duphit_Q_v_CH;
+
+  vector<TH1D*> board_duphit_dPDO;
+  vector<TH1D*> board_duphit_dTDO;
+  vector<TH1D*> board_duphit_dBCID;
   
   // histograms for cluster analysis
   vector<TH1D*> board_clus_CH;
@@ -152,6 +163,15 @@ int main(int argc, char* argv[]){
   vector<TH2D*> board_otrack_resX_v_CH;
 
   for(int i = 0; i < 8; i++){
+    board_PDO_v_EVT.push_back(new TH2D(Form("b_PDOvEVT_%d",i),
+				       Form("b_PDOvEVT_%d",i),
+				       1024,0.,max_EventNum,
+				       128,0.,1028.));
+    board_Q_v_EVT.push_back(new TH2D(Form("b_QvEVT_%d",i),
+				       Form("b_QvEVT_%d",i),
+				       1024,0.,max_EventNum,
+				       128,0.,150.));
+
     board_hit_PDO.push_back(new TH1D(Form("b_h_PDO_%d",i),
 				     Form("b_h_PDO_%d",i),
 				     1024,0.,1028.));
@@ -270,8 +290,8 @@ int main(int argc, char* argv[]){
   MMPlot();
 
   for(int evt = 0; evt < Nevent; evt++){
-       DATA->GetEntry(evt);
-    if(evt%10000 == 0)
+    DATA->GetEntry(evt);
+    if(evt%(Nevent/10) == 0) 
       cout << "Processing event # " << evt << " | " << Nevent << endl;
 
     if(GEOMETRY->RunNumber() < 0){
@@ -309,6 +329,9 @@ int main(int argc, char* argv[]){
 	board_hit_PDO_v_CH[b]->Fill(hit.Channel(),hit.PDO());
 	board_hit_Q_v_CH[b]->Fill(hit.Channel(),hit.Charge());
 	  
+	board_PDO_v_EVT[b]->Fill(DATA->mm_EventNum, hit.PDO());
+	board_Q_v_EVT[b]->Fill(DATA->mm_EventNum, hit.Charge());;
+
 	// hit has duplicate
 	int Ndup = hit.GetNHits();
 	if(Ndup > 1){
@@ -423,6 +446,9 @@ int main(int argc, char* argv[]){
   fout->mkdir("histograms");
   for(int i = 0; i < 8; i++){
     fout->cd("histograms");
+    board_PDO_v_EVT[i]->Write();
+    board_Q_v_EVT[i]->Write();
+
     board_hit_PDO[i]->Write();
     board_hit_CH[i]->Write();
     board_hit_Q[i]->Write();
@@ -463,6 +489,15 @@ int main(int argc, char* argv[]){
   
   string title = "               Run "+string(Form("%d",DATA->RunNum));
   TCanvas* can;
+
+  can = Plot_Octuplet("c_board_PDO_v_EVT", board_PDO_v_EVT, "Event Number", "PDO [counts]", "Number of hits",
+		      iboards, title, true);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_Q_v_EVT", board_Q_v_EVT, "Event Number", "PDO [fC]", "Number of hits",
+		      iboards, title, true);
+  can->Write();
+  delete can;
 
   can = Plot_Octuplet("c_board_PDO", board_hit_PDO, "PDO [counts]", "Number of hits",
 		      iboards, title, true);

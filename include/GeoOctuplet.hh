@@ -17,6 +17,7 @@
 
 #include "include/GeoPlane.hh"
 #include "include/MMClusterList.hh"
+#include "include/AlignmentTree.hh"
 
 class GeoOctuplet {
 
@@ -53,6 +54,8 @@ public:
   void RotateX(double phix, int iplane);
   void RotateY(double phiy, int iplane);
   void RotateZ(double phiz, int iplane);
+
+  void SetAlignment(const std::string& align_filename);
 
 private:
   void Init();
@@ -461,6 +464,64 @@ inline void GeoOctuplet::RotateZ(double phiz, int iplane){
   if(iplane < 0 || iplane >= GetNPlanes())
     return;
   m_planes[iplane]->RotateZ(phiz);
+}
+
+inline void GeoOctuplet::SetAlignment(const std::string& align_filename){
+  TFile f(align_filename.c_str(), "READ");
+  if(!f.IsOpen())
+    return;
+  TTree* T = (TTree*) f.Get("AlignmentTree");
+  if(!T)
+    return;
+  
+  AlignmentTree align(T);
+  align.GetEntry(0);
+
+  TranslateX(align.tranX_1, 1);
+  TranslateX(align.tranX_2, 2);
+  TranslateX(align.tranX_3, 3);
+  TranslateX(align.tranX_4, 4);
+  TranslateX(align.tranX_5, 5);
+  TranslateX(align.tranX_6, 6);
+  TranslateX(align.tranX_7, 7);
+  TranslateY(align.tranY_1, 1);
+  TranslateY(align.tranY_2, 2);
+  TranslateY(align.tranY_3, 3);
+  TranslateY(align.tranY_4, 4);
+  TranslateY(align.tranY_5, 5);
+  TranslateY(align.tranY_6, 6);
+  TranslateY(align.tranY_7, 7);
+  TranslateZ(align.tranZ_1, 1);
+  TranslateZ(align.tranZ_2, 2);
+  TranslateZ(align.tranZ_3, 3);
+  TranslateZ(align.tranZ_4, 4);
+  TranslateZ(align.tranZ_5, 5);
+  TranslateZ(align.tranZ_6, 6);
+  TranslateZ(align.tranZ_7, 7);
+
+  RotateX(align.rotX_1, 1);
+  RotateX(align.rotX_2, 2);
+  RotateX(align.rotX_3, 3);
+  RotateX(align.rotX_4, 4);
+  RotateX(align.rotX_5, 5);
+  RotateX(align.rotX_6, 6);
+  RotateX(align.rotX_7, 7);
+  RotateY(align.rotY_1, 1);
+  RotateY(align.rotY_2, 2);
+  RotateY(align.rotY_3, 3);
+  RotateY(align.rotY_4, 4);
+  RotateY(align.rotY_5, 5);
+  RotateY(align.rotY_6, 6);
+  RotateY(align.rotY_7, 7);
+  RotateZ(align.rotZ_1, 1);
+  RotateZ(align.rotZ_2, 2);
+  RotateZ(align.rotZ_3, 3);
+  RotateZ(align.rotZ_4, 4);
+  RotateZ(align.rotZ_5, 5);
+  RotateZ(align.rotZ_6, 6);
+  RotateZ(align.rotZ_7, 7);
+
+  f.Close();
 }
 
 #endif
