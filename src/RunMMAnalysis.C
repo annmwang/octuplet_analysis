@@ -368,8 +368,12 @@ int main(int argc, char* argv[]){
     MMClusterList fit_clusters;
     for(int i = 0; i < Ncl; i++){
       // add highest charge cluster from each board;
-      if(all_clusters[i].GetNCluster() > 0)
-	fit_clusters.AddCluster(all_clusters[i][0]);
+      int Nc = all_clusters[i].GetNCluster();
+      for(int c = 0; c < Nc; c++)
+	if(all_clusters[i][c].GetNHits() > 1){
+	  fit_clusters.AddCluster(all_clusters[i][c]);
+	  break;
+	}
     }
 
     int Nclus_all = fit_clusters.GetNCluster();

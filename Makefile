@@ -17,7 +17,7 @@ CC_FILES := $(wildcard src/*.C)
 HH_FILES := $(wildcard include/*.hh)
 OBJ_FILES := $(addprefix $(OUTOBJ),$(notdir $(CC_FILES:.C=.o)))
 
-all: octuplet.x RunMMAnalysisTemplate.x RunMMAnalysis.x MakeClusterTree.x
+all: octuplet.x RunMMAnalysisTemplate.x RunMMAnalysis.x MakeClusterTree.x RunAlignment.x
 
 octuplet.x:  $(SRCDIR)octuplet_ana.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o octuplet.x $(GLIBS) $ $<
@@ -34,6 +34,10 @@ RunMMAnalysis.x:  $(SRCDIR)RunMMAnalysis.C $(HH_FILES)
 MakeClusterTree.x:  $(SRCDIR)MakeClusterTree.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o MakeClusterTree.x $(GLIBS) $ $<
 	touch MakeClusterTree.x
+
+RunAlignment.x:  $(SRCDIR)RunAlignment.C $(HH_FILES)
+	$(CXX) $(CXXFLAGS) -o RunAlignment.x $(GLIBS) $ $<
+	touch RunAlignment.x
 clean:
 	rm -f $(OUTOBJ)*.o
 	rm -f *.x

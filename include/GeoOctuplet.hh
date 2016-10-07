@@ -46,6 +46,14 @@ public:
   TGraph*   GetXZGraph(const MMTrack& track) const;
   TGraph2D* Get2DGraph(const MMTrack& track) const;
 
+  void TranslateX(double x, int iplane);
+  void TranslateY(double y, int iplane);
+  void TranslateZ(double z, int iplane);
+
+  void RotateX(double phix, int iplane);
+  void RotateY(double phiy, int iplane);
+  void RotateZ(double phiz, int iplane);
+
 private:
   void Init();
 
@@ -417,6 +425,42 @@ inline TGraph2D* GeoOctuplet::Get2DGraph(const MMTrack& track) const {
   gr->SetMarkerColor(kRed+2);
   gr->SetLineWidth(2);
   return gr;
+}
+
+inline void GeoOctuplet::TranslateX(double x, int iplane){
+  if(iplane < 0 || iplane >= GetNPlanes())
+    return;
+  m_planes[iplane]->TranslateX(x);
+}
+
+inline void GeoOctuplet::TranslateY(double y, int iplane){
+  if(iplane < 0 || iplane >= GetNPlanes())
+    return;
+  m_planes[iplane]->TranslateY(y);
+}
+
+inline void GeoOctuplet::TranslateZ(double z, int iplane){
+  if(iplane < 0 || iplane >= GetNPlanes())
+    return;
+  m_planes[iplane]->TranslateZ(z);
+}
+
+inline void GeoOctuplet::RotateX(double phix, int iplane){
+  if(iplane < 0 || iplane >= GetNPlanes())
+    return;
+  m_planes[iplane]->RotateX(phix);
+}
+
+inline void GeoOctuplet::RotateY(double phiy, int iplane){
+  if(iplane < 0 || iplane >= GetNPlanes())
+    return;
+  m_planes[iplane]->RotateY(phiy);
+}
+
+inline void GeoOctuplet::RotateZ(double phiz, int iplane){
+  if(iplane < 0 || iplane >= GetNPlanes())
+    return;
+  m_planes[iplane]->RotateZ(phiz);
 }
 
 #endif

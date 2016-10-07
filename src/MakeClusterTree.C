@@ -88,8 +88,6 @@ int main(int argc, char* argv[]){
 
   GeoOctuplet* GEOMETRY = new GeoOctuplet();
 
-  SimpleTrackFitter* FITTER = new SimpleTrackFitter();
-
   MMDataAnalysis* DATA;
   TFile* f = new TFile(inputFileName, "READ");
   if(!f){
@@ -148,9 +146,11 @@ int main(int argc, char* argv[]){
     // initialize PACMAN info for this event
     PACMAN->SetEventTrigBCID(DATA->mm_trig_BCID);
     PACMAN->SetEventPadTime(0); // add this
+
+    int Nboards = DATA->mm_EventHits.GetNBoards();
     
     vector<MMClusterList> all_clusters;
-    for(int i = 0; i < 8; i++){
+    for(int i = 0; i < Nboards; i++){
       if(DATA->mm_EventHits[i].GetNHits() == 0)
 	continue;
       
@@ -158,42 +158,33 @@ int main(int argc, char* argv[]){
       if(clusters.GetNCluster() > 0)
 	all_clusters.push_back(clusters);
     }
-    
-    // MMClusterList fit_clusters;
-    // for(int i = 0; i < Ncl; i++){
-    //   // add highest charge cluster from each board;
-    //   if(all_clusters[i].GetNCluster() > 0)
-    // 	fit_clusters.AddCluster(all_clusters[i][0]);
-    // }
 
-    // int N_clus = fit_clusters.GetNCluster();
-    // if(Nclus_all < 6)
-    //   continue;
- 
-    /*
-    MMTrack track_all = FITTER->Fit(fit_clusters, *GEOMETRY);
-
-    for(int c = 0; c < Nclus_all; c++){
-      const MMCluster& clus = fit_clusters[c];
-      int b = ib[clus.MMFE8()];
-      // fill on-track residuals
-      board_itrack_resX[b]->Fill(GEOMETRY->GetResidualX(clus, track_all));
-      board_itrack_resX_v_CH[b]->Fill(clus.Channel(), GEOMETRY->GetResidualX(clus, track_all));
-      // new cluster list without this cluster
-      MMClusterList clus_list;
-      for(int o = 0; o < Nclus_all; o++)
-	if(o != c)
-	  clus_list.AddCluster(fit_clusters[o]);
-	
-      MMTrack track = FITTER->Fit(clus_list, *GEOMETRY);
-
-      board_otrack_resX[b]->Fill(GEOMETRY->GetResidualX(clus, track));
-      board_otrack_resX_v_CH[b]->Fill(clus.Channel(), GEOMETRY->GetResidualX(clus, track));
+    N_clus = 0;
+    clus_MMFE8.clear();
+    clus_Index.clear();
+    clus_Charge.clear();
+    clus_Time.clear();
+    clus_Channel.clear();
+    int Ncl = all_clusters.size();
+    // write clusters to tree
+    for(int i = 0; i < Ncl; i++){
+      // add highest charge cluster from each board;
+      int Nc = all_clusters[i].GetNCluster();
+      for(int c = 0; c < Nc; c++){
+	if(all_clusters[i][c].GetNHits() > 1){
+	  N_clus++;
+	  clus_MMFE8.push_back(all_clusters[i][c].MMFE8());
+	  clus_Index.push_back(ib[all_clusters[i][c].MMFE8()]);
+	  clus_Charge.push_back(all_clusters[i][c].Charge());
+	  clus_Time.push_back(all_clusters[i][c].Time());
+	  clus_Channel.push_back(all_clusters[i][c].Channel());
+	  break;
+	}
+      }
     }
 
-    if(Nclus_all < 8)
-      continue;
-    */
+    if(N_clus >= 5)
+      cluster_tree->Fill(); 
 
   } // end event loop
 

@@ -554,8 +554,8 @@ TCanvas* Plot_Octuplet(string can, vector<TH1D*>& histo, string X, string Y,
 
   int Nh = histo.size();
   for(int i = 0; i < Nh; i++){
-    TVirtualPad* ipad = pad->GetPad(i+1);
-    if(i == 7){
+    TVirtualPad* ipad = pad->GetPad(8-i);
+    if(i == 0){
       TPad* botpad = new TPad((can+"_bpad").c_str(),"",
 			      0.08, 0.03, 0.99, 0.172);
       ipad = botpad;
@@ -580,7 +580,7 @@ TCanvas* Plot_Octuplet(string can, vector<TH1D*>& histo, string X, string Y,
     histo[i]->SetTitle("");
     histo[i]->SetStats(false);
 
-    if(i == 7){
+    if(i == 0){
       ipad->SetBottomMargin(0.23);
       c1->cd();
       ipad->Draw();
@@ -597,14 +597,14 @@ TCanvas* Plot_Octuplet(string can, vector<TH1D*>& histo, string X, string Y,
     histo[i]->SetMarkerSize(0);
     histo[i]->Draw();
     
-    if(i == 7){
+    if(i == 0){
       l.SetTextFont(132);
       l.SetTextSize(0.16);
-      l.DrawLatex(0.83, 0.8, Form("Board %d",iboard[7-i]));
+      l.DrawLatex(0.83, 0.8, Form("Board %d",iboard[i]));
     } else {
       l.SetTextFont(132);
       l.SetTextSize(0.2);
-      l.DrawLatex(0.83, 0.8, Form("Board %d",iboard[7-i]));
+      l.DrawLatex(0.83, 0.8, Form("Board %d",iboard[i]));
     }
   }
   
@@ -651,8 +651,8 @@ TCanvas* Plot_Octuplet(string can, vector<TH2D*>& histo, string X, string Y, str
 
   int Nh = histo.size();
   for(int i = 0; i < Nh; i++){
-    TVirtualPad* ipad = pad->GetPad(i+1);
-    if(i == 7){
+    TVirtualPad* ipad = pad->GetPad(8-i);
+    if(i == 0){
       TPad* botpad = new TPad((can+"_bpad").c_str(),"",
 			      0.08, 0.03, 0.94, 0.172);
       ipad = botpad;
@@ -682,7 +682,7 @@ TCanvas* Plot_Octuplet(string can, vector<TH2D*>& histo, string X, string Y, str
     histo[i]->GetZaxis()->SetTitleSize(0.);
     histo[i]->GetZaxis()->SetLabelSize(0.20);
 
-    if(i == 7){
+    if(i == 0){
       ipad->SetBottomMargin(0.23);
       c1->cd();
       ipad->Draw();
@@ -700,14 +700,14 @@ TCanvas* Plot_Octuplet(string can, vector<TH2D*>& histo, string X, string Y, str
     histo[i]->SetMarkerSize(0);
     histo[i]->Draw("COLZ");
     
-    if(i == 7){
+    if(i == 0){
       l.SetTextFont(132);
       l.SetTextSize(0.16);
-      l.DrawLatex(0.68, 0.8, Form("Board %d",iboard[7-i]));
+      l.DrawLatex(0.68, 0.8, Form("Board %d",iboard[i]));
     } else {
       l.SetTextFont(132);
       l.SetTextSize(0.2);
-      l.DrawLatex(0.68, 0.8, Form("Board %d",iboard[7-i]));
+      l.DrawLatex(0.68, 0.8, Form("Board %d",iboard[i]));
     }
   }
   

@@ -15,14 +15,14 @@ class MMHit {
 
 public:
   MMHit();
-  MMHit(int mmfe8, int vmm = -1, int ch = -1);
+  MMHit(int mmfe8, int vmm = -1, double ch = -1);
   MMHit(const MMHit& hit);
   ~MMHit();
 
   int MMFE8() const;
   int VMM() const;
-  int Channel() const;
-  int VMMChannel() const;
+  double Channel() const;
+  double VMMChannel() const;
   int PDO() const;
   int TDO() const;
   int BCID() const;
@@ -36,7 +36,7 @@ public:
   
   void SetMMFE8(int mmfe8);
   void SetVMM(int vmm);
-  void SetChannel(int ch);
+  void SetChannel(double ch);
   void SetPDO(int pdo);
   void SetTDO(int tdo);
   void SetBCID(int bcid);
@@ -47,7 +47,7 @@ public:
 private:
   int m_MMFE8;
   int m_VMM;
-  int m_CH;
+  double m_CH;
   int m_PDO;
   int m_TDO;
   int m_BCID;
@@ -80,7 +80,7 @@ inline MMHit::MMHit(){
   m_time_calib = false;
 }
 
-inline MMHit::MMHit(int mmfe8, int vmm, int ch){
+inline MMHit::MMHit(int mmfe8, int vmm, double ch){
   m_MMFE8 = mmfe8;
   m_VMM = vmm;
   m_CH = ch;
@@ -123,11 +123,11 @@ inline int MMHit::VMM() const {
   return m_VMM;
 }
 
-inline int MMHit::Channel() const {
-  return std::max(-1,64*m_VMM + m_CH);
+inline double MMHit::Channel() const {
+  return std::max(-1.,64.*m_VMM + m_CH);
 }
 
-inline int MMHit::VMMChannel() const {
+inline double MMHit::VMMChannel() const {
   return m_CH;
 }
 
@@ -171,7 +171,7 @@ inline void MMHit::SetVMM(int vmm){
   m_VMM = vmm;
 }
 
-inline void MMHit::SetChannel(int ch){
+inline void MMHit::SetChannel(double ch){
   m_CH = ch;
 }
 

@@ -149,7 +149,7 @@ inline double GeoPlane::LocalXatYend(double channel) const {
 
 inline double GeoPlane::GetResidualX(double channel,
 			      const MMTrack& track){
-  return LocalXatYend(track) - LocalXatYend(channel);
+  return LocalXatYend(channel)-LocalXatYend(track);
 }
 
 inline TVector3 GeoPlane::Intersection(const MMTrack& track, 
