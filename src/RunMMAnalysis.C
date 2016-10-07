@@ -363,6 +363,7 @@ int main(int argc, char* argv[]){
       int Nhit = DATA->mm_EventHits[i].GetNHits();
       board_NHit[b]->Fill(Nhit);
       board_Ndup[b]->Fill(DATA->mm_EventHits[i].GetNDuplicates());
+      board_Ndup_v_EVT[b]->Fill(DATA->mm_EventNum, DATA->mm_EventHits[i].GetNDuplicates());
       board_NHit_v_EVT[b]->Fill(DATA->mm_EventNum, Nhit);
       for(int j = 0; j < Nhit; j++){
 	const MMLinkedHit& hit = DATA->mm_EventHits[i][j];
@@ -377,7 +378,6 @@ int main(int argc, char* argv[]){
 
 	// hit has duplicate
 	int Ndup = hit.GetNHits();
-	board_Ndup_v_EVT[b]->Fill(DATA->mm_EventNum, Ndup);
 	if(Ndup > 1){
 	  board_duphit_CH[b]->Fill(hit.Channel());
 	  const MMLinkedHit* phit = &hit;
