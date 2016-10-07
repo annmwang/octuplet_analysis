@@ -267,42 +267,42 @@ int main(int argc, char* argv[]){
 			      "AlignmentTree");
   
   cout << "Final Parameters:" << endl;
-  if(g_tranX)
-    for(int i = 0; i < 7; i++){
-      out_tree->Branch(Form("tranX_%d",i+1), &out_tranX[i]);
-      out_tree->Branch(Form("tranX_err_%d",i+1), &out_tranX_err[i]);
+  for(int i = 0; i < 7; i++){
+    out_tree->Branch(Form("tranX_%d",i+1), &out_tranX[i]);
+    out_tree->Branch(Form("tranX_err_%d",i+1), &out_tranX_err[i]);
+    if(g_tranX)
       cout << "tran X [mm] " << i+1 << ": " << out_tranX[i] << " +/- " << out_tranX_err[i] << endl;
-    }
-  if(g_tranY)
-    for(int i = 0; i < 7; i++){
-      out_tree->Branch(Form("tranY_%d",i+1), &out_tranY[i]);
-      out_tree->Branch(Form("tranY_err_%d",i+1), &out_tranY_err[i]);
+  }
+  for(int i = 0; i < 7; i++){
+    out_tree->Branch(Form("tranY_%d",i+1), &out_tranY[i]);
+    out_tree->Branch(Form("tranY_err_%d",i+1), &out_tranY_err[i]);
+    if(g_tranY)
       cout << "tran Y [mm] " << i+1 << ": " << out_tranY[i] << " +/- " << out_tranY_err[i] << endl;
-    }
-  if(g_tranZ)
-    for(int i = 0; i < 7; i++){
-      out_tree->Branch(Form("tranZ_%d",i+1), &out_tranZ[i]);
-      out_tree->Branch(Form("tranZ_err_%d",i+1), &out_tranZ_err[i]);
+  }
+  for(int i = 0; i < 7; i++){
+    out_tree->Branch(Form("tranZ_%d",i+1), &out_tranZ[i]);
+    out_tree->Branch(Form("tranZ_err_%d",i+1), &out_tranZ_err[i]);
+    if(g_tranZ)
       cout << "tran Z [mm] " << i+1 << ": " << out_tranZ[i] << " +/- " << out_tranZ_err[i] << endl;
-    }
-  if(g_rotX)
-    for(int i = 0; i < 7; i++){
-      out_tree->Branch(Form("rotX_%d",i+1), &out_rotX[i]);
-      out_tree->Branch(Form("rotX_err_%d",i+1), &out_rotX_err[i]);
+  }
+  for(int i = 0; i < 7; i++){
+    out_tree->Branch(Form("rotX_%d",i+1), &out_rotX[i]);
+    out_tree->Branch(Form("rotX_err_%d",i+1), &out_rotX_err[i]);
+    if(g_rotX)
       cout << "rot X [rad] " << i+1 << ": " << out_rotX[i] << " +/- " << out_rotX_err[i] << endl;
-    }
-  if(g_rotY)
-    for(int i = 0; i < 7; i++){
-      out_tree->Branch(Form("rotY_%d",i+1), &out_rotY[i]);
-      out_tree->Branch(Form("rotY_err_%d",i+1), &out_rotY_err[i]);
+  }
+  for(int i = 0; i < 7; i++){
+    out_tree->Branch(Form("rotY_%d",i+1), &out_rotY[i]);
+    out_tree->Branch(Form("rotY_err_%d",i+1), &out_rotY_err[i]);
+    if(g_rotY)
       cout << "rot Y [rad] " << i+1 << ": " << out_rotY[i] << " +/- " << out_rotY_err[i] << endl;
-    }
-  if(g_rotZ)
-    for(int i = 0; i < 7; i++){
-      out_tree->Branch(Form("rotZ_%d",i+1), &out_rotZ[i]);
-      out_tree->Branch(Form("rotZ_err_%d",i+1), &out_rotZ_err[i]);
+  }
+  for(int i = 0; i < 7; i++){
+    out_tree->Branch(Form("rotZ_%d",i+1), &out_rotZ[i]);
+    out_tree->Branch(Form("rotZ_err_%d",i+1), &out_rotZ_err[i]);
+    if(g_rotZ)
       cout << "rot Z [rad] " << i+1 << ": " << out_rotZ[i] << " +/- " << out_rotZ_err[i] << endl;
-    }
+  }
 
   out_tree->Fill();
   fout->cd();
