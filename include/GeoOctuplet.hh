@@ -98,7 +98,8 @@ inline void GeoOctuplet::Init(){
 
   // plane 0
   m_planes.push_back(new GeoPlane());
-  origin.SetXYZ(102.3, 100., 0.);
+  //origin.SetXYZ(102.3, 100., 0.);
+  origin.SetXYZ(102.3, 100., -2.7);
   m_planes[i]->SetOrigin(origin);
   m_planes[i]->SetStripAlpha(0.);
   m_planes[i]->SetSignChannel(-1);
@@ -106,7 +107,8 @@ inline void GeoOctuplet::Init(){
   i++;
   // plane 1
   m_planes.push_back(new GeoPlane());
-  origin.SetXYZ(102.3, 100., 11.2);
+  //origin.SetXYZ(102.3, 100., 11.2);
+  origin.SetXYZ(102.3, 100., 11.2+2.7);
   m_planes[i]->SetOrigin(origin);
   ;  m_planes[i]->SetStripAlpha(0.);
   m_planes[i]->SetSignChannel(1);
@@ -114,7 +116,8 @@ inline void GeoOctuplet::Init(){
   i++;
   // plane 2
   m_planes.push_back(new GeoPlane());
-  origin.SetXYZ(102.3, 100.+17.9, 32.4);
+  //origin.SetXYZ(102.3, 100.+17.9, 32.4);
+  origin.SetXYZ(102.3, 100.+17.9, 32.4-2.7);
   m_planes[i]->SetOrigin(origin);
   m_planes[i]->SetStripAlpha(-0.0261799);
   m_planes[i]->SetSignChannel(1);
@@ -122,7 +125,8 @@ inline void GeoOctuplet::Init(){
   i++;
   // plane 3
   m_planes.push_back(new GeoPlane());
-  origin.SetXYZ(102.3, 100.+17.9, 43.6);
+  //origin.SetXYZ(102.3, 100.+17.9, 43.6);
+  origin.SetXYZ(102.3, 100.+17.9, 43.6+2.7);
   m_planes[i]->SetOrigin(origin);
   m_planes[i]->SetStripAlpha(0.0261799);
   m_planes[i]->SetSignChannel(-1);
@@ -130,7 +134,8 @@ inline void GeoOctuplet::Init(){
   i++;
   // plane 4
   m_planes.push_back(new GeoPlane());
-  origin.SetXYZ(102.3, 100.+17.9, 113.6);
+  //origin.SetXYZ(102.3, 100.+17.9, 113.6);
+  origin.SetXYZ(102.3, 100.+17.9, 113.6-2.7);
   m_planes[i]->SetOrigin(origin);
   m_planes[i]->SetStripAlpha(-0.0261799);
   m_planes[i]->SetSignChannel(1);
@@ -138,7 +143,8 @@ inline void GeoOctuplet::Init(){
   i++;
   // plane 5
   m_planes.push_back(new GeoPlane());
-  origin.SetXYZ(102.3, 100.+17.9, 124.8);
+  //origin.SetXYZ(102.3, 100.+17.9, 124.8);
+  origin.SetXYZ(102.3, 100.+17.9, 124.8+2.7);
   m_planes[i]->SetOrigin(origin);
   m_planes[i]->SetStripAlpha(0.0261799);
   m_planes[i]->SetSignChannel(-1);
@@ -146,7 +152,8 @@ inline void GeoOctuplet::Init(){
   i++;
   // plane 6
   m_planes.push_back(new GeoPlane());
-  origin.SetXYZ(102.3, 100., 146.0);
+  //origin.SetXYZ(102.3, 100., 146.0);
+  origin.SetXYZ(102.3, 100., 146.0-2.7);
   m_planes[i]->SetOrigin(origin);
   m_planes[i]->SetStripAlpha(0.);
   m_planes[i]->SetSignChannel(-1);
@@ -154,7 +161,8 @@ inline void GeoOctuplet::Init(){
   i++;
   // plane 7
   m_planes.push_back(new GeoPlane());
-  origin.SetXYZ(102.3, 100., 157.2);
+  //origin.SetXYZ(102.3, 100., 157.2);
+  origin.SetXYZ(102.3, 100., 157.2+2.7);
   m_planes[i]->SetOrigin(origin);
   m_planes[i]->SetStripAlpha(0.);
   m_planes[i]->SetSignChannel(1);

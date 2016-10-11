@@ -86,6 +86,8 @@ int main(int argc, char* argv[]){
 
   MMPacmanAlgo* PACMAN = new MMPacmanAlgo();
 
+  SimpleTrackFitter* FITTER = new SimpleTrackFitter();
+
   GeoOctuplet* GEOMETRY = new GeoOctuplet();
 
   MMDataAnalysis* DATA;
@@ -165,6 +167,9 @@ int main(int argc, char* argv[]){
     clus_Charge.clear();
     clus_Time.clear();
     clus_Channel.clear();
+
+    MMClusterList fit_clusters;
+
     int Ncl = all_clusters.size();
     // write clusters to tree
     for(int i = 0; i < Ncl; i++){
@@ -172,6 +177,7 @@ int main(int argc, char* argv[]){
       int Nc = all_clusters[i].GetNCluster();
       for(int c = 0; c < Nc; c++){
 	if(all_clusters[i][c].GetNHits() > 1){
+	  fit_clusters.AddCluster(all_clusters[i][c]);
 	  N_clus++;
 	  clus_MMFE8.push_back(all_clusters[i][c].MMFE8());
 	  clus_Index.push_back(ib[all_clusters[i][c].MMFE8()]);
@@ -182,6 +188,19 @@ int main(int argc, char* argv[]){
 	}
       }
     }
+
+    if(N_clus < 5)
+      continue;
+    
+    MMTrack track_all = FITTER->Fit(fit_clusters, *GEOMETRY);
+    double sumresX2 = 0.;
+    for(int i = 0; i < N_clus; i++){
+      double resX = GEOMETRY->GetResidualX(fit_clusters[i], track_all);
+      sumresX2 += resX*resX;
+    }
+
+    if( sumresX2 > double(N_clus-2)*0.1)
+      continue;
 
     if(N_clus >= 5)
       cluster_tree->Fill(); 

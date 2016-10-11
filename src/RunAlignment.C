@@ -341,7 +341,9 @@ double EvaluateMetric(const double* param){
 
     MMTrack track = g_FITTER->Fit(*g_clusters[evt], GEO);
     res = GEO.GetResidualX(*g_cluster[evt], track);
-    sum_res2 += sqrt(res*res);
+    //sum_res2 += sqrt(res*res);
+    sum_res2 += sqrt(fabs(res));
+    //sum_res2 += res*res;
   }  // end event loop
 
   if(g_tranX)

@@ -179,6 +179,9 @@ int main(int argc, char* argv[]){
   vector<TH2D*> board_itrack_resX_v_EVT;
   vector<TH2D*> board_otrack_resX_v_EVT;
 
+  vector<TH1D*> track_sumresX2;
+  TH2D*         track_sumresX2_v_Nclus;
+
   for(int i = 0; i < 8; i++){
     board_PDO_v_EVT.push_back(new TH2D(Form("b_PDOvEVT_%d",i),
 				       Form("b_PDOvEVT_%d",i),
@@ -327,6 +330,16 @@ int main(int argc, char* argv[]){
 					       201,-5.,5.));
   }
   
+  for(int i = 5; i <= 8; i++){
+    track_sumresX2.push_back(new TH1D(Form("t_sumresX2_%d",i),
+				      Form("t_sumresX2_%d",i),
+				      1024,0.,5.));
+  }
+  track_sumresX2_v_Nclus = new TH2D("t_sumresX2_v_Nclus",
+				    "t_sumresX2_v_Nclus",
+				    4, 4.5, 8.5,
+				    1024,0.,5.);
+
   TFile* fout = new TFile(outputFileName, "RECREATE");
   fout->mkdir("event_displays");
   MMPlot();
@@ -451,13 +464,30 @@ int main(int argc, char* argv[]){
  
     MMTrack track_all = FITTER->Fit(fit_clusters, *GEOMETRY);
 
+    double sumresX2 = 0.;
     for(int c = 0; c < Nclus_all; c++){
       const MMCluster& clus = fit_clusters[c];
       int b = ib[clus.MMFE8()];
       // fill on-track residuals
-      board_itrack_resX[b]->Fill(GEOMETRY->GetResidualX(clus, track_all));
-      board_itrack_resX_v_CH[b]->Fill(clus.Channel(), GEOMETRY->GetResidualX(clus, track_all));
-      board_itrack_resX_v_EVT[b]->Fill(DATA->mm_EventNum, GEOMETRY->GetResidualX(clus, track_all));
+      double resX = GEOMETRY->GetResidualX(clus, track_all);
+      sumresX2 += resX*resX;
+    }
+
+    track_sumresX2[Nclus_all-5]->Fill(sumresX2);
+    track_sumresX2_v_Nclus->Fill(Nclus_all, sumresX2);
+    
+    if( sumresX2 > double(Nclus_all-2)*0.1)
+      continue;
+
+    for(int c = 0; c < Nclus_all; c++){
+      const MMCluster& clus = fit_clusters[c];
+      int b = ib[clus.MMFE8()];
+      // fill on-track residuals
+      double resX = GEOMETRY->GetResidualX(clus, track_all);
+      board_itrack_resX[b]->Fill(resX);
+      board_itrack_resX_v_CH[b]->Fill(clus.Channel(), resX);
+      board_itrack_resX_v_EVT[b]->Fill(DATA->mm_EventNum, resX);
+
       // new cluster list without this cluster
       MMClusterList clus_list;
       for(int o = 0; o < Nclus_all; o++)
@@ -466,9 +496,10 @@ int main(int argc, char* argv[]){
 	
       MMTrack track = FITTER->Fit(clus_list, *GEOMETRY);
 
-      board_otrack_resX[b]->Fill(GEOMETRY->GetResidualX(clus, track));
-      board_otrack_resX_v_CH[b]->Fill(clus.Channel(), GEOMETRY->GetResidualX(clus, track));
-      board_otrack_resX_v_EVT[b]->Fill(DATA->mm_EventNum, GEOMETRY->GetResidualX(clus, track));
+      resX = GEOMETRY->GetResidualX(clus, track);
+      board_otrack_resX[b]->Fill(resX);
+      board_otrack_resX_v_CH[b]->Fill(clus.Channel(), resX);
+      board_otrack_resX_v_EVT[b]->Fill(DATA->mm_EventNum, resX);
     }
 
     if(Nclus_all < 8)
@@ -535,8 +566,13 @@ int main(int argc, char* argv[]){
     board_otrack_resX_v_CH[i]->Write();
     board_itrack_resX_v_EVT[i]->Write();
     board_otrack_resX_v_EVT[i]->Write();
-
   }
+
+  for(int i = 0; i < 4; i++){
+    fout->cd("histograms");
+    track_sumresX2[i]->Write();
+  }
+  track_sumresX2_v_Nclus->Write();
 
   fout->cd();
   fout->mkdir("plots");
@@ -707,6 +743,20 @@ int main(int argc, char* argv[]){
 		      iboards, title, true);
   can->Write();
   delete can;
+
+  can = Plot_2D("c_track_sumresX2_v_Nclus", track_sumresX2_v_Nclus, "Number of clusters", 
+		"#Sigma ( X residual )^2 [mm^{2}]", "Number of tracks", title);
+  can->Write();
+  delete can;
+
+  for(int i = 0; i < 4; i++){
+    track_sumresX2[i]->Write();
+    can = Plot_1D(Form("c_track_sumresX2_%d",i+5), track_sumresX2[i], 
+		  "#Sigma ( X residual )^2 [mm^{2}]", 
+		  "Number of tracks", title);
+    can->Write();
+    delete can;
+  }
 
   fout->Close();
     
