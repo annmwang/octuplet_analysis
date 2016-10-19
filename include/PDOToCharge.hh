@@ -116,7 +116,7 @@ inline double PDOToCharge::GetCharge(double PDO, int MMFE8, int VMM, int CH) con
     int c = m_CH_to_index[i][CH];
 
     // Pedestal unrealistic value                                                                                                                          
-    if (m_c0[c]-m_A2[c]*m_d21[c]*(m_d21[c]+2.*m_t02[c]) > 200.){
+    if (fabs(m_c0[c]-m_A2[c]*m_d21[c]*(m_d21[c]+2.*m_t02[c])) > 200.){
       //PrintError(MMFE8,VMM,CH);
       return -1.;
     }
