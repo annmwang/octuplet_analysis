@@ -121,7 +121,10 @@ int main(int argc, char* argv[]){
   if(b_align)
     GEOMETRY->SetAlignment(AlignFileName);
 
-  SimpleTrackFitter* FITTER = new SimpleTrackFitter();
+  ChargeTrackFitter *FITTER = new ChargeTrackFitter();
+  SimpleTrackFitter *SIMPLEFITTER = new SimpleTrackFitter();
+
+  //MMEfficiency *EFFICIENCY = new MMEfficiency(GEOMETRY, FITTER);
 
   MMDataAnalysis* DATA;
   TFile* f = new TFile(inputFileName, "READ");
@@ -428,7 +431,7 @@ int main(int argc, char* argv[]){
     vector<MMClusterList> all_clusters;
     for(int i = 0; i < Nboard; i++){
       if(DATA->mm_EventHits[i].GetNHits() == 0)
-	continue;
+        continue;
       
       MMClusterList clusters = PACMAN->Cluster(DATA->mm_EventHits[i]);
       board_Nclus[ib[DATA->mm_EventHits[i].MMFE8()]]->Fill(clusters.GetNCluster());
@@ -436,70 +439,75 @@ int main(int argc, char* argv[]){
       board_Nclus_v_EVT[ib[DATA->mm_EventHits[i].MMFE8()]]->Fill(DATA->mm_EventNum, clusters.GetNCluster());
       board_Nclusdup_v_EVT[ib[DATA->mm_EventHits[i].MMFE8()]]->Fill(DATA->mm_EventNum, clusters.GetNDuplicates());
       if(clusters.GetNCluster() > 0)
-	all_clusters.push_back(clusters);
+        all_clusters.push_back(clusters);
     }
-    
+   
+    // track fitting: use all the tracks 
     int Ncl = all_clusters.size();
+    MMClusterList fit_clusters;
+    double total_charge = 0;
     for(int i = 0; i < Ncl; i++){
       int Nc = all_clusters[i].GetNCluster();
       for(int j = 0; j < Nc; j++){
-	const MMCluster& clus = all_clusters[i][j];
-	int b = ib[clus.MMFE8()];
-	board_clus_CH[b]->Fill(clus.Channel());
-	board_clus_Q[b]->Fill(clus.Charge());
-	board_clus_NHit[b]->Fill(clus.GetNHits());
-	board_clus_Ndup[b]->Fill(clus.GetNDuplicates());
-	board_clus_Q_v_CH[b]->Fill(clus.Channel(),clus.Charge());
-	if(clus.GetNHits() > 1){
-	  board_clusN_CH[b]->Fill(clus.Channel());
-	  board_clusN_Q[b]->Fill(clus.Charge());
-	  board_clusN_Ndup[b]->Fill(clus.GetNDuplicates());
-	  board_clusN_Q_v_CH[b]->Fill(clus.Channel(),clus.Charge());
-	}
-	if(clus.GetNDuplicates() > 0){
-	  board_clusdup_CH[b]->Fill(clus.Channel());
-	  board_clusdup_Q[b]->Fill(clus.Charge());
-	  board_clusdup_NHit[b]->Fill(clus.GetNHits());
-	  board_clusdup_Q_v_CH[b]->Fill(clus.Channel(),clus.Charge());
-	}
+        const MMCluster& clus = all_clusters[i][j];
+
+        total_charge += clus.Charge();
+        fit_clusters.AddCluster( clus );
+
+        int b = ib[clus.MMFE8()];
+        board_clus_CH[b]->Fill(clus.Channel());
+        board_clus_Q[b]->Fill(clus.Charge());
+        board_clus_NHit[b]->Fill(clus.GetNHits());
+        board_clus_Ndup[b]->Fill(clus.GetNDuplicates());
+        board_clus_Q_v_CH[b]->Fill(clus.Channel(),clus.Charge());
+        if(clus.GetNHits() > 1){
+          board_clusN_CH[b]->Fill(clus.Channel());
+          board_clusN_Q[b]->Fill(clus.Charge());
+          board_clusN_Ndup[b]->Fill(clus.GetNDuplicates());
+          board_clusN_Q_v_CH[b]->Fill(clus.Channel(),clus.Charge());
+        }
+        if(clus.GetNDuplicates() > 0){
+          board_clusdup_CH[b]->Fill(clus.Channel());
+          board_clusdup_Q[b]->Fill(clus.Charge());
+          board_clusdup_NHit[b]->Fill(clus.GetNHits());
+          board_clusdup_Q_v_CH[b]->Fill(clus.Channel(),clus.Charge());
+        }
       }
     }
 
-    // track fitting
-    MMClusterList fit_clusters;
+    // see if we have enough tracks
+    int Nboards_hit = 0;
     for(int i = 0; i < Ncl; i++){
       // add highest charge cluster from each board;
       int Nc = all_clusters[i].GetNCluster();
-      for(int c = 0; c < Nc; c++)
-	if(all_clusters[i][c].GetNHits() > 1){
-	  fit_clusters.AddCluster(all_clusters[i][c]);
-	  break;
-	}
+      Nboards_hit += (Nc > 0);
     }
 
-    int Nclus_all = fit_clusters.GetNCluster();
-    if(Nclus_all < 6)
+    if(Nboards_hit < 6)
       continue;
- 
-    MMTrack track_all = FITTER->Fit(fit_clusters, *GEOMETRY);
+
+    MMTrack track_all = FITTER->Fit(fit_clusters, *GEOMETRY, total_charge);
+    //cout << track_all.SlopeX() << " "<< track_all.SlopeY() << " "<< track_all.ConstX() << " " << track_all.ConstY() << endl;
+    const MMClusterList track_clusters = track_all.Clusters();
+    int Nclus_fit = track_clusters.GetNCluster();
 
     double sumresX2 = 0.;
-    for(int c = 0; c < Nclus_all; c++){
-      const MMCluster& clus = fit_clusters[c];
+    for(int c = 0; c < Nclus_fit; c++){
+      const MMCluster& clus = track_clusters.Get(c);
       int b = ib[clus.MMFE8()];
       // fill on-track residuals
       double resX = GEOMETRY->GetResidualX(clus, track_all);
       sumresX2 += resX*resX;
     }
 
-    track_sumresX2[Nclus_all-5]->Fill(sumresX2);
-    track_sumresX2_v_Nclus->Fill(Nclus_all, sumresX2);
+    track_sumresX2[Nclus_fit-5]->Fill(sumresX2);
+    track_sumresX2_v_Nclus->Fill(Nclus_fit, sumresX2);
     
-    if( sumresX2 > double(Nclus_all-2)*0.1)
+    if( sumresX2 > double(Nclus_fit-2)*0.1)
       continue;
 
-    for(int c = 0; c < Nclus_all; c++){
-      const MMCluster& clus = fit_clusters[c];
+    for(int c = 0; c < Nclus_fit; c++){
+      const MMCluster& clus = track_clusters.Get(c);
       int b = ib[clus.MMFE8()];
       // fill on-track residuals
       double resX = GEOMETRY->GetResidualX(clus, track_all);
@@ -509,11 +517,11 @@ int main(int argc, char* argv[]){
 
       // new cluster list without this cluster
       MMClusterList clus_list;
-      for(int o = 0; o < Nclus_all; o++)
+      for(int o = 0; o < Nclus_fit; o++)
 	if(o != c)
-	  clus_list.AddCluster(fit_clusters[o]);
+	  clus_list.AddCluster(track_clusters.Get(o));
 	
-      MMTrack track = FITTER->Fit(clus_list, *GEOMETRY);
+      MMTrack track = SIMPLEFITTER->Fit(clus_list, *GEOMETRY);
 
       resX = GEOMETRY->GetResidualX(clus, track);
       board_otrack_resX[b]->Fill(resX);
@@ -521,24 +529,53 @@ int main(int argc, char* argv[]){
       board_otrack_resX_v_EVT[b]->Fill(DATA->mm_EventNum, resX);
     }
 
-    if(Nclus_all < 8)
-      continue;
+    // Get the Effenciency Values
+    //EFFICIENCY->UpdateEfficiency(fit_clusters);
 
-    TCanvas* can = Plot_Track2D(Form("track2D_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &fit_clusters); 
-    fout->cd("event_displays");
-    can->Write();
-    delete can;
-    
-    TCanvas* canY = Plot_Track2DY(Form("track2DY_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &fit_clusters); 
+    if (evt > 2000)
+        break;
+
+    //if(Nclus_fit < 8)
+    //  continue;
+
+    {
+      vector<MMFE8Hits> boardhits;
+      int Nboards = DATA->mm_EventHits.GetNBoards();
+      for (int i = 0; i < Nboards; i++)
+          boardhits.push_back( DATA->mm_EventHits[i] );
+
+      TCanvas* can = Plot_Cluster2D(Form("clusters2D_%d",DATA->mm_EventNum), *GEOMETRY, all_clusters, track_all, boardhits); 
+      fout->cd("cluster_displays");
+      can->Write();
+      delete can;
+    }
+
+    {
+      TCanvas* can = Plot_Track2D(Form("track2D_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &track_clusters); 
+      fout->cd("event_displays");
+      can->Write();
+      delete can;
+    }
+
+    TCanvas* canY = Plot_Track2DY(Form("track2DY_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &track_clusters); 
     fout->cd("event_displays");
     canY->Write();
     delete canY;
     
-    TCanvas* can3D = Plot_Track3D(Form("track3D_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &fit_clusters); 
+    TCanvas* can3D = Plot_Track3D(Form("track3D_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &track_clusters); 
     fout->cd("event_displays");
     can3D->Write();
     delete can3D;
+
+
   }
+
+  // print the Efficiency 
+  /*
+  for (int ib = 0; ib < GEOMETRY->GetNPlanes(); ib++) {
+    cout << "Board " << GEOMETRY->MMFE8(ib) << ": " << EFFICIENCY->GetBoardEfficiency(ib) << endl;
+  }
+  */
 
   fout->cd();
   fout->mkdir("histograms");

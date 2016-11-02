@@ -12,6 +12,7 @@
 #define MMClusterList_HH
 
 #include "include/MMCluster.hh"
+using namespace std;
 
 class MMClusterList {
 
@@ -31,9 +32,11 @@ public:
   MMCluster const& operator [] (int i) const;
 
   int GetNDuplicates() const;
+  void ClearClusters();
 
   bool Contains(const MMHit& hit) const;
 
+  vector<MMCluster> GetBoardClusters(int MMFE8) const;
 private:
   std::vector<MMCluster*> m_clusters;
   
@@ -52,9 +55,14 @@ inline MMClusterList::MMClusterList(const MMClusterList& cl){
 }
   
 inline MMClusterList::~MMClusterList(){
+    ClearClusters();
+}
+
+inline void MMClusterList::ClearClusters() {
   int N = GetNCluster();
   for(int i = 0; i < N; i++)
     delete m_clusters[i];
+  m_clusters.clear();
 }
 
 inline void MMClusterList::AddCluster(const MMCluster& clus){
@@ -109,6 +117,19 @@ inline bool MMClusterList::Contains(const MMHit& hit) const {
     if(m_clusters[i]->Contains(hit))
       return true;
   return false;
+}
+
+inline vector<MMCluster> MMClusterList::GetBoardClusters(int MMFE8) const {
+  vector<MMCluster> ret;
+  int Nclus = GetNCluster();
+  for (int i = 0; i < Nclus; i ++) {
+      if (m_clusters[i]->MMFE8() == MMFE8) {
+        ret.push_back( *m_clusters[i] );
+      }
+  }
+  return ret;
+
+
 }
 
 #endif

@@ -368,6 +368,113 @@ TCanvas* Plot_1D(string can, vector<TH1D*>& histo, string X, string Y,
   return c1;
 }
 
+inline bool IsGoodHit(const MMHit& hit){
+  return true;
+  float max_BCID_diff = 40;
+  float min_BCID_diff = 15;
+  float trig_BCID = 0;
+
+  if(!hit.IsChargeCalib())
+    return false;
+  if(!hit.IsTimeCalib())
+    return false;
+  if(hit.MMFE8() <= 0)
+    return false;
+  if(hit.PDO() < 0)
+    return false;
+  if(hit.TDO() < 0)
+    return false;
+  if(hit.Charge() < 0)
+    return false;
+  
+  // BCID
+  if(fabs(hit.BCID() - trig_BCID) > max_BCID_diff)
+    return false;
+  if(fabs(hit.BCID() - trig_BCID) < min_BCID_diff)
+    return false;
+
+  return true;
+}
+
+
+TCanvas* Plot_Cluster2D(string can, const GeoOctuplet& geo, const vector<MMClusterList>& all_clusters, const MMTrack& track,
+			const vector<MMFE8Hits>& data) {
+  TCanvas *c1 = new TCanvas(can.c_str(),can.c_str(),700,700);
+  c1->SetRightMargin(0.05);
+  c1->SetTopMargin(0.05);
+  c1->SetBottomMargin(0.14);
+  c1->SetLeftMargin(0.14);
+
+  TMultiGraph* mg = new TMultiGraph();
+  TGraph* gr_track = track.GetXZGraph(-5., 165.);
+  gr_track->SetLineStyle(2);
+  mg->Add(gr_track);
+
+  vector<TGraph*> gr_planes;
+  vector<TGraph*> charge_bars;
+  int Nplane = geo.GetNPlanes();
+  for(int i = 0; i < Nplane; i++){
+    gr_planes.push_back(geo[i].GetXZGraph());
+    mg->Add(gr_planes[i]);
+ }
+ for (const MMFE8Hits hits: data){
+	int ib = geo.Index(hits.MMFE8());
+
+	if(ib < 0 || ib > 7){
+	    cout << "????" << endl;
+    }
+
+	const GeoPlane plane = geo[ib];    
+    int Nhit = hits.GetNHits();
+    const float hit_plot_thresh = 5.;
+    for(int j = 0; j < Nhit; j++){
+      if(hits[j].Charge() > hit_plot_thresh){
+        int ch = hits[j].Channel();
+        TVector3 p1 = plane.Origin() + plane.LocalXatYend(ch)*plane.nX();
+        TVector3 p2 = plane.Origin() + plane.LocalXatYbegin(ch)*plane.nX();
+        double x0 = (p1.X() + p2.X())/2;
+        double z0 = (p1.Z() + p2.Z())/2;
+        double z1 = z0 + hits[j].Charge() / 5.;
+
+        double xs[2] = {x0, x0};
+        double ys[2] = {z0, z1};
+
+        /*
+        cout << all_clusters[ib][0].Channel() << " " << hits[j].Channel() << endl;
+        cout << x0 << endl;
+        cout << z0 <<endl;
+        cout << z1 << endl << endl;
+        */
+
+	    charge_bars.push_back( new TGraph(2, xs, ys) ); 
+        int k = charge_bars.size() - 1;
+        charge_bars[k]->SetLineColor(kBlack); 
+        charge_bars[k]->SetMarkerSize(0.); 
+        charge_bars[k]->SetMarkerColor(kBlack); 
+        charge_bars[k]->SetLineWidth(2);
+        mg->Add( charge_bars[k] );
+      }
+    }
+  }
+
+  c1->Draw();
+  c1->cd();
+  mg->Draw("ACP");
+  mg->GetXaxis()->SetTitle("x position [mm]");
+  mg->GetXaxis()->CenterTitle();
+  mg->GetYaxis()->SetTitle("z position [mm]");
+  mg->GetYaxis()->CenterTitle();
+  mg->GetYaxis()->SetTitleOffset(1.15);
+
+  for (const MMClusterList& board_cluster: all_clusters) {
+    TGraphErrors* gr_clusters = geo.GetXZGraphErrors(board_cluster, 16);
+    gr_clusters->Draw("P same");
+    gr_clusters->Draw("e1 same");
+  }
+  
+  return c1;
+}
+
 TCanvas* Plot_Track2D(string can, const MMTrack& track, const GeoOctuplet& geo, 
 		      const MMClusterList* clusters = 0){
   TCanvas *c1 = new TCanvas(can.c_str(),can.c_str(),700,700);

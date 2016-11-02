@@ -43,7 +43,7 @@ public:
 		      const MMTrack& track);
 
   TGraph* GetXZGraph(const MMClusterList& clusters) const;
-  TGraphErrors* GetXZGraphErrors(const MMClusterList& clusters) const;
+  TGraphErrors* GetXZGraphErrors(const MMClusterList& clusters, int color) const;
   TGraph*   GetXZGraph(const MMTrack& track) const;
   TGraph2D* Get2DGraph(const MMTrack& track) const;
 
@@ -317,7 +317,7 @@ inline TGraph* GeoOctuplet::GetXZGraph(const MMClusterList& clusters) const {
   return gr;
 }
 
-inline TGraphErrors* GeoOctuplet::GetXZGraphErrors(const MMClusterList& clusters) const {
+inline TGraphErrors* GeoOctuplet::GetXZGraphErrors(const MMClusterList& clusters, int color=kBlack) const {
   std::vector<double> vx;
   std::vector<double> vdx;
   std::vector<double> vz;
@@ -346,7 +346,7 @@ inline TGraphErrors* GeoOctuplet::GetXZGraphErrors(const MMClusterList& clusters
   }
   TGraphErrors* gr = new TGraphErrors(N,x,z,dx,0);
   gr->SetMarkerSize(1);
-  gr->SetMarkerColor(kBlack);
+  gr->SetMarkerColor(color);
   gr->SetLineWidth(2);
 
 

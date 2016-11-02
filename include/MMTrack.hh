@@ -14,6 +14,7 @@
 #include "TVector3.h"
 #include "TGraph.h"
 #include "TGraph2D.h"
+#include "include/MMClusterList.hh"
 
 class MMTrack {
 
@@ -39,12 +40,20 @@ public:
   TGraph*   GetXZGraph(double zmin, double zmax) const;
   TGraph2D* Get2DGraph(double zmin, double zmax) const;
 
+  void SetFitScore(double score);
+  double GetFitScore() const;
+
+  void SetClusters(const MMClusterList& clusters);
+  MMClusterList Clusters() const;
+
 private:
   double m_CX;
   double m_CY;
   double m_SX;
   double m_SY;
 
+  double m_fit_score;
+  MMClusterList *m_fit_clusters;
 };
 
 inline MMTrack::MMTrack(){
@@ -52,16 +61,36 @@ inline MMTrack::MMTrack(){
   m_CY = 0.;
   m_SX = 0.;
   m_SY = 0.;
+  m_fit_clusters = NULL;
 }
 
-inline MMTrack::MMTrack(const MMTrack& track){
+inline MMTrack::MMTrack(const MMTrack &track){
   m_CX = track.ConstX();
   m_CY = track.ConstY();
   m_SX = track.SlopeX();
   m_SY = track.SlopeX();
+  SetClusters( track.Clusters() );
 }
 
-inline MMTrack::~MMTrack() {}
+inline MMTrack::~MMTrack() {
+  if (m_fit_clusters != NULL)
+      delete m_fit_clusters;
+}
+
+inline void MMTrack::SetFitScore(double score) {
+  m_fit_score = score;
+}
+inline double MMTrack::GetFitScore() const {
+  return m_fit_score;
+}
+
+inline void MMTrack::SetClusters(const MMClusterList& clusters) {
+  m_fit_clusters = new MMClusterList(clusters);
+}
+
+inline MMClusterList MMTrack::Clusters() const {
+  return *m_fit_clusters;
+}
 
 inline double MMTrack::ConstX() const {
   return m_CX;
