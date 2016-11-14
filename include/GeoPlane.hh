@@ -44,7 +44,9 @@ public:
   void SetSignChannel(int sign);
 
   double GetResidualX(double channel,
-		      const MMTrack& track);
+		      const MMTrack& track) const;
+  double GetResidualY(double channel, 
+                 const MMTrack& track) const;
 
   TGraph*   GetXZGraph() const;
   TGraph2D* Get2DGraph() const;
@@ -148,8 +150,23 @@ inline double GeoPlane::LocalXatYend(double channel) const {
 }
 
 inline double GeoPlane::GetResidualX(double channel,
-			      const MMTrack& track){
+			      const MMTrack& track) const {
   return LocalXatYend(channel)-LocalXatYend(track);
+}
+
+inline double GeoPlane::GetResidualY(double channel, 
+                 const MMTrack& track) const {
+  TVector3 p = Intersection(track);
+  double y = p.Dot(m_nY.Unit());
+  double board_ymax = (m_Origin + 100.*m_nY).Dot(m_nY.Unit()); 
+  double board_ymin = (m_Origin - 100.*m_nY).Dot(m_nY.Unit()); 
+
+  if (y > board_ymax)
+    return y - board_ymax;
+  else if (y < board_ymin)
+    return board_ymin - y;
+  else
+    return 0;
 }
 
 inline TVector3 GeoPlane::Intersection(const MMTrack& track, 
