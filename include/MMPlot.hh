@@ -398,7 +398,7 @@ inline bool IsGoodHit(const MMHit& hit){
 
 
 TCanvas* Plot_Cluster2D(string can, const GeoOctuplet& geo, const vector<MMClusterList>& all_clusters, const MMTrack& track,
-			const vector<MMFE8Hits>& data) {
+			const vector<MMFE8Hits>& data, const MMClusterList *fit_clusters=NULL) {
   TCanvas *c1 = new TCanvas(can.c_str(),can.c_str(),700,700);
   c1->SetRightMargin(0.05);
   c1->SetTopMargin(0.05);
@@ -420,10 +420,6 @@ TCanvas* Plot_Cluster2D(string can, const GeoOctuplet& geo, const vector<MMClust
  for (const MMFE8Hits hits: data){
 	int ib = geo.Index(hits.MMFE8());
 
-	if(ib < 0 || ib > 7){
-	    cout << "????" << endl;
-    }
-
 	const GeoPlane plane = geo[ib];    
     int Nhit = hits.GetNHits();
     const float hit_plot_thresh = 5.;
@@ -438,13 +434,6 @@ TCanvas* Plot_Cluster2D(string can, const GeoOctuplet& geo, const vector<MMClust
 
         double xs[2] = {x0, x0};
         double ys[2] = {z0, z1};
-
-        /*
-        cout << all_clusters[ib][0].Channel() << " " << hits[j].Channel() << endl;
-        cout << x0 << endl;
-        cout << z0 <<endl;
-        cout << z1 << endl << endl;
-        */
 
 	    charge_bars.push_back( new TGraph(2, xs, ys) ); 
         int k = charge_bars.size() - 1;
@@ -467,9 +456,29 @@ TCanvas* Plot_Cluster2D(string can, const GeoOctuplet& geo, const vector<MMClust
   mg->GetYaxis()->SetTitleOffset(1.15);
 
   for (const MMClusterList& board_cluster: all_clusters) {
-    TGraphErrors* gr_clusters = geo.GetXZGraphErrors(board_cluster, 16);
-    gr_clusters->Draw("P same");
-    gr_clusters->Draw("e1 same");
+    int color = 16; /* gray */
+    if (fit_clusters == NULL) {
+      TGraphErrors* gr_clusters = geo.GetXZGraphErrors(board_cluster, color);
+      gr_clusters->Draw("P same");
+      gr_clusters->Draw("e1 same");
+    }
+    else {
+      int n_board_clusters = board_cluster.GetNCluster();
+      int n_fit_clusters = fit_clusters->GetNCluster();
+      for (int i = 0; i < n_board_clusters; i++) {
+        color = 16;
+        for (int j = 0; j < n_fit_clusters; j ++) {
+          if (fit_clusters->Get(j).Charge() == board_cluster.Get(i).Charge()) {
+            color = kRed;
+            break;
+          }
+        }
+        MMClusterList toDraw = MMClusterList( board_cluster.Get(i) );
+        TGraphErrors *gr_clusters = geo.GetXZGraphErrors( toDraw, color);
+        gr_clusters->Draw("P same");
+        gr_clusters->Draw("e1 same");
+      }
+    }
   }
   
   return c1;
