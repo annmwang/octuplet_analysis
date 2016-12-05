@@ -97,9 +97,9 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
       m_hits.insert(m_hits.begin()+i, newhit);
       break;
     }
-    if(hit.Channel() == m_hits[i]->Channel()){
-      return false;
-    }
+    // if(hit.Channel() == m_hits[i]->Channel()){
+    //   return false;
+    // }
   }
   if(!newhit){
     newhit = new SCHit(hit);
@@ -122,17 +122,18 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
       int Nbot = m_bothits.size();
       for(int i = 0; i < Nbot; i++){
 	if(abs(newhit->Channel()-m_bothits[i]->Channel()) == 6){
-	  if(newhit->Channel() < m_bothits[i]->Channel())
+	  if(newhit->Channel() < m_bothits[i]->Channel()) { 
 	    m_bot_pairs.push_back(std::pair<SCHit*,SCHit*>(newhit, m_bothits[i]));
-	  else
+	  }
+	  else { 
 	    m_bot_pairs.push_back(std::pair<SCHit*,SCHit*>(m_bothits[i], newhit));
+	  }
 	  return true;
 	}
       }
       m_bothits.push_back(newhit);
-    }
+      }
   }
-  
   if(newhit->Channel() >= 16 && newhit->Channel() < 28){
     newhit->SetCount(newhit->Count() +
 		     sc_top_corr[newhit->Channel()-16]);
@@ -141,30 +142,29 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
       int Ntop = m_tophits.size();
       for(int i = 0; i < Ntop; i++){
 	if(abs(newhit->Channel()-m_tophits[i]->Channel()) == 6){
-	  if(newhit->Channel() < m_tophits[i]->Channel())
+	  if(newhit->Channel() < m_tophits[i]->Channel()){
 	    m_top_pairs.push_back(std::pair<SCHit*,SCHit*>(newhit, m_tophits[i]));
-	  else
+	  }
+	  else {
 	    m_top_pairs.push_back(std::pair<SCHit*,SCHit*>(m_tophits[i], newhit));
+	  }
 	  return true;
 	}
       }
       m_tophits.push_back(newhit);
     }
-  }
-  
+  }  
   return true;
 }
 
 inline bool SCEventHits::IsGoodEvent(){
   if(!m_padw || !m_pade)
     return false;
-  
   if(m_padw->Count() < 200. ||
      m_padw->Count() > 250. ||
      m_pade->Count() < 200. ||
      m_pade->Count() > 250.)
     return false;
-
   if(NBotPair() != 1 ||
      NTopPair() != 1){
     return false;
