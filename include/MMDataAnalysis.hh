@@ -75,7 +75,7 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
   sc_EventHits = SCEventHits();
 
   // fill event hits
-  for(int i = 0; i < N_sci; i++){
+  for(int i = 0; i < N_sci-1; i++){
    
     SCHit hit(sci_CH->at(i),
 	      sci_count->at(i));

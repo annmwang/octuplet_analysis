@@ -17,8 +17,8 @@ class MMPacmanAlgo : public MMClusterAlgo {
 
 public:
   MMPacmanAlgo(int clus_size = 5,
-	       double seed_thresh = 15.,
-	       double hit_thresh  = 10.);
+	       double seed_thresh = 10.,
+	       double hit_thresh  = 2.); //was 15, 10
   
   ~MMPacmanAlgo() {}
 
