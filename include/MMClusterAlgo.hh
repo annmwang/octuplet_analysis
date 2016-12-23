@@ -85,7 +85,7 @@ inline bool MMClusterAlgo::IsGoodHit(const MMHit& hit){
     return false;
   if(hit.Charge() < 0)
     return false;
-  
+
   // BCID
   if(fabs(hit.BCID() - m_trig_BCID) > m_max_BCID_diff)
     return false;

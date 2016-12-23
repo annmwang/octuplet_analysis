@@ -27,8 +27,10 @@ public:
   void SetClusterSize(int clus_size);
   void SetSeedThreshold(double thresh);
   void SetHitThreshold(double thresh);
-
+  int GetGoodHits();
+  void SetGoodHits(int nhit);
 private:
+  int m_good_hits; // number of hits in the last clustering
   int m_clus_size;
   double m_seed_thresh;
   double m_hit_thresh;
@@ -43,19 +45,21 @@ inline MMPacmanAlgo::MMPacmanAlgo(int clus_size,
   m_clus_size = clus_size;
   m_seed_thresh = seed_thresh;
   m_hit_thresh = hit_thresh;
+  m_good_hits = 0;
 }
 
 inline MMClusterList MMPacmanAlgo::Cluster(const MMFE8Hits& hits){
   MMClusterList cluster_list;
-  
+  m_good_hits = 0;
   // forward step
   int Nhit = hits.GetNHits();
   for(int i = 0; i < Nhit; i++){
     if(!IsGoodHit(hits[i]))
       continue;
+    m_good_hits++;
    
     // new cluster if seed above thresh
-    if(hits[i].Charge() > m_seed_thresh){
+    if(hits[i].Charge() >= m_seed_thresh){
       MMCluster cluster(hits[i]);
       int last_channel = hits[i].Channel();
       // look for additional hits forward
@@ -65,7 +69,7 @@ inline MMClusterList MMPacmanAlgo::Cluster(const MMFE8Hits& hits){
 	}
 	if(hits[j].Channel() <= last_channel+m_clus_size){
 	  i = j; // move index so we don't look for seeds in this channel
-	  if(hits[j].Charge() > m_hit_thresh){
+	  if(hits[j].Charge() >= m_hit_thresh){
 	    cluster.AddLinkedHit(hits[j]);
 	    last_channel = hits[j].Channel();
 	  }
@@ -90,7 +94,7 @@ inline MMClusterList MMPacmanAlgo::Cluster(const MMFE8Hits& hits){
       if(cluster_list.Contains(hits[j]))
 	break; // already in another cluster
       if(hits[j].Channel() >= first_channel-m_clus_size){
-	if(hits[j].Charge() > m_hit_thresh){
+	if(hits[j].Charge() >= m_hit_thresh){
 	  cluster_list.AddLinkedHit(hits[j], c);
 	  first_channel = hits[j].Channel();
 	}
@@ -116,6 +120,12 @@ inline void MMPacmanAlgo::SetHitThreshold(double thresh){
   m_hit_thresh = thresh;
 }
 
+inline int MMPacmanAlgo::GetGoodHits(){
+  return m_good_hits;
+}
 
+inline void MMPacmanAlgo::SetGoodHits(int nhit){
+  m_good_hits = nhit;
+}
 
 

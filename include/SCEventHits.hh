@@ -41,6 +41,10 @@ public:
 
   double BotTDC();
   double TopTDC();
+
+  std::vector<std::pair<SCHit*,SCHit*> > GetTopPair();
+  std::vector<std::pair<SCHit*,SCHit*> > GetBotPair();
+
   
 private:
   std::vector<SCHit*> m_hits;
@@ -97,9 +101,6 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
       m_hits.insert(m_hits.begin()+i, newhit);
       break;
     }
-    // if(hit.Channel() == m_hits[i]->Channel()){
-    //   return false;
-    // }
   }
   if(!newhit){
     newhit = new SCHit(hit);
@@ -132,7 +133,7 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
 	}
       }
       m_bothits.push_back(newhit);
-      }
+    }
   }
   if(newhit->Channel() >= 16 && newhit->Channel() < 28){
     newhit->SetCount(newhit->Count() +
@@ -169,7 +170,6 @@ inline bool SCEventHits::IsGoodEvent(){
      NTopPair() != 1){
     return false;
   }
-    
 
   double topx, topy, botx, boty;
   BotXY(botx,boty);
@@ -182,11 +182,10 @@ inline bool SCEventHits::IsGoodEvent(){
   double length = sqrt(274.3*274.3 +
 		       (botx-topx)*(botx-topx)+
 		       (boty-topy)*(boty-topy))/100.;
+  // 0.5 ns per count
   double timediff = TopTDC() - BotTDC() - length*2.*3.3;
-
   if(fabs(timediff) > 20.)
     return false;
-
   return true;
 }
 
@@ -219,7 +218,7 @@ inline void SCEventHits::TopXY(double& x, double& y){
     m_top_pairs[0].second->Count();
   
   x = -tdcdiff*3.144;
-  y = 50. - (m_bot_pairs[0].first->Channel()-16)*20.;
+  y = 50. - (m_top_pairs[0].first->Channel()-16)*20.;
 }
 
 inline double SCEventHits::BotTDC(){
@@ -238,6 +237,14 @@ inline double SCEventHits::TopTDC(){
   }
   return sc_top_atdc_corr[m_top_pairs[0].first->Channel()] +
     (m_top_pairs[0].first->Count()+m_top_pairs[0].second->Count())/2.;
+}
+
+inline std::vector<std::pair<SCHit*,SCHit*> > SCEventHits::GetTopPair(){
+  return m_top_pairs;
+}
+
+inline std::vector<std::pair<SCHit*,SCHit*> > SCEventHits::GetBotPair(){
+  return m_bot_pairs;
 }
 
 inline bool SCEventHits::operator += (const SCHit& hit){
