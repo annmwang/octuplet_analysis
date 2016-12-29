@@ -27,12 +27,16 @@ public:
   void AddLinkedHit(const MMLinkedHit& hit, int iclus);
   
   int GetNCluster() const;
+  size_t size() const;
   MMCluster const& Get(int i) const;
   MMCluster const& operator [] (int i) const;
 
   int GetNDuplicates() const;
 
   bool Contains(const MMHit& hit) const;
+
+  std::vector<MMCluster*>::iterator begin();
+  std::vector<MMCluster*>::iterator end();
 
 private:
   std::vector<MMCluster*> m_clusters;
@@ -55,6 +59,14 @@ inline MMClusterList::~MMClusterList(){
   int N = GetNCluster();
   for(int i = 0; i < N; i++)
     delete m_clusters[i];
+}
+
+inline std::vector<MMCluster*>::iterator MMClusterList::begin(){
+  return m_clusters.begin();
+}
+
+inline std::vector<MMCluster*>::iterator MMClusterList::end(){
+  return m_clusters.end();
 }
 
 inline void MMClusterList::AddCluster(const MMCluster& clus){
@@ -83,6 +95,10 @@ inline void MMClusterList::AddLinkedHit(const MMLinkedHit& hit, int iclus){
 }
   
 inline int MMClusterList::GetNCluster() const {
+  return m_clusters.size();
+}
+
+inline size_t MMClusterList::size() const {
   return m_clusters.size();
 }
 
