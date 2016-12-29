@@ -60,8 +60,6 @@ private:
   std::vector<std::pair<SCHit*,SCHit*> > m_bot_pairs;
   std::vector<std::pair<SCHit*,SCHit*> > m_top_pairs;
 
-  static double sc_bot_corr[12];
-  static double sc_top_corr[12];
   static double sc_bot_atdc_corr[6];
   static double sc_top_atdc_corr[6];
 
@@ -116,10 +114,8 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
   }
 
   if(newhit->Channel() < 12){
-    newhit->SetCount(newhit->Count() +
-		     sc_bot_corr[newhit->Channel()]);
-    if(newhit->Count() > 160. &&
-       newhit->Count() < 220.){
+    newhit->CorrectCount();
+    if (newhit->PassCountReqs()){
       int Nbot = m_bothits.size();
       for(int i = 0; i < Nbot; i++){
 	if(abs(newhit->Channel()-m_bothits[i]->Channel()) == 6){
@@ -136,10 +132,8 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
     }
   }
   if(newhit->Channel() >= 16 && newhit->Channel() < 28){
-    newhit->SetCount(newhit->Count() +
-		     sc_top_corr[newhit->Channel()-16]);
-    if(newhit->Count() > 180. &&
-       newhit->Count() < 240.){
+    newhit->CorrectCount();
+    if (newhit->PassCountReqs()){
       int Ntop = m_tophits.size();
       for(int i = 0; i < Ntop; i++){
 	if(abs(newhit->Channel()-m_tophits[i]->Channel()) == 6){
@@ -161,15 +155,10 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
 inline bool SCEventHits::IsGoodEvent(){
   if(!m_padw || !m_pade)
     return false;
-  if(m_padw->Count() < 200. ||
-     m_padw->Count() > 250. ||
-     m_pade->Count() < 200. ||
-     m_pade->Count() > 250.)
+  if (!m_padw->PassCountReqs() || !m_pade->PassCountReqs())
     return false;
-  if(NBotPair() != 1 ||
-     NTopPair() != 1){
+  if(NBotPair() != 1 || NTopPair() != 1)
     return false;
-  }
 
   double topx, topy, botx, boty;
   BotXY(botx,boty);
@@ -263,14 +252,6 @@ inline SCHit const& SCEventHits::operator [] (int ihit) const {
   return Get(ihit);
 }
 
-double SCEventHits::sc_bot_corr[12] = { -0.6, -1.5, 0.8,
-					-1.5,  1.4, 0.8,
-					-.8,   0.1, -0.,
-					-.8,   1.4,  .5 };
-double SCEventHits::sc_top_corr[12] = { -1.8, 2.4,  1.2,
-					0.6,   .5, -1.6,
-					1.1,   2.,  -.1,
-					-2.,   .3, -1.4 };
 double SCEventHits::sc_bot_atdc_corr[6] = { -2.8, -2.7, -2.6,
 					    -2.6, -2.6, -2.9 };
 double SCEventHits::sc_top_atdc_corr[6] = { -1.4, -1.4, -1.4,
