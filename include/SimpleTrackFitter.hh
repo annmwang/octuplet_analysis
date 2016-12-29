@@ -46,10 +46,10 @@ inline SimpleTrackFitter::SimpleTrackFitter(){
   m_functor = new ROOT::Math::Functor(this, &SimpleTrackFitter::EvaluateMetric, 4);
   m_minimizer->SetFunction(*m_functor);
 
-  m_minimizer->SetVariable(0, "c_x", 0., 0.001);
-  m_minimizer->SetVariable(1, "s_x", 0., 0.001);
-  m_minimizer->SetVariable(2, "c_y", 0., 0.001);
-  m_minimizer->SetVariable(3, "s_y", 0., 0.001);
+  m_minimizer->SetVariable(0, "c_x", 100., 0.01);
+  m_minimizer->SetVariable(1, "s_x", 0.,   0.001);
+  m_minimizer->SetVariable(2, "c_y", 100., 0.01);
+  m_minimizer->SetVariable(3, "s_y", 0.,   0.001);
 
   m_clusters = nullptr;
   m_geometry = nullptr;
@@ -61,7 +61,7 @@ inline SimpleTrackFitter::~SimpleTrackFitter(){
 }
 
 inline MMTrack SimpleTrackFitter::Fit(const MMClusterList& clusters, 
-				      const GeoOctuplet& geometry){
+                                      const GeoOctuplet&   geometry){
   // return track
   MMTrack track;
 
@@ -72,8 +72,10 @@ inline MMTrack SimpleTrackFitter::Fit(const MMClusterList& clusters,
   int N = clusters.GetNCluster();
   m_clusters = new MMClusterList();
   for(int i = 0; i < N; i++)
-    if(m_geometry->Index(clusters[i].MMFE8()) >= 0)
+    if(m_geometry->Index(clusters[i].MMFE8()) >= 0){
       m_clusters->AddCluster(clusters[i]);
+      track.CountHit(clusters[i].MMFE8Index());
+    }
 
   // do fit
   if(m_clusters->GetNCluster() > 0){

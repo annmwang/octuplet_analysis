@@ -20,6 +20,7 @@ public:
   ~MMHit();
 
   int MMFE8() const;
+  int MMFE8Index() const;
   int VMM() const;
   double Channel() const;
   double VMMChannel() const;
@@ -35,6 +36,7 @@ public:
   bool IsTimeCalib() const;
   
   void SetMMFE8(int mmfe8);
+  void SetMMFE8Index();
   void SetVMM(int vmm);
   void SetChannel(double ch);
   void SetPDO(int pdo);
@@ -46,6 +48,7 @@ public:
   
 private:
   int m_MMFE8;
+  int m_MMFE8index;
   int m_VMM;
   double m_CH;
   int m_PDO;
@@ -78,6 +81,8 @@ inline MMHit::MMHit(){
 
   m_charge_calib = false;
   m_time_calib = false;
+
+  SetMMFE8Index();
 }
 
 inline MMHit::MMHit(int mmfe8, int vmm, double ch){
@@ -93,10 +98,13 @@ inline MMHit::MMHit(int mmfe8, int vmm, double ch){
 
   m_charge_calib = false;
   m_time_calib = false;
+
+  SetMMFE8Index();
 }
 
 inline MMHit::MMHit(const MMHit& hit){
   m_MMFE8 = hit.MMFE8();
+  m_MMFE8index = hit.MMFE8Index();
   m_VMM = hit.VMM();
   m_CH = hit.VMMChannel();
   m_PDO = hit.PDO();
@@ -117,6 +125,10 @@ inline MMHit::~MMHit(){
 
 inline int MMHit::MMFE8() const {
   return m_MMFE8;
+}
+
+inline int MMHit::MMFE8Index() const {
+  return m_MMFE8index;
 }
 
 inline int MMHit::VMM() const {
@@ -203,5 +215,19 @@ inline void MMHit::SetCharge(double q){
 inline void MMHit::SetTime(double t){
   m_time = t;
   m_time_calib = true;
+}
+
+inline void MMHit::SetMMFE8Index() {
+  // only valid for Run 3513.
+  // lets put this info into the ntuple?
+  m_MMFE8index = -1;
+  if      (m_MMFE8 == 111) m_MMFE8index = 0;
+  else if (m_MMFE8 == 116) m_MMFE8index = 1;
+  else if (m_MMFE8 == 101) m_MMFE8index = 2;
+  else if (m_MMFE8 == 109) m_MMFE8index = 3;
+  else if (m_MMFE8 == 117) m_MMFE8index = 4;
+  else if (m_MMFE8 == 102) m_MMFE8index = 5;
+  else if (m_MMFE8 == 107) m_MMFE8index = 6;
+  else if (m_MMFE8 == 105) m_MMFE8index = 7;
 }
 

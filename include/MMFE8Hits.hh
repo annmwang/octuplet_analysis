@@ -37,6 +37,11 @@ public:
   int GetIndex(const MMHit& hit) const;
 
   int MMFE8() const;
+  int MMFE8Index() const;
+
+  int isX() const;
+  int isU() const;
+  int isV() const;
 
   int GetNHits() const;
   MMLinkedHit const& Get(int ihit) const;
@@ -177,9 +182,19 @@ inline bool MMFE8Hits::operator += (const MMFE8Hits& hits){
 inline int MMFE8Hits::MMFE8() const {
   if(GetNHits() == 0)
     return -1;
-
   return m_hits[0]->MMFE8();
 }
+
+inline int MMFE8Hits::MMFE8Index() const {
+  if(GetNHits() == 0)
+    return -1;
+  return m_hits[0]->MMFE8Index();
+}
+
+inline int MMFE8Hits::isX() const { return (MMFE8Index() == 0 || MMFE8Index() == 1 ||
+                                            MMFE8Index() == 6 || MMFE8Index() == 7); }
+inline int MMFE8Hits::isU() const { return (MMFE8Index() == 2 || MMFE8Index() == 4); }
+inline int MMFE8Hits::isV() const { return (MMFE8Index() == 3 || MMFE8Index() == 5); }
 
 inline int MMFE8Hits::GetNHits() const {
   return int(m_hits.size());

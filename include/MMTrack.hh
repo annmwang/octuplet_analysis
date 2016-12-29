@@ -26,6 +26,10 @@ public:
   double ConstY() const;
   double SlopeX() const;
   double SlopeY() const;
+  int NX() const;
+  int NU() const;
+  int NV() const;
+  int NBoard(int b) const;
 
   TVector3 PointX(double x) const;
   TVector3 PointY(double y) const;
@@ -35,6 +39,7 @@ public:
   void SetConstY(double CY);
   void SetSlopeX(double SX);
   void SetSlopeY(double SY);
+  void CountHit(int immfe8);
   
   TGraph*   GetXZGraph(double zmin, double zmax) const;
   TGraph2D* Get2DGraph(double zmin, double zmax) const;
@@ -44,6 +49,11 @@ private:
   double m_CY;
   double m_SX;
   double m_SY;
+  int m_NX;
+  int m_NU;
+  int m_NV;
+  int m_N0; int m_N1; int m_N2; int m_N3;
+  int m_N4; int m_N5; int m_N6; int m_N7;
 
 };
 
@@ -52,6 +62,11 @@ inline MMTrack::MMTrack(){
   m_CY = 0.;
   m_SX = 0.;
   m_SY = 0.;
+  m_NX = 0;
+  m_NU = 0;
+  m_NV = 0;
+  m_N0 = 0; m_N1 = 0; m_N2 = 0; m_N3 = 0;
+  m_N4 = 0; m_N5 = 0; m_N6 = 0; m_N7 = 0;
 }
 
 inline MMTrack::MMTrack(const MMTrack& track){
@@ -59,24 +74,33 @@ inline MMTrack::MMTrack(const MMTrack& track){
   m_CY = track.ConstY();
   m_SX = track.SlopeX();
   m_SY = track.SlopeX();
+  m_NX = track.NX();
+  m_NU = track.NU();
+  m_NV = track.NV();
+  m_N0 = track.NBoard(0); m_N1 = track.NBoard(1); m_N2 = track.NBoard(2); m_N3 = track.NBoard(3);
+  m_N4 = track.NBoard(4); m_N5 = track.NBoard(5); m_N6 = track.NBoard(6); m_N7 = track.NBoard(7);
 }
 
 inline MMTrack::~MMTrack() {}
 
-inline double MMTrack::ConstX() const {
-  return m_CX;
-}
+inline double MMTrack::ConstX() const { return m_CX; }
+inline double MMTrack::ConstY() const { return m_CY; }
+inline double MMTrack::SlopeX() const { return m_SX; }
+inline double MMTrack::SlopeY() const { return m_SY; }
+inline    int MMTrack::NX()     const { return m_NX; }
+inline    int MMTrack::NU()     const { return m_NU; }
+inline    int MMTrack::NV()     const { return m_NV; }
 
-inline double MMTrack::ConstY() const {
-  return m_CY;
-}
-
-inline double MMTrack::SlopeX() const {
-  return m_SX;
-}
-
-inline double MMTrack::SlopeY() const {
-  return m_SY;
+inline int MMTrack::NBoard(int b) const { 
+    if      (b==0) return m_N0;
+    else if (b==1) return m_N1;
+    else if (b==2) return m_N2;
+    else if (b==3) return m_N3;
+    else if (b==4) return m_N4;
+    else if (b==5) return m_N5;
+    else if (b==6) return m_N6;
+    else if (b==7) return m_N7;
+    return -1;
 }
 
 inline TVector3 MMTrack::PointX(double x) const {
@@ -116,20 +140,25 @@ inline TVector3 MMTrack::PointZ(double z) const {
   return p;
 }
 
-inline void MMTrack::SetConstX(double CX){
-  m_CX = CX;
-}
+inline void MMTrack::SetConstX(double CX){ m_CX = CX; }
+inline void MMTrack::SetConstY(double CY){ m_CY = CY; }
+inline void MMTrack::SetSlopeX(double SX){ m_SX = SX; }
+inline void MMTrack::SetSlopeY(double SY){ m_SY = SY; }
 
-inline void MMTrack::SetConstY(double CY){
-  m_CY = CY;
-}
+inline void MMTrack::CountHit(int immfe8) {
+    if      (immfe8 == 0 || immfe8 == 1 ||
+             immfe8 == 6 || immfe8 == 7)   m_NX++;
+    else if (immfe8 == 2 || immfe8 == 4)   m_NU++;
+    else if (immfe8 == 3 || immfe8 == 5)   m_NV++;
 
-inline void MMTrack::SetSlopeX(double SX){
-  m_SX = SX;
-}
-
-inline void MMTrack::SetSlopeY(double SY){
-  m_SY = SY;
+    if      (immfe8 == 0) m_N0++;
+    else if (immfe8 == 1) m_N1++;
+    else if (immfe8 == 2) m_N2++;
+    else if (immfe8 == 3) m_N3++;
+    else if (immfe8 == 4) m_N4++;
+    else if (immfe8 == 5) m_N5++;
+    else if (immfe8 == 6) m_N6++;
+    else if (immfe8 == 7) m_N7++;
 }
 
 inline TGraph* MMTrack::GetXZGraph(double zmin, double zmax) const {
