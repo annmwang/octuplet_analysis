@@ -38,6 +38,8 @@ public:
   std::vector<MMCluster*>::iterator begin();
   std::vector<MMCluster*>::iterator end();
 
+  void Reset();
+
 private:
   std::vector<MMCluster*> m_clusters;
   
@@ -54,11 +56,18 @@ inline MMClusterList::MMClusterList(const MMClusterList& cl){
   for(int i = 0; i < N; i++)
     AddCluster(cl[i]);
 }
-  
+
 inline MMClusterList::~MMClusterList(){
   int N = GetNCluster();
   for(int i = 0; i < N; i++)
     delete m_clusters[i];
+}
+
+inline void MMClusterList::Reset() {
+  for (auto cluster: m_clusters)
+    if (cluster)
+      delete cluster;
+  m_clusters.clear();
 }
 
 inline std::vector<MMCluster*>::iterator MMClusterList::begin(){
