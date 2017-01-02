@@ -24,7 +24,8 @@ public:
   ~SimpleTrackFitter();
 
   MMTrack Fit(const MMClusterList& clusters, 
-	      const GeoOctuplet& geometry);
+              const GeoOctuplet& geometry,
+              const int evt = -1);
 
 private:
   ROOT::Math::Minimizer* m_minimizer;
@@ -61,7 +62,8 @@ inline SimpleTrackFitter::~SimpleTrackFitter(){
 }
 
 inline MMTrack SimpleTrackFitter::Fit(const MMClusterList& clusters, 
-                                      const GeoOctuplet&   geometry){
+                                      const GeoOctuplet&   geometry,
+                                      const int evt){
   // return track
   MMTrack track;
 
@@ -84,7 +86,14 @@ inline MMTrack SimpleTrackFitter::Fit(const MMClusterList& clusters,
     m_minimizer->SetVariableValue(2, 0.);
     m_minimizer->SetVariableValue(3, 0.);
 
-    m_minimizer->Minimize();
+    bool ok = m_minimizer->Minimize();
+    if (!ok && evt != -1)
+      std::cout << " Fit failed on Event " << evt
+                << " | N(clus) = "  << (int)(m_clusters->size())
+                << " | N(X) = "     << track.NX()
+                << " | N(U) = "     << track.NU()
+                << " | N(V) = "     << track.NV()
+                << std::endl;
 
     const double* param = m_minimizer->X();
     track.SetConstX(param[0]);
