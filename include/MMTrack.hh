@@ -44,6 +44,8 @@ public:
   TGraph*   GetXZGraph(double zmin, double zmax) const;
   TGraph2D* Get2DGraph(double zmin, double zmax) const;
 
+  void Reset();
+
 private:
   double m_CX;
   double m_CY;
@@ -82,6 +84,18 @@ inline MMTrack::MMTrack(const MMTrack& track){
 }
 
 inline MMTrack::~MMTrack() {}
+
+inline void MMTrack::Reset(){
+  m_CX = 0.;
+  m_CY = 0.;
+  m_SX = 0.;
+  m_SY = 0.;
+  m_NX = 0;
+  m_NU = 0;
+  m_NV = 0;
+  m_N0 = 0; m_N1 = 0; m_N2 = 0; m_N3 = 0;
+  m_N4 = 0; m_N5 = 0; m_N6 = 0; m_N7 = 0;
+}
 
 inline double MMTrack::ConstX() const { return m_CX; }
 inline double MMTrack::ConstY() const { return m_CY; }
