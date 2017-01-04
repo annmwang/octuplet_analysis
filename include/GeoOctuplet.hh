@@ -40,7 +40,11 @@ public:
   void SetRunNumber(int RunNumber);
 
   double GetResidualX(const MMCluster& clus,
-		      const MMTrack& track);
+                      const MMTrack& track);
+
+  double GetQuadraticSumOfResidualsX(MMClusterList clusters,
+                                     const MMTrack& track,
+                                     bool normalize=true);
 
   TGraph* GetXZGraph(const MMClusterList& clusters) const;
   TGraphErrors* GetXZGraphErrors(const MMClusterList& clusters) const;
@@ -280,12 +284,28 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
 }
 
 inline double GeoOctuplet::GetResidualX(const MMCluster& clus,
-					const MMTrack& track){
+                                        const MMTrack& track){
   int iplane = Index(clus.MMFE8());
   if(iplane < 0)
     return 0.;
 
   return m_planes[iplane]->GetResidualX(clus.Channel(), track);
+}
+
+inline double GeoOctuplet::GetQuadraticSumOfResidualsX(MMClusterList clusters,
+                                                       const MMTrack& track,
+                                                       bool normalize){
+  if (clusters.size() == 0)
+    return 0.0;
+
+  double sum = 0.0;
+  for (auto clus: clusters){
+    sum += pow(GetResidualX(*clus, track), 2.0);
+  }
+  sum = pow(sum, 0.5);
+
+  if (normalize) return sum / (double)(clusters.size());
+  else           return sum;
 }
 
 inline TGraph* GeoOctuplet::GetXZGraph(const MMClusterList& clusters) const {
