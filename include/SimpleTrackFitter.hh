@@ -95,6 +95,7 @@ inline MMTrack SimpleTrackFitter::Fit(const MMClusterList& clusters,
                 << " | N(V) = "     << track.NV()
                 << std::endl;
 
+    
     const double* param = m_minimizer->X();
     track.SetConstX(param[0]);
     track.SetConstY(param[2]);
