@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include "TROOT.h"
 
-#include "include/AtlasStyle.hh"
 #include "include/MMPlot.hh"
 #include "include/PDOToCharge.hh"
 #include "include/TDOToTime.hh"
@@ -149,17 +148,15 @@ int main(int argc, char* argv[]){
   TH1D* passedhits;
   TH1D* totalhits;
 
+  TH1D* track_angles;
+  
   vector<TH1D*> x_hits;
 
-  int five_cluster = 0;
-  int fit_five_cluster = 0;
-  int cut_five_cluster = 0;
-
   int gothit[8] = {0};
-  int exphit[8] = {0};
+   int exphit[8] = {0};
   vector < vector<Double_t> > hiteff;
   vector < vector<Double_t> > hitefferrors;
-  int HT = 5; // boards hit thresh
+  int HT = 8; // boards hit thresh
 
   for(int i = 0; i < 6; i++){ 
     track_deg_top21.push_back(new TH1D(Form("track_deg_top21_bot%d",i),
@@ -177,10 +174,10 @@ int main(int argc, char* argv[]){
 				     1001,-50.5,250.5));
     board_itrack_resX.push_back(new TH1D(Form("b_it_resX_%d",i),
 					 Form("b_it_resX_%d",i),
-					 1001,-5.,5.));
+					 300,-5.,5.));
     board_otrack_resX.push_back(new TH1D(Form("b_ot_resX_%d",i),
 					 Form("b_ot_resX_%d",i),
-					 1001,-5.,5.));
+					 300,-5.,5.));
     track_sumresX2.push_back(new TH1D(Form("t_sumresX2_%d",i),
               Form("t_sumresX2_%d",i),
               1024,0.,5.));
@@ -195,16 +192,17 @@ int main(int argc, char* argv[]){
 
   passedhits = new TH1D("passed_hits","passed_hits",8, -0.5,7.5);
   totalhits = new TH1D("total_hits","total_hits",8, -0.5,7.5);
+  track_angles = new TH1D("track angles","track angles",50, -25.,25.);
   TFile* fout = new TFile(outputFileName, "RECREATE");
   fout->mkdir("event_displays");
   MMPlot();
-
+  int nEventsEight = 0;
   for(int evt = 0; evt < Nevent; evt++){
     DATA->GetEntry(evt);
     mm_evt = DATA->mm_EventNum;
 
     if(evt%(Nevent/10) == 0) 
-      //cout << "Processing event # " << evt << " | " << Nevent << endl;
+      cout << "Processing event # " << evt << " | " << Nevent << endl;
 
     if(GEOMETRY->RunNumber() < 0){
       GEOMETRY->SetRunNumber(DATA->RunNum);
@@ -262,7 +260,6 @@ int main(int argc, char* argv[]){
     // histogram group B
     // clustering applies BCID cuts, strips away hits with values of zero for MMFE8,PDO,TDO,Q,calib
     int TotalMMHits = 0;
-
     vector<MMClusterList> all_clusters;
     for(int i = 0; i < Nboard; i++){
       if(DATA->mm_EventHits[i].GetNHits() == 0)
@@ -272,32 +269,43 @@ int main(int argc, char* argv[]){
       TotalMMHits += PACMAN->GetGoodHits();
       if (clusters.GetNCluster() == 1) 
         single_cluster[ib[DATA->mm_EventHits[i].MMFE8()]]++;
-      if(clusters.GetNCluster() > 0)
+      if(clusters.GetNCluster() > 0){
       	all_clusters.push_back(clusters);
+      }
     }
+
     if (TotalMMHits < 1)
       continue;
     int Ncl = all_clusters.size();
-    // vector<MMClusterList> pruned_clusters;
-    // // prune cluster lists using "slope roads"
-    // for(int i = 0; i < Nboard; i++){
-    //   MMClusterList temp_clusters;
-    //   GeoPlane plane = GEOMETRY->Get(i);
-    //   int Nc = all_clusters[i].GetNCluster();
-    //   for(int c = 0; c < Nc; c++) {
-    //     if(all_clusters[i][c].GetNHits() > 0){
-    //       double x_pos = 102.3+plane.LocalXatYbegin(all_clusters[i][c].Channel());
-    //       if ((x_pos < 115.) && botPair.first->Channel() == 4 && topPair.first->Channel() == 21)
-    //         temp_clusters.AddCluster(all_clusters[i][c]);
-    //     }
-    //   }
-    //   pruned_clusters.push_back(temp_clusters);
-    // }
-
-
-
-
-
+    int nU = 0;
+    int nV = 0;
+    int nX = 0;
+    for (int i = 0; i < Ncl; i++){
+      //check for what planes were hit
+      int Nc = all_clusters[i].GetNCluster();
+      for (int c = 0; c < Nc; c++)
+	if (all_clusters[i][c].GetNHits() > 0){
+	  // cout << "xL " << all_clusters[i][c].isX() << endl;
+	  // cout << "U " << all_clusters[i][c].isU() << endl;
+	  // cout << "V " << all_clusters[i][c].isV() << endl;
+	  if (all_clusters[i][c].isX() == 1)
+	    nX++;
+	  else if (all_clusters[i][c].isU() == 1)
+	    nU++;
+	  else if (all_clusters[i][c].isV() == 1)
+	    nV++;
+	  break;
+	}
+      // break;
+    }
+    // limit to 8 boards hit, with three X, two U, two V
+    if ((nU < 2) | (nV < 2) | (nX < 4)){
+      continue;
+    }
+    nEventsEight++;
+    //    continue;
+    // Picking the best clusters
+    
     MMClusterList aggr_clusters;
     for(int i = 0; i < Ncl; i++){
       // add together all clusters
@@ -308,7 +316,7 @@ int main(int argc, char* argv[]){
         }
       }
     }
-    for (int i = 0; i < 8; i++){
+    for (int i = 0; i < Nboard; i++){
       //if (botPair.first->Channel() == 4 && topPair.first->Channel() == 20) {
         GeoPlane plane = GEOMETRY->Get(i);
         for (int j = 0; j < aggr_clusters.GetNCluster(); j++) {
@@ -320,37 +328,26 @@ int main(int argc, char* argv[]){
         }
       //}
     }
-
+    
+    int Ncomb = 1;
     for(int i = 0; i < Ncl; i++){
-      int Nc = all_clusters[i].GetNCluster();
+      Ncomb = Ncomb*all_clusters[i].GetNCluster();
     }
 
-/*    // track fitting
-    MMClusterList fit_clusters;
-    MMClusterList fit_clusters_a; // first five boards only
-    for(int i = 0; i < Ncl; i++){
-      // add highest charge cluster from each board;
-      int Nc = all_clusters[i].GetNCluster();
-      for(int c = 0; c < Nc; c++) {
-      	if(all_clusters[i][c].GetNHits() > 0){
-      	  fit_clusters.AddCluster(all_clusters[i][c]);
-          if (ib[all_clusters[i][c].MMFE8()] < 5) {
-            fit_clusters_a.AddCluster(all_clusters[i][c]);
-          }
-      	  break;
-        }
-      }
+    // let's not explode
+    if (Ncomb > 10000){
+      cout << "Too many combinations!" << endl;
+      continue;
     }
-    int Nclus_all_a = fit_clusters_a.GetNCluster();
-    */
-
+    
     // track fitting with all possible clusters
     
     // here we save all possible cluster combinations
     int cluster_n[8] = {0,0,0,0,0,0,0,0}; // iterator through clusters
     int listsize = 0; // keep track of how many boards have != 0 clusters
 
-    vector<MMClusterList> fit_clusters_a; 
+    vector<MMClusterList> fit_clusters_a;
+    MMClusterList fit_clusters;
     for (int i = 0; i < all_clusters.size(); i++) {
       if (all_clusters[i].GetNCluster() > 0){
         cluster_n[i] = 0;
@@ -363,11 +360,9 @@ int main(int argc, char* argv[]){
     if (listsize < 1) // if nothing, stop
       continue;
     
-    // cout << "SIZE: " << listsize << endl;
-    
     // add all possible combinations of clusters
     while (cluster_n[0] != all_clusters[0].GetNCluster()){
-      MMClusterList fit_clusters;
+      fit_clusters.Reset();
       for (int j = 0; j < listsize; j++){
         fit_clusters.AddCluster(all_clusters[j][cluster_n[j]]);
         // cout << "BOARD: " << j << " CLUSTER # " << cluster_n[j] << endl;
@@ -380,66 +375,15 @@ int main(int argc, char* argv[]){
       }
     }
 
-    // how many combinations?
-    int Nfit = fit_clusters_a.size();
-    cout << "COMBINATIONS: " << Nfit << endl;
-
-    // let's not explode
-    if (Nfit > 10000)
-      continue;
-
     int Nclus_all_a = fit_clusters_a[0].GetNCluster();
     
     // For comparing with Paolo
-    //cout << "nev 3 " << mm_evt << " " << Nclus_all_a << " " <<endl;
-    //if (mm_evt == 20000)
-    //  break;
+    // cout << "nev 3 " << mm_evt << " " << Nclus_all_a << " " <<endl;
+    // if (mm_evt == 20000)
+    // break;
 
     int Nplane = GEOMETRY->GetNPlanes();
 
-    // here we only fit boards if we have HT or more clusters
-    
-
-    if (Nclus_all_a < HT) 
-      continue;
-    five_cluster++;
-
-    // if (Nclus_all < HT) 
-    //   continue;
-    // saving clusters 
-    /*vector < MMClusterList> hit_clusters;
-    vector <int> denom_ints; // save the boards for which we have eff. denominator candidates
-    //MMClusterList hit_clusters_temp;
-    int other_hits = 0;
-
-   for (int i = 0; i < Nplane; i++){ // calculating hit efficiency for board i
-      MMClusterList hit_clusters_temp;
-      for (int j = 0; j < Nplane; j++){ //loop through all other planes
-      	if (i == j) continue;
-      	bool had_cluster = false;
-      	for (int c = 0; c < Nclus_all; c++){ // look for cluster on that board
-      	  int b = ib[fit_clusters[c].MMFE8()];
-      	  if (b == j) 
-      	    had_cluster = true;
-      	}
-      	if (had_cluster == true) {
-      	  other_hits++;
-      	  had_cluster = false;
-      	}
-      }
-      if (other_hits >= HT){
-      	for (int c = 0; c < Nclus_all; c++){
-  	      int b = ib[fit_clusters[c].MMFE8()]; //taking from a list of the highest charge clusters
-      	  if (b != i) {
-      	    hit_clusters_temp.AddCluster(fit_clusters[c]);
-      	  }
-      	}
-      	hit_clusters.push_back(hit_clusters_temp); // save this fucking piece of shit
-      	denom_ints.push_back(i);
-      }
-      other_hits = 0;
-    }*/
-      
     // picking the cluster combination that gives you the best track
   
     vector <double> list_sumres;
@@ -451,7 +395,7 @@ int main(int argc, char* argv[]){
       MMTrack track_all = FITTER->Fit(fit_clusters_a[k], *GEOMETRY);
       // Calculate the chi2 for the track, using the "other board's highest charge clusters"
       sumresX2 = 0.;
-      for(int c = 0; c < HT; c++){
+      for(int c = 0; c < Nboard; c++){
         const MMCluster& clus = fit_clusters_a[k][c];
         // fill residuals
         double resX = GEOMETRY->GetResidualX(clus, track_all);
@@ -464,58 +408,50 @@ int main(int argc, char* argv[]){
         imin_res = k;
       }
     }
-    // Uncomment this if you want to see what cluster it picks
-/*    cout << "MINRES: " << min_res << " " << imin_res << endl;
-    for (int i = 0; i < fit_clusters_a[imin_res].GetNCluster(); i++){
-      int boardi = ib[fit_clusters_a[imin_res].Get(i).MMFE8()];
-      cout << "BOARD: " << boardi << endl;
-      GeoPlane plane = GEOMETRY->Get(boardi);
-      double tempx = 102.3+plane.LocalXatYbegin(fit_clusters_a[imin_res].Get(i).Channel());
-      cout << "XPOS: " << tempx << endl;
-    } */     
-//    if (mm_evt > 600)
-//      break;
-    
+
     MMTrack track_all = list_tracks[imin_res]; 
     
     // track angles
     double track_theta = atan(track_all.SlopeX());
     double track_theta_deg = atan(track_all.SlopeX())/TMath::Pi()*180.;
-    for (int i = 0; i < 6; i++) { 
-      if (botPair.first->Channel() == i && topPair.first->Channel() == 21) {
-  	    cout << botPair.first->Channel() << " SC angle: " << sc_theta_deg << " Track angle: " << track_theta_deg << endl;
-  	    track_deg_top21[i]->Fill(track_theta_deg);
-      }
+    track_angles->Fill(track_theta_deg);
+    // if (fabs(track_theta_deg) > 10)
+    //   continue;
+    // Uncomment this if you want to see what cluster it picks
+    // cout << "MINRES: " << min_res << " " << imin_res << endl;
+    for (int i = 0; i < fit_clusters_a[imin_res].GetNCluster(); i++){
+      int boardi = ib[fit_clusters_a[imin_res].Get(i).MMFE8()];
+      double resX = GEOMETRY->GetResidualX(fit_clusters_a[imin_res].Get(i),track_all);
+      board_itrack_resX[boardi]->Fill(resX);
+      //cout << "BOARD: " << boardi << endl;
+      GeoPlane plane = GEOMETRY->Get(boardi);
+      double tempx = 102.3+plane.LocalXatYbegin(fit_clusters_a[imin_res].Get(i).Channel());
+      //cout << "XPOS: " << tempx << endl;
+
+      // new cluster list without this cluster
+      MMClusterList clus_list;
+      for (int o = 0; o < fit_clusters_a[imin_res].GetNCluster(); o++)
+	if (o != i)
+	  clus_list.AddCluster(fit_clusters_a[imin_res].Get(o));
+      MMTrack track = FITTER->Fit(clus_list, *GEOMETRY);
+      resX = GEOMETRY->GetResidualX(fit_clusters_a[imin_res].Get(i),track);
+      board_otrack_resX[boardi]->Fill(resX);
     }
 
-
-    cout << "SC angle: " << sc_theta_deg << " Track angle: " << track_theta_deg << endl;
+    //    cout << "SC angle: " << sc_theta_deg << " Track angle: " << track_theta_deg << endl;
 
     double fitProb = TMath::Prob(min_res/pow(x_res,2),HT-4);
     track_sumresX2[0]->Fill(min_res/pow(x_res,2));
     track_FitProb[0]->Fill(fitProb); //assuming HT-1 degrees of freedom
 
-    // Fiducial Cut, projected onto board 7 
-    std::vector<double> vx;
-    TVector3 p;
-    GeoPlane plane = GEOMETRY->Get(7);
-    p = plane.Intersection(track_all);
-
+    // // Fiducial Cut, projected onto board 7
+    // std::vector<double> vx;
+    // TVector3 p;
+    // GeoPlane plane = GEOMETRY->Get(7);
+    // p = plane.Intersection(track_all);
 
     // if ((p.X() > 215.) || (p.X() < -15.)) continue;
     // if ((p.Y() > 233.) || (p.Y() < 2.)) continue;
-
-    int fid_cut = 1;
-    if (((p.X() > 200.) || (p.X() < 0.)) || (p.Y() > 217.9) || (p.Y() < 17.9))
-      fid_cut = 0;
-    //cout << "nev " << mm_evt << " fitprob=   " << fitProb << " acc= " << fid_cut << endl;
-
-    if (fitProb < pow(10,-5.)) continue;
-    fit_five_cluster++;
-
-    if (fid_cut == 0.)
-      continue;
-    cut_five_cluster++;
 
     // past denominator selection
 
@@ -544,64 +480,11 @@ int main(int argc, char* argv[]){
         }
       }
       // save the cluster with the smallest residual
-      if (min_res < 999999.)
-        board_itrack_resX[k]->Fill(min_res);
+      //      if (min_res < 999999.)
+	//        board_itrack_resX[k]->Fill(min_res);
     }
 
 
-/*    for (int k = 0; k < denom_ints.size(); k++){
-
-      // ID of the board we're interested in measuring the hit efficiency of
-      int BID = denom_ints[k];
-
-      // fit the track
-      MMTrack track_all = FITTER->Fit(hit_clusters[k], *GEOMETRY);
-      
-      // save all clusters for target hit eff board
-      MMClusterList target_clusters;
-      for(int i = 0; i < Ncl; i++){
-    	  int Nc = all_clusters[i].GetNCluster();
-      	for(int j = 0; j < Nc; j++){
-    	  if(all_clusters[i][j].GetNHits() > 0){
-    	    if (ib[all_clusters[i][j].MMFE8()] == BID)
-    	      target_clusters.AddCluster(all_clusters[i][j]);
-      	  }
-      	}
-      }
-
-      // Calculate the chi2 for the track, using the "other board's highest charge clusters"
-      double sumresX2 = 0.;
-      for(int c = 0; c < HT; c++){
-      	const MMCluster& clus = hit_clusters[k][c];
-      	// fill residuals
-      	double resX = GEOMETRY->GetResidualX(clus, track_all);
-      	sumresX2 += resX*resX;
-      }
-
-      double fitProb = TMath::Prob(sumresX2/pow(x_res,2),HT-4);
-      track_sumresX2[BID]->Fill(sumresX2/pow(x_res,2));
-      // cout << "Event: " << evt<< endl;
-      // cout << "Filled hist! " << endl;
-      track_FitProb[BID]->Fill(fitProb); //assuming HT-1 degrees of freedom
-
-      // cut to remove bad fits
-      if (fitProb > pow(10,-5.)) continue;
-      exphit[BID]++;
-
-      double min_res = 999999.;
-      // calculate the residuals for ALL clusters in the hit eff board
-      for(int c = 0; c < target_clusters.GetNCluster(); c++){
-    	  const MMCluster& clus = target_clusters[c];
-      	// fill residuals
-      	double resX = GEOMETRY->GetResidualX(clus, track_all);
-      	if (fabs(resX) < fabs(min_res)) {
-      	  min_res = resX;
-      	}
-      }
-      // save the cluster with the smallest residual
-      if (min_res < 999999.)
-        board_itrack_resX[BID]->Fill(min_res);
-    }*/
   }
   
   /*vector < TF1 > sidebands;
@@ -631,16 +514,17 @@ int main(int argc, char* argv[]){
   for (int i = 0; i < 8; i++){
     double eff = double(gothit[i])/double(exphit[i]);
   }
-  
+  */
   cout << "/////////////////////////////////" << endl;
   cout << "EVENT SUMMARY: " << endl;
-  cout << "Event candidates: " << five_cluster <<" After fit: " << fit_five_cluster << " After cuts: " <<cut_five_cluster <<  endl;
+  cout << "Evnets: " << nEventsEight << endl;
+  //  cout << "Event candidates: " << five_cluster <<" After fit: " << fit_five_cluster << " After cuts: " <<cut_five_cluster <<  endl;
   cout << "/////////////////////////////////" << endl;
-  for (int i =0; i<8; i++){
-      cout << "Board " << i << ": Exp Hits " << exphit[i] << endl;
-      cout << "Board " << i << ": Got Hits " << gothit[i] << endl;
-      cout << "Board " << i << ": Hit % " << double(gothit[i])/double(exphit[i]) << endl;
-   }
+  // for (int i =0; i<8; i++){
+  //     cout << "Board " << i << ": Exp Hits " << exphit[i] << endl;
+  //     cout << "Board " << i << ": Got Hits " << gothit[i] << endl;
+  //     cout << "Board " << i << ": Hit % " << double(gothit[i])/double(exphit[i]) << endl;
+  //  }
   fout->cd();
   fout->mkdir("histograms");
   for(int i = 0; i < 8; i++){
@@ -661,26 +545,27 @@ int main(int argc, char* argv[]){
     track_FitProb[i]->Write();
     x_hits[i]->Write();
   }
+  track_angles->Write();
 //  x_hits->Write();
-  passedhits->Write();
-  totalhits->Write();
-  pEff->SetDirectory(gDirectory);
-  pEff->Write();
+//  passedhits->Write();
+//  totalhits->Write();
+//  pEff->SetDirectory(gDirectory);
+//  pEff->Write();
 
-  TCanvas* c1 = new TCanvas("c1","",600,400);
-  TGraphAsymmErrors* gr = pEff->CreateGraph("");
-  gr->SetMarkerColor(kBlue-7);
+//  TCanvas* c1 = new TCanvas("c1","",600,400);
+  // TGraphAsymmErrors* gr = pEff->CreateGraph("");
+  // gr->SetMarkerColor(kBlue-7);
 
-  gr->SetPointEXlow(0,0.0);
-  gr->SetPointEXhigh(0,0.0);
-  gr->SetPointEXlow(1,0.0);
-  gr->SetPointEXhigh(1,0.0);
-  gr->SetPointEXlow(2,0.0);
-  gr->SetPointEXhigh(2,0.0);
-  gr->Draw("AP");
-  gr->GetXaxis()->SetTitle("Board Number");
-  gr->GetYaxis()->SetTitle("Hit Efficiency");
-  c1->Print("HitEff_5.pdf");*/
+  // gr->SetPointEXlow(0,0.0);
+  // gr->SetPointEXhigh(0,0.0);
+  // gr->SetPointEXlow(1,0.0);
+  // gr->SetPointEXhigh(1,0.0);
+  // gr->SetPointEXlow(2,0.0);
+  // gr->SetPointEXhigh(2,0.0);
+  // gr->Draw("AP");
+  // gr->GetXaxis()->SetTitle("Board Number");
+  // gr->GetYaxis()->SetTitle("Hit Efficiency");
+  // c1->Print("HitEff_5.pdf");
 
   fout->Close();
     
