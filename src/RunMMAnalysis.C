@@ -19,6 +19,9 @@
 #include "include/MMPacmanAlgo.hh"
 #include "include/GeoOctuplet.hh"
 #include "include/SimpleTrackFitter.hh"
+#include "include/HighQTrackFitter.hh"
+#include "include/CombinatoricTrackFitter.hh"
+#include "include/CombinatoricChi2TrackFitter.hh"
 
 using namespace std;
 
@@ -103,7 +106,10 @@ int main(int argc, char* argv[]){
   if(b_align)
     GEOMETRY->SetAlignment(AlignFileName);
 
-  SimpleTrackFitter* FITTER = new SimpleTrackFitter();
+  //SimpleTrackFitter* FITTER = new SimpleTrackFitter();
+  //HighQTrackFitter* FITTER = new HighQTrackFitter();
+  //CombinatoricTrackFitter* FITTER = new CombinatoricTrackFitter();
+  CombinatoricChi2TrackFitter* FITTER = new CombinatoricChi2TrackFitter();
 
   MMDataAnalysis* DATA;
   TFile* f = new TFile(inputFileName, "READ");
@@ -344,9 +350,11 @@ int main(int argc, char* argv[]){
   fout->mkdir("event_displays");
   MMPlot();
 
+  //Nevent /= 100;
+
   for(int evt = 0; evt < Nevent; evt++){
     DATA->GetEntry(evt);
-    if(evt%(Nevent/10) == 0) 
+    if(evt%(Nevent/1000) == 0) 
       cout << "Processing event # " << evt << " | " << Nevent << endl;
 
     if(GEOMETRY->RunNumber() < 0){
@@ -449,14 +457,22 @@ int main(int argc, char* argv[]){
     // track fitting
     MMClusterList fit_clusters;
     for(int i = 0; i < Ncl; i++){
-      // add highest charge cluster from each board;
+      // add all clusters from each board
       int Nc = all_clusters[i].GetNCluster();
       for(int c = 0; c < Nc; c++)
-	if(all_clusters[i][c].GetNHits() > 1){
+	// if(all_clusters[i][c].GetNHits() > 1)
 	  fit_clusters.AddCluster(all_clusters[i][c]);
-	  break;
-	}
     }
+
+    // for(int i = 0; i < Ncl; i++){
+    //   // add highest charge cluster from each board;
+    //   int Nc = all_clusters[i].GetNCluster();
+    //   for(int c = 0; c < Nc; c++)
+    // 	if(all_clusters[i][c].GetNHits() > 1){
+    // 	  fit_clusters.AddCluster(all_clusters[i][c]);
+    // 	  break;
+    // 	}
+    // }
 
     int Nclus_all = fit_clusters.GetNCluster();
     if(Nclus_all < 5)
@@ -484,6 +500,12 @@ int main(int argc, char* argv[]){
  
     MMTrack track_all = FITTER->Fit(fit_clusters, *GEOMETRY);
 
+    if(!track_all.IsFit() ||
+       track_all.NX() < 2 ||
+       track_all.NU()+track_all.NV() < 2 ||
+       track_all.NX()+track_all.NU()+track_all.NV() < 5)
+      continue;
+
     double sumresX2 = 0.;
     for(int c = 0; c < Nclus_all; c++){
       // fill on-track residuals
@@ -491,19 +513,20 @@ int main(int argc, char* argv[]){
       sumresX2 += resX*resX;
     }
 
-    track_sumresX2[Nclus_all-5]->Fill(sumresX2);
-    track_sumresX2_v_Nclus->Fill(Nclus_all, sumresX2);
+    // track_sumresX2[Nclus_all-5]->Fill(sumresX2);
+    // track_sumresX2_v_Nclus->Fill(Nclus_all, sumresX2);
     
-    if( sumresX2 > double(Nclus_all-1)*0.1)
-      continue;
+    // if( sumresX2 > double(Nclus_all-1)*0.1)
+    //   continue;
 
-    if(NA < 4)
-      continue;
-
+    // if(NA < 4)
+    //   continue;
+    
+    
     for(int c = 0; c < Nclus_all; c++){
       const MMCluster& clus = fit_clusters[c];
       int b = ib[clus.MMFE8()];
-      if(b <= 3) continue;
+      //if(b <= 3) continue;
       // fill on-track residuals
       double resX = GEOMETRY->GetResidualX(clus, track_all);
       board_itrack_resX[b]->Fill(resX);
@@ -528,7 +551,7 @@ int main(int argc, char* argv[]){
       MMClusterList clus_list;
       for(int o = 0; o < Nclus_all; o++){
 	int iib = ib[fit_clusters[o].MMFE8()];
-	if(iib >= 4) continue;
+	//if(iib >= 4) continue;
 	if(o != c)
 	  clus_list.AddCluster(fit_clusters[o]);
       }
@@ -540,6 +563,7 @@ int main(int argc, char* argv[]){
       board_otrack_resX_v_CH[b]->Fill(clus.Channel(), resX);
       board_otrack_resX_v_EVT[b]->Fill(DATA->mm_EventNum, resX);
     }
+    
 
     if(Nclus_all < 8)
       continue;
@@ -549,15 +573,15 @@ int main(int argc, char* argv[]){
     can->Write();
     delete can;
     
-    TCanvas* canY = Plot_Track2DY(Form("track2DY_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &fit_clusters); 
-    fout->cd("event_displays");
-    canY->Write();
-    delete canY;
+    // TCanvas* canY = Plot_Track2DY(Form("track2DY_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &fit_clusters); 
+    // fout->cd("event_displays");
+    // canY->Write();
+    // delete canY;
     
-    TCanvas* can3D = Plot_Track3D(Form("track3D_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &fit_clusters); 
-    fout->cd("event_displays");
-    can3D->Write();
-    delete can3D;
+    // TCanvas* can3D = Plot_Track3D(Form("track3D_%d",DATA->mm_EventNum), track_all, *GEOMETRY, &fit_clusters); 
+    // fout->cd("event_displays");
+    // can3D->Write();
+    // delete can3D;
   }
 
   fout->cd();

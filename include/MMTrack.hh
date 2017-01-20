@@ -98,6 +98,8 @@ inline MMTrack::MMTrack(const MMTrack& track){
   m_NV = track.NV();
   m_N0 = track.NBoard(0); m_N1 = track.NBoard(1); m_N2 = track.NBoard(2); m_N3 = track.NBoard(3);
   m_N4 = track.NBoard(4); m_N5 = track.NBoard(5); m_N6 = track.NBoard(6); m_N7 = track.NBoard(7);
+  m_Res2 = track.ResidualSq();
+  m_IsFit = track.IsFit();
 }
 
 inline MMTrack::~MMTrack() {}
