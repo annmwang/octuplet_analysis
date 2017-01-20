@@ -29,6 +29,7 @@ public:
   double Time() const;
   
   int NHoles() const;
+  int VMM() const;
 };
 
 inline MMCluster::MMCluster()
@@ -76,6 +77,10 @@ inline int MMCluster::NHoles() const {
   int clus_size = Get(Nhit-1).Channel()-Get(0).Channel()+1;
 
   return clus_size - Nhit;
+}
+
+inline int MMCluster::VMM() const {
+  return (int)(Channel()) / 64;
 }
 
 #endif
