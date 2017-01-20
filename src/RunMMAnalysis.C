@@ -459,40 +459,79 @@ int main(int argc, char* argv[]){
     }
 
     int Nclus_all = fit_clusters.GetNCluster();
-    if(Nclus_all < 6)
+    if(Nclus_all < 5)
+      continue;
+
+    int NA = 0;
+    int NB = 0;
+
+    int NX = 0;
+    int NUV = 0;
+    for(int c = 0; c < Nclus_all; c++){
+      int iib = ib[fit_clusters[c].MMFE8()];
+      if(iib <= 1 || iib >= 6)
+	NX++;
+      else
+	NUV++;
+
+      if(iib <= 3)
+	NA++;
+      else
+	NB++;
+    }
+    if(NX < 2 || NUV < 2)
       continue;
  
     MMTrack track_all = FITTER->Fit(fit_clusters, *GEOMETRY);
 
     double sumresX2 = 0.;
     for(int c = 0; c < Nclus_all; c++){
-      const MMCluster& clus = fit_clusters[c];
-      int b = ib[clus.MMFE8()];
       // fill on-track residuals
-      double resX = GEOMETRY->GetResidualX(clus, track_all);
+      double resX = GEOMETRY->GetResidualX(fit_clusters[c], track_all);
       sumresX2 += resX*resX;
     }
 
     track_sumresX2[Nclus_all-5]->Fill(sumresX2);
     track_sumresX2_v_Nclus->Fill(Nclus_all, sumresX2);
     
-    if( sumresX2 > double(Nclus_all-2)*0.1)
+    if( sumresX2 > double(Nclus_all-1)*0.1)
+      continue;
+
+    if(NA < 4)
       continue;
 
     for(int c = 0; c < Nclus_all; c++){
       const MMCluster& clus = fit_clusters[c];
       int b = ib[clus.MMFE8()];
+      if(b <= 3) continue;
       // fill on-track residuals
       double resX = GEOMETRY->GetResidualX(clus, track_all);
       board_itrack_resX[b]->Fill(resX);
       board_itrack_resX_v_CH[b]->Fill(clus.Channel(), resX);
       board_itrack_resX_v_EVT[b]->Fill(DATA->mm_EventNum, resX);
 
+      NX = 0;
+      NUV = 0;
+      for(int o = 0; o < Nclus_all; o++){
+	if(o != c){
+	  int iib = ib[fit_clusters[o].MMFE8()];
+	  if(iib <= 1 || iib >= 6)
+	    NX++;
+	  else
+	    NUV++;
+	}
+      }
+      if(NX < 2 || NUV < 2)
+	continue;
+      
       // new cluster list without this cluster
       MMClusterList clus_list;
-      for(int o = 0; o < Nclus_all; o++)
+      for(int o = 0; o < Nclus_all; o++){
+	int iib = ib[fit_clusters[o].MMFE8()];
+	if(iib >= 4) continue;
 	if(o != c)
 	  clus_list.AddCluster(fit_clusters[o]);
+      }
 	
       MMTrack track = FITTER->Fit(clus_list, *GEOMETRY);
 
@@ -611,6 +650,10 @@ int main(int argc, char* argv[]){
   can->Write();
   delete can;
   can = Plot_Octuplet("c_board_CH", board_hit_CH, "Channel", "Number of hits",
+		      iboards, title);
+  can->Write();
+  delete can;
+  can = Plot_Octuplet("c_board_CH_log", board_hit_CH, "Channel", "Number of hits",
 		      iboards, title, true);
   can->Write();
   delete can;

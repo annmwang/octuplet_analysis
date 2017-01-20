@@ -22,6 +22,9 @@ public:
   MMTrack(const MMTrack& track);
   ~MMTrack();
 
+  bool IsFit() const;
+  void SetIsFit(bool isfit = true);
+
   double ConstX() const;
   double ConstY() const;
   double SlopeX() const;
@@ -31,10 +34,13 @@ public:
   int NV() const;
   int NBoard(int b) const;
 
+  double ResidualSq() const;
+
   TVector3 PointX(double x) const;
   TVector3 PointY(double y) const;
   TVector3 PointZ(double z) const;
 
+  void SetRes2(double Res2);
   void SetConstX(double CX);
   void SetConstY(double CY);
   void SetSlopeX(double SX);
@@ -47,15 +53,24 @@ public:
   void Reset();
 
 private:
+  // track parameters
   double m_CX;
   double m_CY;
   double m_SX;
   double m_SY;
+  
+  // number of hits counting for all boards
   int m_NX;
   int m_NU;
   int m_NV;
   int m_N0; int m_N1; int m_N2; int m_N3;
   int m_N4; int m_N5; int m_N6; int m_N7;
+
+  // residual^2 sum from fit
+  double m_Res2;
+
+  // flag indicating whether track has been fit or not
+  bool m_IsFit;
 
 };
 
@@ -69,6 +84,8 @@ inline MMTrack::MMTrack(){
   m_NV = 0;
   m_N0 = 0; m_N1 = 0; m_N2 = 0; m_N3 = 0;
   m_N4 = 0; m_N5 = 0; m_N6 = 0; m_N7 = 0;
+  m_Res2 = 0.;
+  m_IsFit = false;
 }
 
 inline MMTrack::MMTrack(const MMTrack& track){
@@ -97,6 +114,15 @@ inline void MMTrack::Reset(){
   m_N4 = 0; m_N5 = 0; m_N6 = 0; m_N7 = 0;
 }
 
+inline bool MMTrack::IsFit() const {
+  return m_IsFit;
+}
+
+inline void MMTrack::SetIsFit(bool isfit){
+  m_IsFit = isfit;
+}
+
+inline double MMTrack::ResidualSq() const { return m_Res2; }
 inline double MMTrack::ConstX() const { return m_CX; }
 inline double MMTrack::ConstY() const { return m_CY; }
 inline double MMTrack::SlopeX() const { return m_SX; }
@@ -154,6 +180,7 @@ inline TVector3 MMTrack::PointZ(double z) const {
   return p;
 }
 
+inline void MMTrack::SetRes2(double Res2){ m_Res2 = Res2; }
 inline void MMTrack::SetConstX(double CX){ m_CX = CX; }
 inline void MMTrack::SetConstY(double CY){ m_CY = CY; }
 inline void MMTrack::SetSlopeX(double SX){ m_SX = SX; }

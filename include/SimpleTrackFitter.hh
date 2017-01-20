@@ -23,9 +23,9 @@ public:
   SimpleTrackFitter();
   ~SimpleTrackFitter();
 
-  MMTrack Fit(const MMClusterList& clusters, 
-              const GeoOctuplet& geometry,
-              const int evt = -1);
+  virtual MMTrack Fit(const MMClusterList& clusters, 
+		      const GeoOctuplet& geometry,
+		      const int evt = -1);
 
 private:
   ROOT::Math::Minimizer* m_minimizer;
@@ -79,6 +79,10 @@ inline MMTrack SimpleTrackFitter::Fit(const MMClusterList& clusters,
       track.CountHit(clusters[i].MMFE8Index());
     }
 
+  // need at least two X and two U/V planes to fit
+  if(track.NX() < 2 || track.NU()+track.NV() < 2)
+    return track;
+
   // do fit
   if(m_clusters->GetNCluster() > 0){
     m_minimizer->SetVariableValue(0, 0.);
@@ -97,10 +101,12 @@ inline MMTrack SimpleTrackFitter::Fit(const MMClusterList& clusters,
 
     
     const double* param = m_minimizer->X();
+    track.SetRes2(m_minimizer->MinValue());
     track.SetConstX(param[0]);
     track.SetConstY(param[2]);
     track.SetSlopeX(param[1]);
     track.SetSlopeY(param[3]);
+    track.SetIsFit();
   }
 
   m_geometry = nullptr;

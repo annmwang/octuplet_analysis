@@ -128,6 +128,9 @@ int main(int argc, char* argv[]){
     return false;
   }
 
+  GeoOctuplet GEO;
+  GEO.SetRunNumber(g_RunNum);
+
   g_tree = (ClusterTree*) new ClusterTree(T);
   g_N_event = T->GetEntries();
 
@@ -137,7 +140,7 @@ int main(int argc, char* argv[]){
   for(int i = 0; i < g_N_event; i++){
     g_tree->GetEntry(i);
     int Nc = g_tree->N_clus;
-    if(Nc < 7)
+    if(Nc < 6)
       continue;
 
     MMClusterList all_clusters;
@@ -148,6 +151,20 @@ int main(int argc, char* argv[]){
       all_clusters.AddCluster(MMCluster(clus));
     }
     for(int i = 0; i < Nc; i++){
+      int NX = 0;
+      int NUV = 0;
+      for(int c = 0; c < Nc; c++){
+	if(i != c){
+	  int ib = GEO.Index(all_clusters[c].MMFE8());
+	  if(ib <= 1 || ib >= 6)
+	    NX++;
+	  else
+	    NUV++;
+	}
+      }
+      if(NX < 2 || NUV < 2)
+	continue;
+
       MMClusterList* clusters = new MMClusterList();
       MMCluster* cluster = new MMCluster(all_clusters[i]);
       for(int c = 0; c < Nc; c++)
@@ -341,8 +358,8 @@ double EvaluateMetric(const double* param){
 
     MMTrack track = g_FITTER->Fit(*g_clusters[evt], GEO);
     res = GEO.GetResidualX(*g_cluster[evt], track);
-    //sum_res2 += sqrt(res*res);
-    sum_res2 += sqrt(fabs(res));
+    sum_res2 += sqrt(res*res);
+    //sum_res2 += sqrt(fabs(res));
     //sum_res2 += res*res;
   }  // end event loop
 

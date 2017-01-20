@@ -199,7 +199,7 @@ int main(int argc, char* argv[]){
       sumresX2 += resX*resX;
     }
 
-    if( sumresX2 > double(N_clus-2)*0.1)
+    if( sumresX2 > double(N_clus-1)*0.1)
       continue;
 
     if(N_clus >= 5)
