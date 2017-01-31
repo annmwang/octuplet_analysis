@@ -10,6 +10,7 @@
 #ifndef ScintillatorClusterFilterer_HH
 #define ScintillatorClusterFilterer_HH
 
+#include <numeric>
 #include "include/GeoPlane.hh"
 #include "include/SimpleTrackFitter.hh"
 
