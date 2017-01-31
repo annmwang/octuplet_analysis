@@ -20,6 +20,8 @@ public:
   MMClusterList(const MMCluster& clus);
   MMClusterList(const MMClusterList& cl);
   
+  MMClusterList operator= (const MMClusterList& cl);
+
   ~MMClusterList();
 
   void AddCluster(const MMCluster& clus);
@@ -55,6 +57,16 @@ inline MMClusterList::MMClusterList(const MMClusterList& cl){
   int N = cl.GetNCluster();
   for(int i = 0; i < N; i++)
     AddCluster(cl[i]);
+}
+
+inline MMClusterList MMClusterList::operator = (const MMClusterList& cl){
+  if (this != &cl){
+    for (int i = 0; i <    GetNCluster(); i++)
+      delete m_clusters[i];
+    for (int i = 0; i < cl.GetNCluster(); i++)
+      AddCluster(cl[i]);
+  }
+  return *this;
 }
 
 inline MMClusterList::~MMClusterList(){
