@@ -143,16 +143,24 @@ int main(int argc, char* argv[]){
   TH1D* track_angles;
   vector<TH1D*> hDeltaX;
   TH1D* nBoardsHit;
+  vector<TH1D*> targetBoardClustM;
+  vector<TH1D*> hitEff_vs_angle;
 
   double minCut [8] = {5.,5.,5.,5.,5.,5.,5.,5.};
 
   passedhits = new TH1D("passed_hits","passed_hits",8, -0.5,7.5);
   totalhits = new TH1D("total_hits","total_hits",8, -0.5,7.5);
   hitEff = new TH1D("hitEff","hitEff",8, -0.5,7.5);
-  for(int i = 0; i < 8; i++){
+  for (int i = 0; i < 8; i++){
       hDeltaX.push_back(new TH1D(Form("hDeltaX_%d",i),
            Form("hDeltaX_%d",i),
-           250,-5,5.));
+           100,-15,15.));
+      targetBoardClustM.push_back(new TH1D(Form("targetBoardClustM_%d",i),
+        Form("targetBoardClusM_%d",i),
+        4,-0.5,4.5));      
+      hitEff_vs_angle.push_back(new TH1D(Form("hitEff_vs_angle_%d",i),
+        Form("hitEff_vs_angle_%d",i),
+        20,-24.,18.));
       }
   //hDeltaX = new TH1D("hDeltaX","hDeltaX",250,-50.,50.);
   nBoardsHit = new TH1D("nBoardsHit","nBoardsHit",9,-0.5,8.5);
@@ -251,13 +259,11 @@ int main(int argc, char* argv[]){
     // saving efficiency clusters for each hit eff calculation
     vector < MMClusterList> hit_clusters;
     vector <int> denom_ints;
-    int other_hits = 0;
-    bool skip = false;
     MMClusterList hit_clusters_temp;
     for (int i = 0; i < 8; i++){ // calculating hit efficiency for board i
       // if there's a missing board, we can only calculate the hit eff for that one board!
       if (missing_board > -1) 
-        if (missing_board != i) // this should always just be 0 for HT = 7
+        if (missing_board != i) // this should always just be 0 for HT = 8
           continue;
       hit_clusters_temp.Reset();
       for (int c = 0; c < Nclus_all; c++){
@@ -277,6 +283,7 @@ int main(int argc, char* argv[]){
     TVector3 p;
     bool outBound = false;
     pair < SCHit*,SCHit* > botPair;
+    int clustM[8] = {0,0,0,0,0,0,0,0};
 
     for (int k = 0; k < denom_ints.size(); k++){
       int BID = denom_ints[k]; // for board we're interested in for the hit eff
@@ -332,116 +339,91 @@ int main(int argc, char* argv[]){
           if ((deltaX < minCut[k]) && targetBoardHit[BID] == false){
             passedhits->Fill(denom_ints[k]);
             targetBoardHit[BID] = true;
+            clustM[BID]++;
             continue;
           }          
         }
       }
     }
+      for (int k = 0; k  < 8; k++)
+    targetBoardClustM[k]->Fill(clustM[k]);
   }
+
+  
   TCanvas* c1 = new TCanvas("c1","",600,400);
   gStyle->SetTextFont(42);
   double backgroundEvents = 0.;
-  bool gauss = false;
-  if (gauss)
-    for (int i = 0; i < 8; i++) { 
-      //TF1 *f1 = new TF1("gaussian_1","gaus(0)",-2.4,-2.4);
-      c1->cd();
-      c1->Clear();
-      c1->SetLogy();
-      TF1 *f2 = new TF1("gaussian_2","gaus(0)+gaus(3)",-4.99,4.99);
-      f2->SetParameter(0, hDeltaX[i]->GetMaximum());
-      f2->SetParameter(1, hDeltaX[i]->GetMean());
-      f2->SetParameter(2, hDeltaX[i]->GetRMS()/2);
-      f2->SetParameter(3, hDeltaX[i]->GetMaximum());
-      f2->SetParameter(4, hDeltaX[i]->GetMean());
-      f2->SetParameter(5, hDeltaX[i]->GetRMS()*2);
-      hDeltaX[i]->Fit(f2,"RQN");
-      cout << "Fit parameters: " << f2->GetParameter(0) << " " 
-      << f2->GetParameter(1) << " " << f2->GetParameter(2) << " " 
-      << f2->GetParameter(3) << " " << f2->GetParameter(4) << " " 
-      << f2->GetParameter(5) << " " << endl;
-      TF1 *f1 = new TF1("gauss","gaus(0)",-4.9,4.9);
-      f1->SetParameter(0,f2->GetParameter(3));
-      f1->SetParameter(1,f2->GetParameter(4));
-      f1->SetParameter(2,f2->GetParameter(5));
-      backgroundEvents = f1->Integral(-4.99,4.99);
-      cout << "Nevents bkg: " << backgroundEvents << endl;
-      double tempEvents = passedhits->GetBinContent(i+1);
-      cout << "Nevents pre cut: " << tempEvents << endl;
-
-      passedhits->SetBinContent(i+1,tempEvents-backgroundEvents);
-      cout << "Nevents post cut: " << passedhits->GetBinContent(i+1) << endl;
-
-      // plot beautification
-      hDeltaX[i]->SetTitle(Form("x Residuals for Board %d",i));
-      hDeltaX[i]->GetXaxis()->SetTitleOffset(1.3);
-      hDeltaX[i]->GetYaxis()->SetTitleOffset(1.3);
-      hDeltaX[i]->GetXaxis()->SetLabelSize(0.045);
-      hDeltaX[i]->GetXaxis()->SetTitleSize(0.045);    
-      hDeltaX[i]->GetYaxis()->SetLabelSize(0.045);
-      hDeltaX[i]->GetYaxis()->SetTitleSize(0.045);
-      hDeltaX[i]->GetXaxis()->SetTitle("x_{cluster} - x_{track, proj.} [mm]");
-      hDeltaX[i]->GetYaxis()->SetTitle("Number of Clusters");
-
-      //hDeltaX[i]->GetXaxis()->CenterTitle();
-      hDeltaX[i]->Draw("pe");
-      f2->SetLineStyle(7);
-      f2->SetLineColor(kBlue);
-      f1->SetLineStyle(1);
-      f1->SetLineColor(kRed);
-      f2->Draw("same");
-      f1->Draw("same");
-      c1->Print(Form("HitEfficiencyPlots/fit_%d.pdf",i));
+  int ngauss = 3; 
+  for (int i = 0; i < 8; i++) { 
+    //TF1 *f1 = new TF1("gaussian_1","gaus(0)",-2.4,-2.4);
+    c1->cd();
+    c1->Clear();
+    c1->SetLogy();
+    if (ngauss == 1){
+      TF1 *f2 = new TF1("gaussian and constant","pol0(0)+gaus(1)",-14.99,14.99);
+      f2->SetParameter(0, 0.);
+      f2->SetParameter(1, hDeltaX[i]->GetMaximum());
+      f2->SetParameter(2, hDeltaX[i]->GetMean());
+      f2->SetParameter(3, hDeltaX[i]->GetRMS()/2);     
     }
-    else 
-      for (int i = 0; i < 8; i++) { 
-      //TF1 *f1 = new TF1("gaussian_1","gaus(0)",-2.4,-2.4);
-      c1->cd();
-      c1->Clear();
-      c1->SetLogy();
-      TF1 *f2 = new TF1("gaussian and constant","pol0(0)+gaus(1)+ gaus(4)",-4.99,4.99);
+    else if (ngauss == 2){
+      TF1 *f2 = new TF1("double gaussian and constant","pol0(0)+gaus(1)+gaus(4)",-14.99,14.99);
       f2->SetParameter(0, 0.);
       f2->SetParameter(1, hDeltaX[i]->GetMaximum());
       f2->SetParameter(2, hDeltaX[i]->GetMean());
       f2->SetParameter(3, hDeltaX[i]->GetRMS()/2);
-      f2->SetParameter(4, hDeltaX[i]->GetMaximum());
+      f2->SetParameter(4, hDeltaX[i]->GetMaximum()/2/1.5);
       f2->SetParameter(5, hDeltaX[i]->GetMean());
-      f2->SetParameter(6, hDeltaX[i]->GetRMS()/2);      
-      hDeltaX[i]->Fit(f2,"RQN");
-      cout << "Fit parameters: " << f2->GetParameter(0) << " " 
-      << f2->GetParameter(1) << " " << f2->GetParameter(2) << " " 
-      << f2->GetParameter(3) << endl;
-      TF1 *f1 = new TF1("pol0","pol0(0)",-4.9,4.9);
-      f1->SetParameter(0,f2->GetParameter(0));
-      backgroundEvents = f1->Integral(-4.99,4.99);
-      cout << "Nevents bkg: " << backgroundEvents << endl;
-      double tempEvents = passedhits->GetBinContent(i+1);
-      cout << "Nevents pre cut: " << tempEvents << endl;
-
-      passedhits->SetBinContent(i+1,tempEvents-backgroundEvents);
-      cout << "Nevents post cut: " << passedhits->GetBinContent(i+1) << endl;
-
-      // plot beautification
-      hDeltaX[i]->SetTitle(Form("x Residuals for Board %d",i));
-      hDeltaX[i]->GetXaxis()->SetTitleOffset(1.3);
-      hDeltaX[i]->GetYaxis()->SetTitleOffset(1.3);
-      hDeltaX[i]->GetXaxis()->SetLabelSize(0.045);
-      hDeltaX[i]->GetXaxis()->SetTitleSize(0.045);    
-      hDeltaX[i]->GetYaxis()->SetLabelSize(0.045);
-      hDeltaX[i]->GetYaxis()->SetTitleSize(0.045);
-      hDeltaX[i]->GetXaxis()->SetTitle("x_{cluster} - x_{track, proj.} [mm]");
-      hDeltaX[i]->GetYaxis()->SetTitle("Number of Clusters");
-
-      //hDeltaX[i]->GetXaxis()->CenterTitle();
-      hDeltaX[i]->Draw("pe");
-      f2->SetLineStyle(7);
-      f2->SetLineColor(kBlue);
-      f1->SetLineStyle(1);
-      f1->SetLineColor(kRed);
-      f2->Draw("same");
-      f1->Draw("same");
-      c1->Print(Form("HitEfficiencyPlots/const_gauss_fit_%d.pdf",i));
+      f2->SetParameter(6, hDeltaX[i]->GetRMS()*1.5);       
     }
+    else if (ngauss == 3){
+      TF1 *f2 = new TF1("triple gaussian and constant","pol0(0)+gaus(1)+gaus(4)+gaus(7)",-14.99,14.99);
+      f2->SetParameter(0, 0.);
+      f2->SetParameter(1, hDeltaX[i]->GetMaximum());
+      f2->SetParameter(2, hDeltaX[i]->GetMean());
+      f2->SetParameter(3, hDeltaX[i]->GetRMS()/2);
+      f2->SetParameter(4, hDeltaX[i]->GetMaximum()/2/1.5);
+      f2->SetParameter(5, hDeltaX[i]->GetMean());
+      f2->SetParameter(6, hDeltaX[i]->GetRMS()*1.5);      
+      f2->SetParameter(7, hDeltaX[i]->GetMaximum()/4/1.5);
+      f2->SetParameter(8, hDeltaX[i]->GetMean());
+      f2->SetParameter(9, hDeltaX[i]->GetRMS()*3);   
+    }
+    hDeltaX[i]->Fit(f2,"RQN");
+    cout << "First four fit parameters: " << f2->GetParameter(0) << " " 
+    << f2->GetParameter(1) << " " << f2->GetParameter(2) << " " 
+    << f2->GetParameter(3) << endl;
+    TF1 *f1 = new TF1("pol0","pol0(0)",-14.9,14.9);
+    f1->SetParameter(0,f2->GetParameter(0));
+    backgroundEvents = f1->Integral(-5.,5.);
+    cout << "Nevents bkg: " << backgroundEvents << endl;
+    double tempEvents = passedhits->GetBinContent(i+1);
+    cout << "Nevents pre cut: " << tempEvents << endl;
+
+    passedhits->SetBinContent(i+1,tempEvents-backgroundEvents);
+    cout << "Nevents post cut: " << passedhits->GetBinContent(i+1) << endl;
+
+    // plot beautification
+    hDeltaX[i]->SetTitle(Form("x Residuals for Board %d",i));
+    hDeltaX[i]->GetXaxis()->SetTitleOffset(1.3);
+    hDeltaX[i]->GetYaxis()->SetTitleOffset(1.3);
+    hDeltaX[i]->GetXaxis()->SetLabelSize(0.045);
+    hDeltaX[i]->GetXaxis()->SetTitleSize(0.045);    
+    hDeltaX[i]->GetYaxis()->SetLabelSize(0.045);
+    hDeltaX[i]->GetYaxis()->SetTitleSize(0.045);
+    hDeltaX[i]->GetXaxis()->SetTitle("x_{cluster} - x_{track, proj.} [mm]");
+    hDeltaX[i]->GetYaxis()->SetTitle("Number of Clusters");
+
+    //hDeltaX[i]->GetXaxis()->CenterTitle();
+    hDeltaX[i]->Draw("pe");
+    f2->SetLineStyle(7);
+    f2->SetLineColor(kBlue);
+    f1->SetLineStyle(1);
+    f1->SetLineColor(kRed);
+    f2->Draw("same");
+    f1->Draw("same");
+    c1->Print(Form("HitEfficiencyPlots/const_gauss_fit_%d.pdf",i));
+  }
     //   board_itrack_resX[i]->Fit("f2","R");
     //   double f = 0.5*(f1->GetParameter(0) + f2->GetParameter(0));
     //   double cfit = board_itrack_resX[i]->GetNbinsX()*f;
@@ -468,8 +450,10 @@ int main(int argc, char* argv[]){
 //  x_hits->Write();
   passedhits->Write();
   totalhits->Write();
-  for (int i = 0; i < 8; i++)
+  for (int i = 0; i < 8; i++){
     hDeltaX[i]->Write();
+    targetBoardClustM[i]->Write();
+  }
   nBoardsHit->Write();
   
   TCanvas* c2 = new TCanvas("c2","",600,400);
