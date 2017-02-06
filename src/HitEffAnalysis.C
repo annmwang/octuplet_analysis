@@ -437,7 +437,7 @@ int main(int argc, char* argv[]){
     c1->cd();
     c1->Clear();
     c1->SetLogy();
-    TF1 *f2;
+    TF1 *f2 = nullptr;
     if (ngauss == 1){
       f2 = new TF1("gaussian and constant","pol0(0)+gaus(1)",-14.99,14.99);
       f2->SetParameter(0, 0.);
@@ -506,7 +506,7 @@ int main(int argc, char* argv[]){
     // Do this bin by bin for angle bins
     cout << "SIZE: " << sizeof(track_angle_bins)/sizeof(*track_angle_bins) << endl;
     for (int j = 0; j < nangles-1; j++){
-      TF1* f3;
+      TF1* f3 = nullptr;
       if (ngauss == 3){
        f3 = new TF1("triple gaussian and constant","pol0(0)+gaus(1)+gaus(4)+gaus(7)",-14.99,14.99);
         f3->SetParameter(0, 0.5);
