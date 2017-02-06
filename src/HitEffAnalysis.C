@@ -13,6 +13,8 @@
 #include <iostream>
 #include <stdlib.h>
 #include "TMath.h"
+#include "TColor.h"
+#include "TLegend.h"
 
 #include "include/MMPlot.hh"
 #include "include/PDOToCharge.hh"
@@ -143,25 +145,62 @@ int main(int argc, char* argv[]){
   TH1D* track_angles;
   vector<TH1D*> hDeltaX;
   TH1D* nBoardsHit;
+  vector<TH1D*> nBoardsHit_anglebin;
   vector<TH1D*> targetBoardClustM;
-  vector<TH1D*> hitEff_vs_angle;
+
+  vector<TH1D*> passedhits_anglebin;
+  vector<TH1D*> totalhits_anglebin;
+  vector<TH1D*> hitEff_anglebin;
+  vector<vector<TH1D*>> hDeltaX_anglebin;
+
+  TH2D* nBoards_vs_track_angle;
+
 
   double minCut [8] = {5.,5.,5.,5.,5.,5.,5.,5.};
+  double track_angle_bins[7] = {0.,5.,10.,15.,20.,25.,90.};
+  //double track_angle_bins[7] = {0.,2.5,5.,7.5,10.,12.5,90.};
+
+  int nangles = sizeof(track_angle_bins)/sizeof(*track_angle_bins);
 
   passedhits = new TH1D("passed_hits","passed_hits",8, -0.5,7.5);
   totalhits = new TH1D("total_hits","total_hits",8, -0.5,7.5);
   hitEff = new TH1D("hitEff","hitEff",8, -0.5,7.5);
+  nBoards_vs_track_angle = new TH2D("nBoards_vs_track_angle","nBoards_vs_track_angle",
+    5, 3.5,8.5,
+    50,0.,5.);
+
+
   for (int i = 0; i < 8; i++){
       hDeltaX.push_back(new TH1D(Form("hDeltaX_%d",i),
            Form("hDeltaX_%d",i),
            100,-15,15.));
       targetBoardClustM.push_back(new TH1D(Form("targetBoardClustM_%d",i),
         Form("targetBoardClusM_%d",i),
-        4,-0.5,4.5));      
-      hitEff_vs_angle.push_back(new TH1D(Form("hitEff_vs_angle_%d",i),
-        Form("hitEff_vs_angle_%d",i),
-        20,-24.,18.));
+        4,-0.5,4.5));
       }
+  for (int i = 0; i < nangles-1; i++){
+      passedhits_anglebin.push_back(new TH1D(Form("passedhits_anglebin_%d",i),
+        Form("passedhits_anglebin_%d",i),
+        8,-0.5,7.5)) ;
+      totalhits_anglebin.push_back(new TH1D(Form("totalhits_anglebin_%d",i),
+        Form("totalhits_anglebin_%d",i),
+        8,-0.5,7.5)) ;
+      hitEff_anglebin.push_back(new TH1D(Form("hitEff_anglebin_%d",i),
+        Form("hitEff_anglebin_%d",i),
+        8,-0.5,7.5)) ;
+      vector<TH1D*> hDeltaX_anglebin_temp;
+      for (int j = 0; j < 8; j++)
+        hDeltaX_anglebin_temp.push_back(new TH1D(Form("hDeltaX_%d_%d",j,i),
+        Form("hDeltaX_%d_%d",j,i),
+        100,-15.,15.));
+      hDeltaX_anglebin.push_back(hDeltaX_anglebin_temp);
+
+      passedhits_anglebin[i]->Sumw2();
+      totalhits_anglebin[i]->Sumw2();
+      nBoardsHit_anglebin.push_back(new TH1D(Form("nBoardsHit_%d",i),
+        Form("nBoardsHit_%d",i),
+        9,-0.5,8.5));
+  }
   //hDeltaX = new TH1D("hDeltaX","hDeltaX",250,-50.,50.);
   nBoardsHit = new TH1D("nBoardsHit","nBoardsHit",9,-0.5,8.5);
 
@@ -181,6 +220,7 @@ int main(int argc, char* argv[]){
     if(evt%(Nevent/1000) == 0) 
       cout << "Processing event # " << evt << " | " << Nevent << endl;
     //if (evt == 10000) break;
+    //cout << "Nevent " << evt << endl;
     if(GEOMETRY->RunNumber() < 0){
       GEOMETRY->SetRunNumber(DATA->RunNum);
 
@@ -249,11 +289,36 @@ int main(int argc, char* argv[]){
         missing_board= i;
     }
     nBoardsHit->Fill(nB);
+    if ((nB) < 4)
+      continue;
+    // checking nboard distribution as a function of angle
+    pair < SCHit*,SCHit* > botPair;
+    botPair = DATA->sc_EventHits.GetBotPair()[0];
+    MMClusterList filtered_allclusters = FILTER->FilterClustersScint(fit_clusters, *GEOMETRY, botPair.first->Channel(), evt);
+
+    MMTrack track = FITTER->Fit(filtered_allclusters, *GEOMETRY);
+
+    // check if track is okay
+    if(!track.IsFit() ||
+      track.NX() < 2 ||
+      track.NU()+track.NV() < 2 ||
+      track.NX()+track.NU()+track.NV() < 5)
+      continue;
+
+    double precut_track_theta_deg = atan(track.SlopeX())/TMath::Pi()*180.;
+    nBoards_vs_track_angle->Fill(nB,precut_track_theta_deg);
+    int precut_anglebin = -1;
+    for (int j = 0; j < nangles-1; j++)
+      if (fabs(precut_track_theta_deg) >= track_angle_bins[j] 
+          && fabs(precut_track_theta_deg) < track_angle_bins[j+1] )
+            precut_anglebin = j;
+    nBoardsHit_anglebin[precut_anglebin]->Fill(nB);
 
     //cout << "N clus: " << Nclus_all << endl;
     if(nB < HT)
       continue;
-
+    //continue;
+    //cout << "Got min clusters" << endl;
     NEventsHT++;
 
     // saving efficiency clusters for each hit eff calculation
@@ -282,14 +347,14 @@ int main(int argc, char* argv[]){
     std::vector<double> vx;
     TVector3 p;
     bool outBound = false;
-    pair < SCHit*,SCHit* > botPair;
+    //pair < SCHit*,SCHit* > botPair;
     int clustM[8] = {0,0,0,0,0,0,0,0};
 
     for (int k = 0; k < denom_ints.size(); k++){
       int BID = denom_ints[k]; // for board we're interested in for the hit eff
       // fit track
       filtered_clusters.Reset();
-      botPair = DATA->sc_EventHits.GetBotPair()[0];
+      //botPair = DATA->sc_EventHits.GetBotPair()[0];
       filtered_clusters = FILTER->FilterClustersScint(hit_clusters[k], *GEOMETRY, botPair.first->Channel(), evt);
 
       MMTrack track_all = FITTER->Fit(filtered_clusters, *GEOMETRY);
@@ -298,7 +363,7 @@ int main(int argc, char* argv[]){
       if(!track_all.IsFit() ||
         track_all.NX() < 2 ||
         track_all.NU()+track_all.NV() < 2 ||
-        track_all.NX()+track_all.NU()+track_all.NV() < 5)
+        track_all.NX()+track_all.NU()+track_all.NV() < 4)
         continue;
 
       // track angles
@@ -323,12 +388,22 @@ int main(int argc, char* argv[]){
 
       // fiducial cut
 
-      if ((p.X() > 215.) || (p.X() < -15.)) 
+      if ((p.X() > 200.) || (p.X() < 0.)) 
         continue;
-      if ((p.Y() > 233.) || (p.Y() < 2.)) 
+      if ((p.Y() > 217.9) || (p.Y() < 17.9)) 
         continue;
-
+      // if ((p.X() > 215.) || (p.X() < -15.)) 
+      //   continue;
+      // if ((p.Y() > 233.) || (p.Y() < 2.)) 
+      //   continue;
+      int anglebin = -1;
+      for (int j = 0; j < nangles-1; j++)
+        if (fabs(track_theta_deg) >= track_angle_bins[j] 
+            && fabs(track_theta_deg) < track_angle_bins[j+1] )
+            anglebin = j;
+      //cout << "foudn angle bin: " << anglebin << endl;
       totalhits->Fill(BID);
+      totalhits_anglebin[anglebin]->Fill(BID);
 
       bool targetBoardHit[8] = {false,false,false,false,false,false,false,false};
 
@@ -336,8 +411,11 @@ int main(int argc, char* argv[]){
         if (ib[target_clusters[i].MMFE8()] == BID){
           double deltaX = plane.GetResidualX(target_clusters[i].Channel(),track_all);
           hDeltaX[BID]->Fill(deltaX);
+          hDeltaX_anglebin[anglebin][BID]->Fill(deltaX);
           if ((deltaX < minCut[k]) && targetBoardHit[BID] == false){
-            passedhits->Fill(denom_ints[k]);
+            //cout << "Filling hist" << endl;
+            passedhits->Fill(BID);
+            passedhits_anglebin[anglebin]->Fill(BID);
             targetBoardHit[BID] = true;
             clustM[BID]++;
             continue;
@@ -346,28 +424,29 @@ int main(int argc, char* argv[]){
       }
     }
       for (int k = 0; k  < 8; k++)
-    targetBoardClustM[k]->Fill(clustM[k]);
+        targetBoardClustM[k]->Fill(clustM[k]);
+      //cout << "made it past filling" << endl;
+
   }
 
-  
   TCanvas* c1 = new TCanvas("c1","",600,400);
   gStyle->SetTextFont(42);
-  double backgroundEvents = 0.;
   int ngauss = 3; 
   for (int i = 0; i < 8; i++) { 
     //TF1 *f1 = new TF1("gaussian_1","gaus(0)",-2.4,-2.4);
     c1->cd();
     c1->Clear();
     c1->SetLogy();
+    TF1 *f2;
     if (ngauss == 1){
-      TF1 *f2 = new TF1("gaussian and constant","pol0(0)+gaus(1)",-14.99,14.99);
+      f2 = new TF1("gaussian and constant","pol0(0)+gaus(1)",-14.99,14.99);
       f2->SetParameter(0, 0.);
       f2->SetParameter(1, hDeltaX[i]->GetMaximum());
       f2->SetParameter(2, hDeltaX[i]->GetMean());
       f2->SetParameter(3, hDeltaX[i]->GetRMS()/2);     
     }
     else if (ngauss == 2){
-      TF1 *f2 = new TF1("double gaussian and constant","pol0(0)+gaus(1)+gaus(4)",-14.99,14.99);
+      f2 = new TF1("double gaussian and constant","pol0(0)+gaus(1)+gaus(4)",-14.99,14.99);
       f2->SetParameter(0, 0.);
       f2->SetParameter(1, hDeltaX[i]->GetMaximum());
       f2->SetParameter(2, hDeltaX[i]->GetMean());
@@ -377,12 +456,12 @@ int main(int argc, char* argv[]){
       f2->SetParameter(6, hDeltaX[i]->GetRMS()*1.5);       
     }
     else if (ngauss == 3){
-      TF1 *f2 = new TF1("triple gaussian and constant","pol0(0)+gaus(1)+gaus(4)+gaus(7)",-14.99,14.99);
+      f2 = new TF1("triple gaussian and constant","pol0(0)+gaus(1)+gaus(4)+gaus(7)",-14.99,14.99);
       f2->SetParameter(0, 0.);
       f2->SetParameter(1, hDeltaX[i]->GetMaximum());
       f2->SetParameter(2, hDeltaX[i]->GetMean());
       f2->SetParameter(3, hDeltaX[i]->GetRMS()/2);
-      f2->SetParameter(4, hDeltaX[i]->GetMaximum()/2/1.5);
+      f2->SetParameter(4, hDeltaX[i]->GetMaximum()/2.5/1.5);
       f2->SetParameter(5, hDeltaX[i]->GetMean());
       f2->SetParameter(6, hDeltaX[i]->GetRMS()*1.5);      
       f2->SetParameter(7, hDeltaX[i]->GetMaximum()/4/1.5);
@@ -395,7 +474,7 @@ int main(int argc, char* argv[]){
     << f2->GetParameter(3) << endl;
     TF1 *f1 = new TF1("pol0","pol0(0)",-14.9,14.9);
     f1->SetParameter(0,f2->GetParameter(0));
-    backgroundEvents = f1->Integral(-5.,5.);
+    double backgroundEvents = f1->Integral(-5.,5.);
     cout << "Nevents bkg: " << backgroundEvents << endl;
     double tempEvents = passedhits->GetBinContent(i+1);
     cout << "Nevents pre cut: " << tempEvents << endl;
@@ -423,20 +502,40 @@ int main(int argc, char* argv[]){
     f2->Draw("same");
     f1->Draw("same");
     c1->Print(Form("HitEfficiencyPlots/const_gauss_fit_%d.pdf",i));
+
+    // Do this bin by bin for angle bins
+    cout << "SIZE: " << sizeof(track_angle_bins)/sizeof(*track_angle_bins) << endl;
+    for (int j = 0; j < nangles-1; j++){
+      TF1* f3;
+      if (ngauss == 3){
+       f3 = new TF1("triple gaussian and constant","pol0(0)+gaus(1)+gaus(4)+gaus(7)",-14.99,14.99);
+        f3->SetParameter(0, 0.5);
+        f3->SetParLimits(0,0.,1000.);
+        f3->SetParameter(1, hDeltaX[i]->GetMaximum());
+        f3->SetParameter(2, hDeltaX[i]->GetMean());
+        f3->SetParameter(3, hDeltaX[i]->GetRMS()/2);
+        f3->SetParameter(4, hDeltaX[i]->GetMaximum()/2/1.5);
+        f3->SetParameter(5, hDeltaX[i]->GetMean());
+        f3->SetParameter(6, hDeltaX[i]->GetRMS()*1.5);      
+        f3->SetParameter(7, hDeltaX[i]->GetMaximum()/4/1.5);
+        f3->SetParameter(8, hDeltaX[i]->GetMean());
+        f3->SetParameter(9, hDeltaX[i]->GetRMS()*3);   
+      }
+      cout << "Fitting board " << i << " anglebin " << j << endl;
+      hDeltaX_anglebin[j][i]->Fit(f3, "RQ");
+      TF1 *f4 = new TF1("pol0","pol0(0)",-14.9,14.9);
+      f4->SetParameter(0,f3->GetParameter(0));
+      backgroundEvents = f4->Integral(-5.,5.);
+      cout << "background estimation: " << backgroundEvents << endl;
+      tempEvents = passedhits_anglebin[j]->GetBinContent(i+1);
+      passedhits_anglebin[j]->SetBinContent(i+1,tempEvents-backgroundEvents);
+    }
   }
-    //   board_itrack_resX[i]->Fit("f2","R");
-    //   double f = 0.5*(f1->GetParameter(0) + f2->GetParameter(0));
-    //   double cfit = board_itrack_resX[i]->GetNbinsX()*f;
-    //   cout << "Exp events: " << exphit[i] << endl;
-    //   cout << "Subtracted events: " << cfit << endl;
-    //   gothit[i] = board_itrack_resX[i]->GetEntries()-cfit;
-    //   cout << "Full events " << board_itrack_resX[i]->GetEntries() << endl;
-    //   passedhits->SetBinContent(i,gothit[i]);
-    //   cout << "GOT HIT: " << gothit[i] << endl;
-    //   totalhits->SetBinContent(i,exphit[i]);
-    // }
 
   hitEff->Divide(passedhits,totalhits,1.,1.,"B");
+  for (int i = 0; i < 5; i++){
+    hitEff_anglebin[i]->Divide(passedhits_anglebin[i],totalhits_anglebin[i],1.,1.,"B");
+  }
 
   cout << "/////////////////////////////////" << endl;
   cout << "EVENT SUMMARY: " << endl;
@@ -455,8 +554,13 @@ int main(int argc, char* argv[]){
     targetBoardClustM[i]->Write();
   }
   nBoardsHit->Write();
+  for (int i = 0; i < nangles-1; i++)
+    nBoardsHit_anglebin[i]->Write();
+  nBoards_vs_track_angle->Write();
   
   TCanvas* c2 = new TCanvas("c2","",600,400);
+  vector<int> colors = {kOrange+6,kPink+3,kGreen+2,kCyan-6,kAzure+7,kViolet-8};
+
 
   gStyle->SetErrorX(0.);
   c2->cd();
@@ -475,8 +579,35 @@ int main(int argc, char* argv[]){
   hitEff->GetXaxis()->SetTitleSize(0.045);    
   hitEff->GetYaxis()->SetLabelSize(0.045);
   hitEff->GetYaxis()->SetTitleSize(0.045);
-
   c2->Print("HitEfficiencyPlots/HitEffJan31.pdf");
+  c2->Clear();
+
+
+  //
+
+  TLegend* leg = new TLegend(0.8,0.3,0.94,0.5);
+  hitEff_anglebin[0]->SetMarkerStyle(20);
+  hitEff_anglebin[0]->SetMinimum(0.3);
+  hitEff_anglebin[0]->SetMaximum(1.);
+  hitEff_anglebin[0]->GetXaxis()->SetTitle("Board Number");
+  //hitEff->GetXaxis()->CenterTitle();
+  hitEff_anglebin[0]->GetYaxis()->SetTitle("Hit Efficiency");
+  //hitEff->GetYaxis()->CenterTitle();
+  hitEff_anglebin[0]->GetXaxis()->SetTitleOffset(1.3);
+  hitEff_anglebin[0]->GetYaxis()->SetTitleOffset(1.3);
+  hitEff_anglebin[0]->GetXaxis()->SetLabelSize(0.045);
+  hitEff_anglebin[0]->GetXaxis()->SetTitleSize(0.045);    
+  hitEff_anglebin[0]->GetYaxis()->SetLabelSize(0.045);
+  hitEff_anglebin[0]->GetYaxis()->SetTitleSize(0.045);
+  hitEff_anglebin[0]->Draw("E1 P");
+  for (int i = 0; i < nangles-3; i++){
+    hitEff_anglebin[i]->SetMarkerColor(colors[i]);
+    hitEff_anglebin[i]->SetMarkerStyle(20);
+    hitEff_anglebin[i]->Draw("E1 PL same");
+    leg->AddEntry(hitEff_anglebin[i],Form("%d#circ #leq #theta < %d#circ",int(track_angle_bins[i]),int(track_angle_bins[i+1])));
+  }
+  leg->Draw();
+  c2->Print("HitEfficiencyPlots/HitEffJan31_angles.pdf");
   c2->Clear();
 
   fout->cd();
