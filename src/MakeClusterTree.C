@@ -16,6 +16,7 @@
 #include "include/MMPacmanAlgo.hh"
 #include "include/GeoOctuplet.hh"
 #include "include/SimpleTrackFitter.hh"
+#include "include/ScintillatorClusterFilterer.hh"
 
 using namespace std;
 
@@ -86,7 +87,7 @@ int main(int argc, char* argv[]){
 
   MMPacmanAlgo* PACMAN = new MMPacmanAlgo();
 
-  SimpleTrackFitter* FITTER = new SimpleTrackFitter();
+  ScintillatorClusterFilterer* FILTERER = new ScintillatorClusterFilterer();
 
   GeoOctuplet* GEOMETRY = new GeoOctuplet();
 
@@ -105,6 +106,7 @@ int main(int argc, char* argv[]){
   DATA = (MMDataAnalysis*) new MMDataAnalysis(T);
 
   int Nevent = DATA->GetNEntries();
+  int debug  = 0;
   
   TFile* fout = new TFile(outputFileName, "RECREATE");
   fout->cd();
@@ -168,42 +170,34 @@ int main(int argc, char* argv[]){
     clus_Time.clear();
     clus_Channel.clear();
 
-    MMClusterList fit_clusters;
+    MMClusterList clusters_all;
+    MMClusterList clusters_fit;
 
-    int Ncl = all_clusters.size();
-    // write clusters to tree
-    for(int i = 0; i < Ncl; i++){
-      // add highest charge cluster from each board;
-      int Nc = all_clusters[i].GetNCluster();
-      for(int c = 0; c < Nc; c++){
-	if(all_clusters[i][c].GetNHits() > 1){
-	  fit_clusters.AddCluster(all_clusters[i][c]);
-	  N_clus++;
-	  clus_MMFE8.push_back(all_clusters[i][c].MMFE8());
-	  clus_Index.push_back(ib[all_clusters[i][c].MMFE8()]);
-	  clus_Charge.push_back(all_clusters[i][c].Charge());
-	  clus_Time.push_back(all_clusters[i][c].Time());
-	  clus_Channel.push_back(all_clusters[i][c].Channel());
-	  break;
-	}
+    // flatten the list of lists
+    for (auto clus_list: all_clusters)
+      for (auto clus: clus_list)
+        clusters_all.AddCluster(*clus);
+
+    // filter clusters with scintillator roads
+    // no need for sum(res2) selection since roads are already restrictive
+    // but we can play with this!
+    for (auto botpair: DATA->sc_EventHits.GetBotPair()){
+      clusters_fit = FILTERER->FilterClustersScint(clusters_all, *GEOMETRY, botpair.first->Channel(), DATA->mm_EventNum, debug);
+
+      N_clus = clusters_fit.GetNCluster();
+      for (auto clus: clusters_fit){
+        clus_MMFE8  .push_back(clus->MMFE8());
+        clus_Index  .push_back(ib[clus->MMFE8()]);
+        clus_Charge .push_back(clus->Charge());
+        clus_Time   .push_back(clus->Time());
+        clus_Channel.push_back(clus->Channel());
       }
     }
 
-    if(N_clus < 5)
-      continue;
-    
-    MMTrack track_all = FITTER->Fit(fit_clusters, *GEOMETRY);
-    double sumresX2 = 0.;
-    for(int i = 0; i < N_clus; i++){
-      double resX = GEOMETRY->GetResidualX(fit_clusters[i], track_all);
-      sumresX2 += resX*resX;
-    }
-
-    if( sumresX2 > double(N_clus-1)*0.1)
+    if (clusters_fit.GetNCluster() < 8)
       continue;
 
-    if(N_clus >= 5)
-      cluster_tree->Fill(); 
+    cluster_tree->Fill();
 
   } // end event loop
 
