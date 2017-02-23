@@ -281,6 +281,30 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
 
     m_RunNum = RunNumber;
   }
+
+  if(RunNumber >= 3515){
+    m_MMFE82Index.clear(); 
+    m_MMFE82Index[111] = 0;
+    m_MMFE82Index[116] = 1;
+    m_MMFE82Index[117] = 2;
+    m_MMFE82Index[119] = 3;
+    m_MMFE82Index[106] = 4;
+    m_MMFE82Index[107] = 5;
+    m_MMFE82Index[118] = 6;
+    m_MMFE82Index[105] = 7;
+
+    m_Index2MMFE8.clear();
+    m_Index2MMFE8[0] = 111;
+    m_Index2MMFE8[1] = 116;
+    m_Index2MMFE8[2] = 117;
+    m_Index2MMFE8[3] = 119;
+    m_Index2MMFE8[4] = 106;
+    m_Index2MMFE8[5] = 107;
+    m_Index2MMFE8[6] = 118;
+    m_Index2MMFE8[7] = 105;
+
+    m_RunNum = RunNumber;
+  }
 }
 
 inline double GeoOctuplet::GetResidualX(const MMCluster& clus,
