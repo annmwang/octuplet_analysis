@@ -17,6 +17,7 @@ class SCEventHits {
 
 public:
   SCEventHits();
+  SCEventHits(int RunNumber);
   SCEventHits(const SCHit& hit);
   SCEventHits(const SCEventHits& evt_hits);
   
@@ -63,11 +64,18 @@ private:
   static double sc_bot_atdc_corr[6];
   static double sc_top_atdc_corr[6];
 
+  int m_RunNumber;
 };
 
 inline SCEventHits::SCEventHits(){
   m_padw = nullptr;
   m_pade = nullptr;
+}
+
+inline SCEventHits::SCEventHits(int RunNumber){
+  m_padw = nullptr;
+  m_pade = nullptr;
+  m_RunNumber = RunNumber;
 }
 
 inline SCEventHits::SCEventHits(const SCHit& hit){
@@ -115,7 +123,7 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
 
   if(newhit->Channel() < 12){
     newhit->CorrectCount();
-    if (newhit->PassCountReqs()){
+    if (newhit->PassCountReqs(m_RunNumber)){
       int Nbot = m_bothits.size();
       for(int i = 0; i < Nbot; i++){
 	if(abs(newhit->Channel()-m_bothits[i]->Channel()) == 6){
@@ -133,7 +141,7 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
   }
   if(newhit->Channel() >= 16 && newhit->Channel() < 28){
     newhit->CorrectCount();
-    if (newhit->PassCountReqs()){
+    if (newhit->PassCountReqs(m_RunNumber)){
       int Ntop = m_tophits.size();
       for(int i = 0; i < Ntop; i++){
 	if(abs(newhit->Channel()-m_tophits[i]->Channel()) == 6){
@@ -155,7 +163,7 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
 inline bool SCEventHits::IsGoodEvent(){
   if(!m_padw || !m_pade)
     return false;
-  if (!m_padw->PassCountReqs() || !m_pade->PassCountReqs())
+  if (!m_padw->PassCountReqs(m_RunNumber) || !m_pade->PassCountReqs(m_RunNumber))
     return false;
   if(NBotPair() != 1 || NTopPair() != 1)
     return false;

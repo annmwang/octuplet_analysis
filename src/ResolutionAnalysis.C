@@ -94,7 +94,7 @@ int main(int argc, char* argv[]){
   // class defs
   PDOToCharge* PDOCalibrator;
   TDOToTime*   TDOCalibrator;
-  MMPacmanAlgo*                PACMAN       = new MMPacmanAlgo();
+  MMPacmanAlgo*                PACMAN       = new MMPacmanAlgo(5,5.,0.5);
   GeoOctuplet*                 GEOMETRY     = new GeoOctuplet();
   SimpleTrackFitter*           FITTER       = new SimpleTrackFitter();
   ScintillatorClusterFilterer* FILTERER     = new ScintillatorClusterFilterer();
@@ -262,7 +262,7 @@ int main(int argc, char* argv[]){
   clus_vs_board          = new TH2D("clus_vs_board",          ";MMFE number;clusters;Events",            8, -0.5, 7.5, 32, -0.5, 31.5);
   hits_vs_board          = new TH2D("hits_vs_board",          ";MMFE number;strips;Events",              8, -0.5, 7.5, 32, -0.5, 31.5);
   dups_vs_board          = new TH2D("dups_vs_board",          ";MMFE number;duplicate strips;Events",    8, -0.5, 7.5, 32, -0.5, 31.5);
-  hits_per_clus_vs_board = new TH2D("hits_per_clus_vs_board", ";MMFE number;hits in a cluster;Clusters", 8, -0.5, 7.5, 32, -0.5, 31.5);
+  hits_per_clus_vs_board = new TH2D("hits_per_clus_vs_board", ";MMFE number;hits in a cluster;Clusters", 8, -0.5, 7.5, 13, -0.5, 12.5);
   timediff_vs_board      = new TH2D("timediff_vs_board",      ";MMFE number;#DeltaBCID;Events",          8, -0.5, 7.5, 100, -0.5, 99.5);
   timediff_track         = new TH1D("timediff_track",         ";#DeltaBCID;Strips on-track",             100, -0.5, 99.5);
   timediff_dupli         = new TH1D("timediff_dupli",         ";#DeltaBCID;Duplicate strips",            100, -0.5, 99.5);
@@ -323,10 +323,8 @@ int main(int argc, char* argv[]){
     DATA->GetEntry(evt);
     if(evt % (Nevent/20) == 0)
       cout << "Processing event # " << evt << " | " << Nevent << endl;
-
     if(GEOMETRY->RunNumber() < 0)
       GEOMETRY->SetRunNumber(DATA->RunNum);
-
     if(!DATA->sc_EventHits.IsGoodEvent())
       continue;
 
@@ -346,6 +344,8 @@ int main(int argc, char* argv[]){
     PACMAN->SetEventTrigBCID(DATA->mm_trig_BCID);
     PACMAN->SetEventPadTime(0);
 
+    FILTERER->SetRunNumber(DATA->RunNum);
+    
     // run pacman
     nboardshit = DATA->mm_EventHits.GetNBoards();
     for(i = 0; i < nboardshit; i++){
@@ -383,10 +383,10 @@ int main(int argc, char* argv[]){
 
     }
 
+
     // hits, duplicates, clusters per board
     // ------------------------------------
     for (ibo = 0; ibo < nboards; ibo++){
-
       test = -1;
       for (i = 0; i < nboardshit; i++){
         // hits on this board!
@@ -397,14 +397,18 @@ int main(int argc, char* argv[]){
           dups_vs_board->Fill(ibo, DATA->mm_EventHits[i].GetNDuplicates());
 
           duplicates = DATA->mm_EventHits[i].GetDuplicates();
-          for(ich = 0; ich < (int)(duplicates.GetNHits()); ich++){
-            // do you want to fill this with a weight of duplicates[ich].GetNHits()-1?
-            dups_vs_channel->Fill(duplicates[ich].Channel(), ibo, duplicates[ich].GetNHits()-1);
-            timediff_dupli->Fill(DATA->mm_trig_BCID - duplicates[ich].BCID());
-          }
+	  //	  cout << "Duplicates? " << duplicates.GetNHits() << endl;
+          // for(ich = 0; ich < (int)(duplicates.GetNHits()); ich++){
+	  //   cout << "i " << ich << endl;
+	  //   cout << "channel " << duplicates[ich].Channel() << endl;
+	  //   cout << "nhits " << duplicates[ich].GetNHits() << endl;
+          //   // do you want to fill this with a weight of duplicates[ich].GetNHits()-1?
+	  //   dups_vs_channel->Fill(duplicates[ich].Channel(), ibo, duplicates[ich].GetNHits()-1);
+	  //   timediff_dupli->Fill(DATA->mm_trig_BCID - duplicates[ich].BCID());
+          // }
         }
       }
-      
+
       // no hits on this board!
       if (test == -1){
         clus_vs_board->Fill(ibo, 0);
@@ -413,15 +417,17 @@ int main(int argc, char* argv[]){
       }
     }
 
+    
     for (auto clus_list: clusters_perboard)
       for (auto clus: clus_list)
         hits_per_clus_vs_board->Fill(GEOMETRY->Index(clus->MMFE8()), clus->GetNHits());
 
+    
     // preselection quality to run tracking
     // require at least 7 boards hit
     if (clusters_perboard.size() < 7)
       continue;
-
+    //    cout << "fucked" << endl;
     // flatten these lists
     for (auto clus_list: clusters_perboard)
       for (auto clus: clus_list)

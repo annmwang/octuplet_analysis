@@ -18,6 +18,7 @@ class ScintillatorClusterFilterer : public SimpleTrackFitter {
 
 public:
   ScintillatorClusterFilterer();
+  ScintillatorClusterFilterer(int RunNumber);
   ~ScintillatorClusterFilterer();
 
   MMClusterList FilterClustersScint(MMClusterList& clusters, 
@@ -26,6 +27,8 @@ public:
                                     int evt = -1,
                                     int debug = 0
                                     );
+  int RunNumber() const;
+  void SetRunNumber(int RunNumber);
 
 private:
 
@@ -80,13 +83,13 @@ inline ScintillatorClusterFilterer::ScintillatorClusterFilterer(){
   m_clusters = nullptr;
   m_geometry = nullptr;
 
-  // xz-slopes from paolo
-  m_scint_slope_mean.push_back(-0.287);
-  m_scint_slope_mean.push_back(-0.194);
-  m_scint_slope_mean.push_back(-0.105);
-  m_scint_slope_mean.push_back(-0.017);
-  m_scint_slope_mean.push_back( 0.070);
-  m_scint_slope_mean.push_back( 0.158);
+}
+
+inline ScintillatorClusterFilterer::ScintillatorClusterFilterer(int RunNumber){
+  m_clusters = nullptr;
+  m_geometry = nullptr;
+
+  SetRunNumber(RunNumber);
 }
 
 inline ScintillatorClusterFilterer::~ScintillatorClusterFilterer(){
@@ -126,6 +129,27 @@ inline MMClusterList ScintillatorClusterFilterer::FilterClustersScint(MMClusterL
   // done!
   return m_clusters_within_road_avgd;
 
+}
+
+inline void ScintillatorClusterFilterer::SetRunNumber(int RunNumber){
+  // xz-slopes from paolo
+  if (RunNumber >= 3518){
+    m_scint_slope_mean.push_back(-0.37);
+    m_scint_slope_mean.push_back(-0.3);
+    m_scint_slope_mean.push_back(-0.2144);
+    m_scint_slope_mean.push_back(-0.1255);
+    m_scint_slope_mean.push_back(-0.043);
+    m_scint_slope_mean.push_back( 0.038);
+  }
+  // // xz-slopes from paolo before Run 3518
+  else {
+    m_scint_slope_mean.push_back(-0.287);
+    m_scint_slope_mean.push_back(-0.194);
+    m_scint_slope_mean.push_back(-0.105);
+    m_scint_slope_mean.push_back(-0.017);
+    m_scint_slope_mean.push_back( 0.070);
+    m_scint_slope_mean.push_back( 0.158);
+  }
 }
 
 inline MMClusterList ScintillatorClusterFilterer::FilterClusters(MMClusterList& clusters,

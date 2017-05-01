@@ -105,17 +105,12 @@ int main(int argc, char* argv[]){
   else
     TDOCalibrator = new TDOToTime();
 
-  MMPacmanAlgo* PACMAN = new MMPacmanAlgo();
+  //MMPacmanAlgo* PACMAN = new MMPacmanAlgo(5,5.,0.5);
+  MMPacmanAlgo* PACMAN = new MMPacmanAlgo(5,2.,0.5);
 
   GeoOctuplet* GEOMETRY = new GeoOctuplet();
   if(b_align)
     GEOMETRY->SetAlignment(AlignFileName);
-
-  ScintillatorClusterFilterer* FILTER = new ScintillatorClusterFilterer();
-  SimpleTrackFitter* FITTER = new SimpleTrackFitter();
-  //HighQTrackFitter* FITTER = new HighQTrackFitter();
-  //CombinatoricTrackFitter* FITTER = new CombinatoricTrackFitter();
-  //CombinatoricChi2TrackFitter* FITTER = new CombinatoricChi2TrackFitter();
 
   MMDataAnalysis* DATA;
   TFile* f = new TFile(inputFileName, "READ");
@@ -134,6 +129,9 @@ int main(int argc, char* argv[]){
   DATA = (MMDataAnalysis*) new MMDataAnalysis(T);
 
   int Nevent = DATA->GetNEntries();
+
+  ScintillatorClusterFilterer* FILTER = new ScintillatorClusterFilterer();
+  SimpleTrackFitter* FITTER = new SimpleTrackFitter();
 
   // Hits!
 
@@ -203,6 +201,7 @@ int main(int argc, char* argv[]){
   }
   //hDeltaX = new TH1D("hDeltaX","hDeltaX",250,-50.,50.);
   nBoardsHit = new TH1D("nBoardsHit","nBoardsHit",9,-0.5,8.5);
+  //nBoardsHit = new TH1D("nBoardsHit","nBoardsHit",5,3.5,8.5);
 
   track_angles = new TH1D("track angles","track angles",50, -25.,25.);
 
@@ -231,6 +230,7 @@ int main(int argc, char* argv[]){
 
     if(!DATA->sc_EventHits.IsGoodEvent())
       continue;
+
     
     // Calibrate PDO -> Charge
     PDOCalibrator->Calibrate(DATA->mm_EventHits);
@@ -240,6 +240,9 @@ int main(int argc, char* argv[]){
     // initialize PACMAN info for this event
     PACMAN->SetEventTrigBCID(DATA->mm_trig_BCID);
     PACMAN->SetEventPadTime(0); // add this
+
+    // initialize cluster making
+    FILTER->SetRunNumber(DATA->RunNum);
 
     // book histograms for MM hits
     int Nboard = DATA->mm_EventHits.GetNBoards();
@@ -464,7 +467,7 @@ int main(int argc, char* argv[]){
       f2->SetParameter(4, hDeltaX[i]->GetMaximum()/2.5/1.5);
       f2->SetParameter(5, hDeltaX[i]->GetMean());
       f2->SetParameter(6, hDeltaX[i]->GetRMS()*1.5);      
-      f2->SetParameter(7, hDeltaX[i]->GetMaximum()/4/1.5);
+      f2->SetParameter(7, hDeltaX[i]->GetMaximum()/3/1.5);
       f2->SetParameter(8, hDeltaX[i]->GetMean());
       f2->SetParameter(9, hDeltaX[i]->GetRMS()*3);   
     }
@@ -533,6 +536,9 @@ int main(int argc, char* argv[]){
   }
 
   hitEff->Divide(passedhits,totalhits,1.,1.,"B");
+  for (int i = 1; i < 9; i++){
+    cout << "Efficiency for Board " << i-1 << ", " << hitEff->GetBinContent(i) << endl;
+  }
   for (int i = 0; i < 5; i++){
     hitEff_anglebin[i]->Divide(passedhits_anglebin[i],totalhits_anglebin[i],1.,1.,"B");
   }
@@ -579,7 +585,7 @@ int main(int argc, char* argv[]){
   hitEff->GetXaxis()->SetTitleSize(0.045);    
   hitEff->GetYaxis()->SetLabelSize(0.045);
   hitEff->GetYaxis()->SetTitleSize(0.045);
-  c2->Print("HitEfficiencyPlots/HitEffJan31.pdf");
+  c2->Print("HitEfficiencyPlots/HitEff.pdf");
   c2->Clear();
 
 
@@ -607,7 +613,7 @@ int main(int argc, char* argv[]){
     leg->AddEntry(hitEff_anglebin[i],Form("%d#circ #leq #theta < %d#circ",int(track_angle_bins[i]),int(track_angle_bins[i+1])));
   }
   leg->Draw();
-  c2->Print("HitEfficiencyPlots/HitEffJan31_angles.pdf");
+  c2->Print("HitEfficiencyPlots/HitEff_angles.pdf");
   c2->Clear();
 
   fout->cd();

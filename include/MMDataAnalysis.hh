@@ -50,9 +50,10 @@ inline Int_t MMDataAnalysis::GetNEntries(){
 }
 
 inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
+
   if(entry < 0 || entry >= m_Nentry)
     return false;
-
+  
   int ret = MMDataBase::GetEntry(entry);
 
   // clear previous event micromega hits;
@@ -62,7 +63,8 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
   for(int i = 0; i < N_mm; i++){
     MMHit hit(mm_MMFE8->at(i),
 	      mm_VMM->at(i),
-	      mm_CH->at(i));
+	      mm_CH->at(i),
+	      RunNum);
     hit.SetPDO(mm_PDO->at(i));
     hit.SetTDO(mm_TDO->at(i));
     hit.SetBCID(mm_BCID->at(i));
@@ -72,7 +74,7 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
   }
 
   // clear previous event scintillator hits
-  sc_EventHits = SCEventHits();
+  sc_EventHits = SCEventHits(RunNum);
 
   // fill event hits
   for(int i = 0; i < N_sci-1; i++){

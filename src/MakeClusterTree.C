@@ -151,6 +151,9 @@ int main(int argc, char* argv[]){
     PACMAN->SetEventTrigBCID(DATA->mm_trig_BCID);
     PACMAN->SetEventPadTime(0); // add this
 
+    // initialize cluster maker
+    FILTERER->SetRunNumber(DATA->RunNum);
+    
     int Nboards = DATA->mm_EventHits.GetNBoards();
     
     vector<MMClusterList> all_clusters;

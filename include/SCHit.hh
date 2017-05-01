@@ -26,7 +26,7 @@ public:
   void SetCount(double count);
   void CorrectCount();
   
-  int PassCountReqs();
+  int PassCountReqs(int RunNumber);
 
 private:
   int m_CH;
@@ -99,10 +99,21 @@ inline void SCHit::CorrectCount(){
     else if (m_CH == 27) m_Count += -1.4;
 }
 
-inline int SCHit::PassCountReqs() {
-  if      (m_CH < 12) return (int)(m_Count >  160.0 && m_Count  < 220.0);
-  else if (m_CH > 15) return (int)(m_Count >  180.0 && m_Count  < 240.0);
-  else                return (int)(m_Count >= 200.0 && m_Count <= 250.0);
+inline int SCHit::PassCountReqs(int RunNumber) {
+  if (RunNumber == 3513) {
+    if      (m_CH < 12) return (int)(m_Count >  160.0 && m_Count  < 220.0);
+    else if (m_CH > 15) return (int)(m_Count >  180.0 && m_Count  < 240.0);
+    else                return (int)(m_Count >= 200.0 && m_Count <= 250.0);
+  }
+  else if (RunNumber >= 3516) {
+    if      (m_CH < 12) return (int)(m_Count >  110.0 && m_Count  < 170.0);
+    else if (m_CH > 15) return (int)(m_Count >  130.0 && m_Count  < 190.0);
+    else                return (int)(m_Count >= 150.0 && m_Count <= 200.0);
+  }
+  else{
+    std::cout << "Need to add RunNumber settings to include/SCHit.hh! Error!" << std::endl;
+    return -1;
+  }
   // probably shouldnt compare Counts() with float boundaries,
   // since they want to be ints, but who cares for now
 }

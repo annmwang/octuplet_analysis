@@ -15,7 +15,7 @@ class MMHit {
 
 public:
   MMHit();
-  MMHit(int mmfe8, int vmm = -1, double ch = -1);
+  MMHit(int mmfe8, int vmm = -1, double ch = -1, int RunNumber = -1);
   MMHit(const MMHit& hit);
   ~MMHit();
 
@@ -28,6 +28,7 @@ public:
   int TDO() const;
   int BCID() const;
   int FIFOcount() const;
+  int RunNumber() const;
 
   double Charge() const;
   double Time() const;
@@ -36,12 +37,13 @@ public:
   bool IsTimeCalib() const;
   
   void SetMMFE8(int mmfe8);
-  void SetMMFE8Index();
+  void SetMMFE8Index(int RunNumber);
   void SetVMM(int vmm);
   void SetChannel(double ch);
   void SetPDO(int pdo);
   void SetTDO(int tdo);
   void SetBCID(int bcid);
+  void SetRunNumber(int RunNumber);
   void SetFIFOcount(int fifo);
   void SetCharge(double q);
   void SetTime(double t);
@@ -55,6 +57,7 @@ private:
   int m_TDO;
   int m_BCID;
   int m_FIFOcount;
+  int m_RunNumber;
 
   double m_charge;
   double m_time;
@@ -76,16 +79,17 @@ inline MMHit::MMHit(){
   m_TDO = -1;
   m_BCID = -1;
   m_FIFOcount = -1;
+  m_RunNumber = -1;
   m_charge = -1;
   m_time = -1;
 
   m_charge_calib = false;
   m_time_calib = false;
 
-  SetMMFE8Index();
+  SetMMFE8Index(m_RunNumber);
 }
 
-inline MMHit::MMHit(int mmfe8, int vmm, double ch){
+inline MMHit::MMHit(int mmfe8, int vmm, double ch, int RunNumber){
   m_MMFE8 = mmfe8;
   m_VMM = vmm;
   m_CH = ch;
@@ -93,13 +97,14 @@ inline MMHit::MMHit(int mmfe8, int vmm, double ch){
   m_TDO = -1;
   m_BCID = -1;
   m_FIFOcount = -1;
+  m_RunNumber = RunNumber;
   m_charge = -1;
   m_time = -1;
 
   m_charge_calib = false;
   m_time_calib = false;
 
-  SetMMFE8Index();
+  SetMMFE8Index(RunNumber);
 }
 
 inline MMHit::MMHit(const MMHit& hit){
@@ -111,6 +116,7 @@ inline MMHit::MMHit(const MMHit& hit){
   m_TDO = hit.TDO();
   m_BCID = hit.BCID();
   m_FIFOcount = hit.FIFOcount();
+  m_RunNumber = hit.RunNumber();
 
   m_charge = hit.Charge();
   m_time = hit.Time();
@@ -159,6 +165,10 @@ inline int MMHit::FIFOcount() const {
   return m_FIFOcount;
 }
 
+inline int MMHit::RunNumber() const {
+  return m_RunNumber;
+}
+
 inline double MMHit::Charge() const {
   return m_charge;
 }
@@ -203,6 +213,10 @@ inline void MMHit::SetBCID(int bcid){
   m_BCID = bcid;
 }
 
+inline void MMHit::SetRunNumber(int RunNumber){
+  m_RunNumber = RunNumber;
+}
+
 inline void MMHit::SetFIFOcount(int fifo){
   m_FIFOcount = fifo;
 }
@@ -217,17 +231,42 @@ inline void MMHit::SetTime(double t){
   m_time_calib = true;
 }
 
-inline void MMHit::SetMMFE8Index() {
+inline void MMHit::SetMMFE8Index(int RunNumber) {
   // only valid for Run 3513.
   // lets put this info into the ntuple?
   m_MMFE8index = -1;
-  if      (m_MMFE8 == 111) m_MMFE8index = 0;
-  else if (m_MMFE8 == 116) m_MMFE8index = 1;
-  else if (m_MMFE8 == 101) m_MMFE8index = 2;
-  else if (m_MMFE8 == 109) m_MMFE8index = 3;
-  else if (m_MMFE8 == 117) m_MMFE8index = 4;
-  else if (m_MMFE8 == 102) m_MMFE8index = 5;
-  else if (m_MMFE8 == 107) m_MMFE8index = 6;
-  else if (m_MMFE8 == 105) m_MMFE8index = 7;
+  if (RunNumber == 3513) {
+    if      (m_MMFE8 == 111) m_MMFE8index = 0;
+    else if (m_MMFE8 == 116) m_MMFE8index = 1;
+    else if (m_MMFE8 == 101) m_MMFE8index = 2;
+    else if (m_MMFE8 == 109) m_MMFE8index = 3;
+    else if (m_MMFE8 == 117) m_MMFE8index = 4;
+    else if (m_MMFE8 == 102) m_MMFE8index = 5;
+    else if (m_MMFE8 == 107) m_MMFE8index = 6;
+    else if (m_MMFE8 == 105) m_MMFE8index = 7;
+  }
+  else if (RunNumber == 3516) {
+    if      (m_MMFE8 == 111) m_MMFE8index = 0;
+    else if (m_MMFE8 == 116) m_MMFE8index = 1;
+    else if (m_MMFE8 == 117) m_MMFE8index = 2;
+    else if (m_MMFE8 == 119) m_MMFE8index = 3;
+    else if (m_MMFE8 == 106) m_MMFE8index = 4;
+    else if (m_MMFE8 == 107) m_MMFE8index = 5;
+    else if (m_MMFE8 == 118) m_MMFE8index = 6;
+    else if (m_MMFE8 == 105) m_MMFE8index = 7;
+  }
+  else if (RunNumber == 3518) {
+    if      (m_MMFE8 == 118) m_MMFE8index = 0;
+    else if (m_MMFE8 == 116) m_MMFE8index = 1;
+    else if (m_MMFE8 == 102) m_MMFE8index = 2;
+    else if (m_MMFE8 == 119) m_MMFE8index = 3;
+    else if (m_MMFE8 == 106) m_MMFE8index = 4;
+    else if (m_MMFE8 == 107) m_MMFE8index = 5;
+    else if (m_MMFE8 == 117) m_MMFE8index = 6;
+    else if (m_MMFE8 == 105) m_MMFE8index = 7;
+  }
+  else {
+    std::cout << "Need to add RunNumber settings to include/MMHit.hh! Error!" << std::endl;
+  }
 }
 
