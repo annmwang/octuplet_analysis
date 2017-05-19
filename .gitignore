@@ -5,5 +5,7 @@ RunMMAnalysisTemplate.x
 AutoDict*
 *.d
 *.so
+*~
+*#
 *.root
 .DS_Store

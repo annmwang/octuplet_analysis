@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Mon Sep 26 18:45:48 2016 by ROOT version 5.34/34
+// Thu May 18 20:49:28 2017 by ROOT version 6.06/00
 // from TTree COMB_data/COMB_data
-// found on file: test/test_data.root
+// found on file: Run3522_combSCMMTP_part.root
 //////////////////////////////////////////////////////////
 
 #ifndef MMDataBase_h
@@ -13,16 +13,15 @@
 #include <TFile.h>
 
 // Header file for the classes stored in the TTree if any.
-#include <vector>
-
-// Fixed size dimensions of array or collections stored in the TTree if any.
-
-using namespace std;
+#include "vector"
+#include "vector"
 
 class MMDataBase {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
+
+// Fixed size dimensions of array or collections stored in the TTree if any.
 
    // Declaration of leaf types
    Int_t           RunNum;
@@ -44,6 +43,18 @@ public :
    vector<int>     *mm_BCID;
    vector<int>     *mm_MMFE8;
    vector<int>     *mm_FIFOcount;
+   Int_t           tp_n;
+   vector<int>     *tp_EventNum;
+   vector<int>     *tp_cntr;
+   vector<int>     *tp_Time_sec;
+   vector<int>     *tp_Time_nsec;
+   vector<int>     *tp_BCID;
+   vector<int>     *tp_hit_n;
+   vector<double>  *tp_mxlocal;
+   vector<vector<int> > *tp_hit_MMFE8;
+   vector<vector<int> > *tp_hit_VMM;
+   vector<vector<int> > *tp_hit_CH;
+   vector<vector<int> > *tp_hit_BCID;
 
    // List of branches
    TBranch        *b_RunNum;   //!
@@ -65,6 +76,18 @@ public :
    TBranch        *b_mm_BCID;   //!
    TBranch        *b_mm_MMFE8;   //!
    TBranch        *b_mm_FIFOcount;   //!
+   TBranch        *b_tp_n;   //!
+   TBranch        *b_tp_EventNum;   //!
+   TBranch        *b_tp_cntr;   //!
+   TBranch        *b_tp_Time_sec;   //!
+   TBranch        *b_tp_Time_nsec;   //!
+   TBranch        *b_tp_BCID;   //!
+   TBranch        *b_tp_hit_n;   //!
+   TBranch        *b_tp_mxlocal;   //!
+   TBranch        *b_tp_hit_MMFE8;   //!
+   TBranch        *b_tp_hit_VMM;   //!
+   TBranch        *b_tp_hit_CH;   //!
+   TBranch        *b_tp_hit_BCID;   //!
 
    MMDataBase(TTree *tree=0);
    virtual ~MMDataBase();
@@ -78,14 +101,15 @@ public :
 
 #endif
 
+
 inline MMDataBase::MMDataBase(TTree *tree) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("test/test_data.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("Run3522_combSCMMTP_part.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("test/test_data.root");
+         f = new TFile("Run3522_combSCMMTP_part.root");
       }
       f->GetObject("COMB_data",tree);
 
@@ -138,6 +162,17 @@ inline void MMDataBase::Init(TTree *tree)
    mm_BCID = 0;
    mm_MMFE8 = 0;
    mm_FIFOcount = 0;
+   tp_EventNum = 0;
+   tp_cntr = 0;
+   tp_Time_sec = 0;
+   tp_Time_nsec = 0;
+   tp_BCID = 0;
+   tp_hit_n = 0;
+   tp_mxlocal = 0;
+   tp_hit_MMFE8 = 0;
+   tp_hit_VMM = 0;
+   tp_hit_CH = 0;
+   tp_hit_BCID = 0;
    // Set branch addresses and branch pointers
    if (!tree) return;
    fChain = tree;
@@ -163,6 +198,18 @@ inline void MMDataBase::Init(TTree *tree)
    fChain->SetBranchAddress("mm_BCID", &mm_BCID, &b_mm_BCID);
    fChain->SetBranchAddress("mm_MMFE8", &mm_MMFE8, &b_mm_MMFE8);
    fChain->SetBranchAddress("mm_FIFOcount", &mm_FIFOcount, &b_mm_FIFOcount);
+   fChain->SetBranchAddress("tp_n", &tp_n, &b_tp_n);
+   fChain->SetBranchAddress("tp_EventNum", &tp_EventNum, &b_tp_EventNum);
+   fChain->SetBranchAddress("tp_cntr", &tp_cntr, &b_tp_cntr);
+   fChain->SetBranchAddress("tp_Time_sec", &tp_Time_sec, &b_tp_Time_sec);
+   fChain->SetBranchAddress("tp_Time_nsec", &tp_Time_nsec, &b_tp_Time_nsec);
+   fChain->SetBranchAddress("tp_BCID", &tp_BCID, &b_tp_BCID);
+   fChain->SetBranchAddress("tp_hit_n", &tp_hit_n, &b_tp_hit_n);
+   fChain->SetBranchAddress("tp_mxlocal", &tp_mxlocal, &b_tp_mxlocal);
+   fChain->SetBranchAddress("tp_hit_MMFE8", &tp_hit_MMFE8, &b_tp_hit_MMFE8);
+   fChain->SetBranchAddress("tp_hit_VMM", &tp_hit_VMM, &b_tp_hit_VMM);
+   fChain->SetBranchAddress("tp_hit_CH", &tp_hit_CH, &b_tp_hit_CH);
+   fChain->SetBranchAddress("tp_hit_BCID", &tp_hit_BCID, &b_tp_hit_BCID);
    Notify();
 }
 

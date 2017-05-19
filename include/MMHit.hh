@@ -255,7 +255,7 @@ inline void MMHit::SetMMFE8Index(int RunNumber) {
     else if (m_MMFE8 == 118) m_MMFE8index = 6;
     else if (m_MMFE8 == 105) m_MMFE8index = 7;
   }
-  else if (RunNumber == 3518) {
+  else if (RunNumber >= 3518) {
     if      (m_MMFE8 == 118) m_MMFE8index = 0;
     else if (m_MMFE8 == 116) m_MMFE8index = 1;
     else if (m_MMFE8 == 102) m_MMFE8index = 2;

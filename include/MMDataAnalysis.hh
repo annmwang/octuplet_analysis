@@ -14,6 +14,7 @@
 #include "include/MMDataBase.hh"
 #include "include/SCEventHits.hh"
 #include "include/MMEventHits.hh"
+#include "include/TPEventTracks.hh"
 
 class MMDataAnalysis : public MMDataBase {
 
@@ -26,7 +27,7 @@ public:
 
   MMEventHits mm_EventHits;
   SCEventHits sc_EventHits;
-
+  TPEventTracks tp_EventTracks;
 private:
   int m_Nentry;
   
@@ -85,5 +86,51 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
     
   }
 
+  
+  vector< TPTrack > sorted_tracks;
+  
+  if (tp_hit_n != 0 ) {
+    // fill event tracks
+    for (int i = 0; i < tp_hit_n->size(); i++){
+      TPTrack tp_track = TPTrack();
+      for(int j = 0; j < tp_hit_n->at(i); j++){
+        TPHit hit((tp_hit_MMFE8->at(i))[j],
+                  (tp_hit_VMM->at(i))[j],
+                  (tp_hit_CH->at(i))[j],
+                  RunNum);
+        tp_track += hit;
+      }
+      tp_track.SetMxLocal(tp_mxlocal->at(i));
+      tp_track.SetBCID(tp_BCID->at(i));
+
+      TPTrack* new_track = nullptr;
+
+      for (int j = 0; j < sorted_tracks.size(); j++){
+        if (tp_track.GetNHits() > sorted_tracks[j].GetNHits()){
+          new_track = new TPTrack(tp_track);
+          sorted_tracks.insert(sorted_tracks.begin()+j, *new_track);
+          break;
+        }
+      }
+      if (!new_track){
+        new_track = new TPTrack(tp_track);
+        sorted_tracks.push_back(*new_track);
+      }
+    }
+    // clear out previous tracks
+    if (sorted_tracks.size() > 0){
+      tp_EventTracks = TPEventTracks(sorted_tracks[0]);
+      for (int i = 1; i < sorted_tracks.size(); i++){
+        tp_EventTracks.AddTrack(sorted_tracks[i]);
+      }
+    }
+    // debug:
+    // const TPEventTracks* tr = &tp_EventTracks;
+    // cout << "Ntracks seen: " << tr->GetNTracks() << endl;
+    // while(tr){
+    //   cout << "hits: " << tr->GetNHits() << endl;
+    //   tr = tr->GetNext();
+    // }
+  }
   return ret;
 }
