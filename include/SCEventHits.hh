@@ -36,9 +36,13 @@ public:
   
   int NBotPair();
   int NTopPair();
+  int TPBCID();
+  int TPph();
 
   void BotXY(double& x, double& y);
   void TopXY(double& x, double& y);
+  void SetTPBCID(int BCID);
+  void SetTPph(int ph);
 
   double BotTDC();
   double TopTDC();
@@ -65,6 +69,8 @@ private:
   static double sc_top_atdc_corr[6];
 
   int m_RunNumber;
+  int m_tpBCID;
+  int m_tpPh;
 };
 
 inline SCEventHits::SCEventHits(){
@@ -194,6 +200,14 @@ inline int SCEventHits::NTopPair(){
   return m_top_pairs.size();
 }
 
+inline int SCEventHits::TPBCID(){
+  return m_tpBCID;
+}
+
+inline int SCEventHits::TPph(){
+  return m_tpPh;
+}
+
 inline void SCEventHits::BotXY(double& x, double& y){
   if(m_bot_pairs.size() <= 0){
     x = 0; y = 0;
@@ -216,6 +230,14 @@ inline void SCEventHits::TopXY(double& x, double& y){
   
   x = -tdcdiff*3.144;
   y = 50. - (m_top_pairs[0].first->Channel()-16)*20.;
+}
+
+inline void SCEventHits::SetTPBCID(int bcid){
+  m_tpBCID = bcid;
+}
+
+inline void SCEventHits::SetTPph(int ph){
+  m_tpPh = ph;
 }
 
 inline double SCEventHits::BotTDC(){

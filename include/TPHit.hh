@@ -14,7 +14,7 @@ class TPHit {
 
 public:
   TPHit();
-  TPHit(int mmfe8, int vmm = -1, double ch = -1, int RunNumber = -1);
+  TPHit(int mmfe8, int vmm = -1, double ch = -1, int bcid = -1, int RunNumber = -1);
   TPHit(const TPHit& hit);
   ~TPHit();
 
@@ -54,11 +54,11 @@ inline TPHit::TPHit(){
   SetMMFE8Index(m_RunNumber);
 }
 
-inline TPHit::TPHit(int mmfe8, int vmm, double ch, int RunNumber){
+inline TPHit::TPHit(int mmfe8, int vmm, double ch, int bcid, int RunNumber){
   m_MMFE8 = mmfe8;
   m_VMM = vmm;
   m_CH = ch;
-  m_BCID = -1;
+  m_BCID = bcid;
   m_RunNumber = RunNumber;
 
   SetMMFE8Index(RunNumber);

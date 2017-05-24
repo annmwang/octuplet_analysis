@@ -17,7 +17,7 @@ class TPTrack {
 public:
   TPTrack();
   TPTrack(const TPHit& hit);
-  TPTrack(const TPTrack& hits);
+  TPTrack(const TPTrack& track);
   
   ~TPTrack();
 
@@ -82,18 +82,8 @@ inline TPTrack::~TPTrack(){
 
 inline bool TPTrack::AddHit(const TPHit& hit){
   TPHit* newhit = nullptr;
-  int N = GetNHits();
-  for (int i = 0; i < N; i++){
-    if (hit.MMFE8Index() < m_hits[i]->MMFE8Index()){
-      newhit = new TPHit(hit);
-      m_hits.insert(m_hits.begin()+i, newhit);
-      break;
-    }
-  }
-  if (!newhit){
-    newhit = new TPHit(hit);
-    m_hits.push_back(newhit);
-  }
+  newhit = new TPHit(hit);
+  m_hits.push_back(newhit);
   return true;
 }
 

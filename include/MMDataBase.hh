@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Thu May 18 20:49:28 2017 by ROOT version 6.06/00
+// Sun May 21 23:41:20 2017 by ROOT version 6.06/00
 // from TTree COMB_data/COMB_data
-// found on file: Run3522_combSCMMTP_part.root
+// found on file: data/Run3522_part/Run3522_combSCMMTPTIME.root
 //////////////////////////////////////////////////////////
 
 #ifndef MMDataBase_h
@@ -55,6 +55,12 @@ public :
    vector<vector<int> > *tp_hit_VMM;
    vector<vector<int> > *tp_hit_CH;
    vector<vector<int> > *tp_hit_BCID;
+   Int_t           tpsci_EventNum;
+   Int_t           tpsci_BCID;
+   Int_t           tpsci_ph;
+   Int_t           tpsci_overflow;
+   Int_t           tpsci_Time_sec;
+   Int_t           tpsci_Time_nsec;
 
    // List of branches
    TBranch        *b_RunNum;   //!
@@ -88,6 +94,12 @@ public :
    TBranch        *b_tp_hit_VMM;   //!
    TBranch        *b_tp_hit_CH;   //!
    TBranch        *b_tp_hit_BCID;   //!
+   TBranch        *b_tpsci_EventNum;   //!
+   TBranch        *b_tpsci_BCID;   //!
+   TBranch        *b_tpsci_ph;   //!
+   TBranch        *b_tpsci_overflow;   //!
+   TBranch        *b_tpsci_Time_sec;   //!
+   TBranch        *b_tpsci_Time_nsec;   //!
 
    MMDataBase(TTree *tree=0);
    virtual ~MMDataBase();
@@ -101,15 +113,14 @@ public :
 
 #endif
 
-
 inline MMDataBase::MMDataBase(TTree *tree) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("Run3522_combSCMMTP_part.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("data/Run3522_part/Run3522_combSCMMTPTIME.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("Run3522_combSCMMTP_part.root");
+         f = new TFile("data/Run3522_part/Run3522_combSCMMTPTIME.root");
       }
       f->GetObject("COMB_data",tree);
 
@@ -210,6 +221,12 @@ inline void MMDataBase::Init(TTree *tree)
    fChain->SetBranchAddress("tp_hit_VMM", &tp_hit_VMM, &b_tp_hit_VMM);
    fChain->SetBranchAddress("tp_hit_CH", &tp_hit_CH, &b_tp_hit_CH);
    fChain->SetBranchAddress("tp_hit_BCID", &tp_hit_BCID, &b_tp_hit_BCID);
+   fChain->SetBranchAddress("tpsci_EventNum", &tpsci_EventNum, &b_tpsci_EventNum);
+   fChain->SetBranchAddress("tpsci_BCID", &tpsci_BCID, &b_tpsci_BCID);
+   fChain->SetBranchAddress("tpsci_ph", &tpsci_ph, &b_tpsci_ph);
+   fChain->SetBranchAddress("tpsci_overflow", &tpsci_overflow, &b_tpsci_overflow);
+   fChain->SetBranchAddress("tpsci_Time_sec", &tpsci_Time_sec, &b_tpsci_Time_sec);
+   fChain->SetBranchAddress("tpsci_Time_nsec", &tpsci_Time_nsec, &b_tpsci_Time_nsec);
    Notify();
 }
 

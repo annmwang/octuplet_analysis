@@ -1,7 +1,7 @@
 ///
 ///  \file   TPEventTracks.hh
 ///
-///  \author Ann Miao Wang
+///  \author AW
 ///
 ///  \date   2017 May
 ///
@@ -10,77 +10,80 @@
 #ifndef TPEventTracks_HH
 #define TPEventTracks_HH
 
-#include "include/TPTrack.hh"
+#include "include/TPLinkedTrack.hh"
 
-class TPEventTracks : public TPTrack {
+class TPEventTracks {
 
 public:
   TPEventTracks();
   TPEventTracks(const TPTrack& track);
-  TPEventTracks(const TPEventTracks& track);
   
   ~TPEventTracks();
 
-  int GetNTracks() const;
+  bool AddTrack(const TPTrack& track);
 
-  void AddTrack(const TPTrack& track);
-  void AddLinkedTrack(const TPEventTracks& track);
+  bool operator += (const TPTrack& track);
+  
+  int GetNTrack() const;
+  TPLinkedTrack Get() const;
+  TPLinkedTrack operator [] (int itrack) const;
 
-  const TPEventTracks* GetNext() const;
   
 private:
-  TPEventTracks* m_next;
+  std::vector<TPTrack*> m_track;
 
+  friend class PDOToCharge;
+  friend class TDOToTime;
 };
 
-#endif
+inline TPEventTracks::TPEventTracks() {}
 
-inline TPEventTracks::TPEventTracks()
-{
-  m_next = nullptr;
+inline TPEventTracks::TPEventTracks(const TPTrack& track){
+  AddTrack(track);
 }
 
-inline TPEventTracks::TPEventTracks(const TPTrack& track)
-  : TPTrack(track)
-{
-  m_next = nullptr;
-}
-
-inline TPEventTracks::TPEventTracks(const TPEventTracks& track)
-  : TPTrack(track)
-{
-  if(track.GetNTracks() > 1)
-    m_next = new TPEventTracks(*track.GetNext());
-  else
-    m_next = nullptr;
-}
-  
 inline TPEventTracks::~TPEventTracks(){
-  if(m_next){
-    delete m_next;
+  int N = GetNTrack();
+  for(int i = 0; i < N; i++)
+    delete m_track[i];
+}
+
+inline bool TPEventTracks::AddTrack(const TPTrack& track){
+  int N = GetNTrack();
+  for(int i = 0; i < N; i++){
+    if(track.GetNHits() > m_track[i]->GetNHits()){
+      m_track.insert(m_track.begin()+i, new TPTrack(track));
+      return true;
+    }
+    if(track.GetNHits() == m_track[i]->GetNHits()){
+      m_track.insert(m_track.begin()+i+1, new TPTrack(track));
+      return true;
+    }
   }
+  m_track.push_back(new TPLinkedTrack(track));
+  return true;
 }
 
-inline int TPEventTracks::GetNTracks() const {
-  if(m_next)
-    return m_next->GetNTracks()+1;
-  return 1;
+
+inline bool TPEventTracks::operator += (const TPTrack& track){
+  return AddTrack(track);
 }
 
-inline const TPEventTracks* TPEventTracks::GetNext() const {
-  return m_next;
+  
+inline int TPEventTracks::GetNTrack() const {
+  return int(m_track.size());
 }
 
-inline void TPEventTracks::AddTrack(const TPTrack& track) {
-  if (m_next)
-    m_next->AddTrack(track);
-  else
-    m_next = new TPEventTracks(track);
-}
-inline void TPEventTracks::AddLinkedTrack(const TPEventTracks& track) {
-  if(m_next)
-    m_next->AddLinkedTrack(track);
-  else
-    m_next = new TPEventTracks(track);
+inline TPLinkedTrack TPEventTracks::Get() const {
+  TPLinkedTrack tr = TPLinkedTrack(*m_track[0]);
+  for (int i = 1; i < GetNTrack(); i++){
+    tr.AddTrack(*m_track[i]);
+  }
+  return tr;
 }
 
+inline TPLinkedTrack TPEventTracks::operator [] (int itrack) const {
+  return Get();
+}
+
+#endif
