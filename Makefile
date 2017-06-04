@@ -17,11 +17,7 @@ CC_FILES := $(wildcard src/*.C)
 HH_FILES := $(wildcard include/*.hh) 
 OBJ_FILES := $(addprefix $(OUTOBJ),$(notdir $(CC_FILES:.C=.o)))
 
-all: octuplet.x RunMMAnalysisTemplate.x RunMMAnalysis.x RunMMAnalysis_v2.x MakeClusterTree.x RunAlignment.x HitEffAnalysis.x ResolutionAnalysis.x
-
-octuplet.x:  $(SRCDIR)octuplet_ana.C $(HH_FILES)
-	$(CXX) $(CXXFLAGS) -o octuplet.x $(GLIBS) $ $<
-	touch octuplet.x
+all: RunMMAnalysisTemplate.x RunMMAnalysis.x RunMMAnalysis_v2.x MakeClusterTree.x RunAlignment.x HitEffAnalysis.x ResolutionAnalysis.x TPAnalysis.x
 
 RunMMAnalysisTemplate.x:  $(SRCDIR)RunMMAnalysisTemplate.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o RunMMAnalysisTemplate.x $(GLIBS) $ $<
@@ -42,6 +38,10 @@ HitEffAnalysis.x:  $(SRCDIR)HitEffAnalysis.C $(HH_FILES)
 ResolutionAnalysis.x:  $(SRCDIR)ResolutionAnalysis.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o ResolutionAnalysis.x $(GLIBS) $ $<
 	touch ResolutionAnalysis.x
+
+TPAnalysis.x:  $(SRCDIR)TPAnalysis.C $(HH_FILES)
+	$(CXX) $(CXXFLAGS) -o TPAnalysis.x $(GLIBS) $ $<
+	touch TPAnalysis.x
 
 MakeClusterTree.x:  $(SRCDIR)MakeClusterTree.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o MakeClusterTree.x $(GLIBS) $ $<
