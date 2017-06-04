@@ -39,12 +39,15 @@ public:
 
   MMEventHits GetDuplicates() const;
 
+  void SetTime(int time, int time_ns);    
+  double Time();
+  
   friend class PDOToCharge;
   friend class TDOToTime;
   
 private:
   std::vector<MMFE8Hits*> m_boards;
-
+  double m_time;
 };
 
 inline MMEventHits::MMEventHits() {}
@@ -140,6 +143,14 @@ inline MMEventHits MMEventHits::GetDuplicates() const {
     dups += m_boards[i]->GetDuplicates();
   
   return dups;
+}
+
+inline void MMEventHits::SetTime(int time, int time_ns){
+  m_time = time+time_ns/pow(10,9.);
+}
+
+inline double MMEventHits::Time(){
+  return m_time;
 }
 
 inline MMEventHits operator + (const MMEventHits& evt_hits, 
