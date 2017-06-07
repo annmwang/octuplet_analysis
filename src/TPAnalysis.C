@@ -99,6 +99,7 @@ int main(int argc, char* argv[]){
 
   // colors
   string pink = "\033[38;5;205m";
+  string green = "\033[38;5;84m";
   string blue = "\033[38;5;27m";
   string end = "\033[0m";
   string warning = "\033[38;5;227;48;5;232m";
@@ -154,11 +155,24 @@ int main(int argc, char* argv[]){
 
   int NEvents = 0;
   int NEventsGood = 0;
-  int NEventsTrigMatch = 0;
+  int NEventsTrig = 0;
+  int NEventsTrigGoodTP = 0;
+  int NEventsTrigGoodTrack = 0;
+  int NEventsTrigScintMatch = 0;
   
   TH1D* TPcands;
+  TH1D* TPmatch;
   TH1D* TPscimatch;
+  TH1D* effTP;
   TH1D* fracTPscimatch;
+
+  TH1D* nomatch_timediff;
+  TH1D* all_timediff;
+  TH1D* packetBCID;
+  
+  TH1D* all_MMmatch;
+  TH1D* nomatch_MMmatch;
+  TH1D* match_MMmatch;
 
 
   TH1D* dEarlyBCID;
@@ -177,7 +191,29 @@ int main(int argc, char* argv[]){
   // tp_sci + 1945 = tp_BCID[0]
 
   TPcands = new TH1D("Candidate events","Candidate events",200,1494.5*pow(10,6),1495.2*pow(10,6));
+  TPmatch = new TH1D("Trigger candidate events with tp","Trigger candidate events with tp",200,1494.5*pow(10,6),1495.2*pow(10,6));
+  effTP = new TH1D("Fraction of trigger cands with tp","Fraction of trigger cands with tp",200,1494.5*pow(10,6),1495.2*pow(10,6));
   TPscimatch = new TH1D("Events with tp and tpsci BCID match","Events with tp and tpsci BCID match",200,1494.5*pow(10,6),1495.2*pow(10,6));
+  fracTPscimatch = new TH1D("Fraction of events with tp and tpsci BCID match","Fraction of events with tp and tpsci BCID match",200,1494.5*pow(10,6),1495.2*pow(10,6));
+
+  nomatch_timediff = new TH1D("Timestamp difference for those without the scintillator match",
+                              "Timestamp difference for those without the scintillator match",
+                              100,-0.01,0.06);
+  all_timediff = new TH1D("Timestamp difference for all candidate events with tp",
+                              "Timestamp difference for all candidate events with tp",
+                              100,-0.01,0.06);
+
+  nomatch_MMmatch = new TH1D("Number of TP hits matched with MM for those without the scintillator match",
+                              "Number of TP hits matched with MM for those without the scintillator match",
+                              9,-0.5,8.5);
+  match_MMmatch = new TH1D("Number of TP hits matched with MM for those with the scintillator match",
+                           "Number of TP hits matched with MM for those with the scintillator match",
+                           9,-0.5,8.5);
+  all_MMmatch = new TH1D("Number of TP hits matched with MM for all candidate events with tp",
+                              "Number of TP hits matched with MM for all candidate events with tp",
+                              9,-0.5,8.5);
+
+  packetBCID = new TH1D("Delta tp BCID","Delta tp BCID",10001, -5000,5000);
 
   dEarlyBCID = new TH1D("Delta Earliest BCID","Delta Earliest BCID",13, -6.5,6.5);
   dEarlyBCIDph = new TH1D("Delta Earliest BCID phase","Delta Earliest BCID phase",208, -6.5,6.5);
@@ -200,7 +236,7 @@ int main(int argc, char* argv[]){
   for(int evt = 0; evt < Nevent; evt++){
     DATA->GetEntry(evt);
     // if (evt > 100)
-    //   break;
+    //   break
     if (debug)
       cout << "Event " << evt << endl;
     if(evt%(Nevent/10) == 0) 
@@ -216,6 +252,9 @@ int main(int argc, char* argv[]){
     if(!DATA->sc_EventHits.IsGoodEvent())
       continue;
     NEvents++;
+
+    if (DATA->mm_EventHits.EventNum() > 300001)
+      break;
     
     // Calibrate PDO -> Charge
     PDOCalibrator->Calibrate(DATA->mm_EventHits);
@@ -233,9 +272,20 @@ int main(int argc, char* argv[]){
     // book histograms for MM hits
     int Nboard = DATA->mm_EventHits.GetNBoards();
 
+    int NX1 = 0;
+    int NX2 = 0;
+    int NUV = 0;
+
     bool Gothits = false;
     vector<MMClusterList> all_clusters;
     for(int i = 0; i < Nboard; i++){
+      int ib = DATA->mm_EventHits[i].MMFE8Index();
+      if (ib < 2)
+        NX1++;
+      else if (ib > 5)
+        NX2++;
+      else
+        NUV++;
       if(DATA->mm_EventHits[i].GetNHits() == 0)
 	      continue;
       else
@@ -269,16 +319,19 @@ int main(int argc, char* argv[]){
       const MMCluster& clus = filtered_allclusters[i];
     }
 
-    if (!track.IsFit()||
-        !track.IsTrigCand()){
-      if (debug)
-        cout << pink << "Event " << evt << " didn't make the cut" << end << endl;
+    if (!(NX1>0 && NX2> 0 && NUV > 0))
       continue;
-    }
+//     if (!track.IsTrigCand()){
+//       //    if (!track.IsFit()||
+//       //!track.IsTrigCand()){
+//       if (debug)
+//         cout << pink << "Event " << evt << " didn't make the cut" << end << endl;
+//       continue;
+//     }
     NEventsGood++;
     TPcands->Fill(DATA->mm_EventHits.Time());
-    // tp packets
 
+    // tp packets
     TPLinkedTrack tr = DATA->tp_EventTracks.Get();
     int Ntptrk = DATA->tp_EventTracks.GetNTrack();
 
@@ -295,6 +348,8 @@ int main(int argc, char* argv[]){
     if (debug)
       cout << blue << "Looking for best trigger match" << end << endl;
 
+
+    
     int nTP;
     int nTrk = Ntptrk;
     while (nTrk > 0){
@@ -302,11 +357,13 @@ int main(int argc, char* argv[]){
       TPTrack tp_track = TPTrack();
       int nMatch = 0;
       nTP = tr.GetNHits();
+      if (debug)
+        cout << "hits: " << nTP << endl;
       for (int i = 0; i < nTP; i++){
         tp_track += tr.Get(i);
         MMHit planeHit(tr.Get(i).MMFE8(), tr.Get(i).VMM(), tr.Get(i).Channel(), DATA->RunNum);
-        for (int j = 0; j < filtered_allclusters.size(); j++){
-          if (filtered_allclusters[j].Contains(planeHit))
+        for (int j = 0; j < fit_clusters.size(); j++){
+          if (fit_clusters[j].ContainsTP(planeHit))
             nMatch+= 1;
         }
       }
@@ -314,29 +371,54 @@ int main(int argc, char* argv[]){
       candtracks.push_back(tp_track);
       nMatchHits.push_back(nMatch);
       
-      if (nMatch == nTP)
-        break;
-      else {
-        tr.GetNext();
-        nTrk--;
-      }
+      nTrk--;
+      if (nTrk > 0)
+        tr = *tr.GetNext();
     }
 
     int imax;
     int maxMatch = -1;
     int maxN = -1;
+    if (debug)
+      cout << green << "Ntracks " << candtracks.size() << end << endl;
     for (int i = 0; i < candtracks.size(); i++){
-      if (nMatchHits[i] > maxMatch && candtracks[i].GetNHits()>maxN){
+      if (debug)
+        cout << blue << "iteration: " << i << " nmatch " << nMatchHits[i] << end << endl;
+      if (nMatchHits[i] > maxMatch){
+        //if (nMatchHits[i] > maxMatch && candtracks[i].GetNHits()>maxN){
         maxMatch = nMatchHits[i];
         maxN = candtracks[i].GetNHits();
         imax = i;
+        if (debug)
+          cout << blue << "Looping through: " << i << " nmatched: " << nMatchHits[i] << " out of "<< maxN <<  end<< endl;
       }
     }
 
     if (debug)
-      cout << blue << "Found best match with " << Ntptrk << " tracks, max hits "<< maxN << end << endl;    
+      cout << blue << "Found best match with " << Ntptrk << " tracks, max hits "<< maxN << " match " << maxMatch << end << endl;    
 
     TPTrack bestTrack(candtracks[imax]);
+
+    if (maxMatch < 1)
+      continue;
+
+    TPmatch->Fill(DATA->mm_EventHits.Time());
+    NEventsTrig++;
+
+    if (maxN < 4)
+      continue;
+    NEventsTrigGoodTP++;
+    
+    all_timediff->Fill(candtracks[imax].Time()-DATA->mm_EventHits.Time());
+    all_MMmatch->Fill(maxMatch);
+
+    if (!track.IsFit()||
+        !track.IsTrigCand()){
+      if (debug)
+        cout << pink << "Event " << evt << " didn't make the cut" << end << endl;
+      continue;
+    }
+    NEventsTrigGoodTrack++;
 
     int minBCID = 9999;
     double sumBCID = 0.;
@@ -383,20 +465,34 @@ int main(int argc, char* argv[]){
 
       int tpBCID = DATA->sc_EventHits.TPBCID();
       int tpPh = DATA->sc_EventHits.TPph();
-
+      bool foundmatch = false;
       // if tp sci comes before tp bcid, offset ~ 1944
       // otherwise, offset is -(4096-1944)
       for (int i = 0; i < candtracks.size(); i++){
+        packetBCID->Fill(deltaBCID(tpBCID, tpPh, candtracks[i].BCID(), dB));
         if (fabs(deltaBCID(tpBCID, tpPh, candtracks[i].BCID(), dB)) < 10){
           TPscimatch->Fill(DATA->mm_EventHits.Time());
-          NEventsTrigMatch++;
+          NEventsTrigScintMatch++;
+          foundmatch = true;
+          //cout << pink << "found match" << end << endl;
           break;
         }
-        else
-          cout << pink << "track BCID " << candtracks[i].BCID() << " difference " << deltaBCID(tpBCID, tpPh, candtracks[i].BCID(), dB) << end << endl;
       }
-
-
+      if (deltaBCID(tpBCID, tpPh, candtracks[imax].BCID(), dB)< -2150){
+        if (debug)
+          cout << "Error flag cases" << endl;
+        continue;
+      }
+      if (!foundmatch){
+        nomatch_timediff->Fill(candtracks[imax].Time()-DATA->mm_EventHits.Time());
+        nomatch_MMmatch->Fill(maxMatch);
+      }
+      else{
+        match_MMmatch->Fill(maxMatch);
+      }
+//       all_timediff->Fill(candtracks[imax].Time()-DATA->mm_EventHits.Time());
+//       all_MMmatch->Fill(maxMatch);
+      
       if (valid){
         if ((tpBCID-minBCID) < 0){
           dEarlyBCID->Fill((tpBCID-minBCID+dB));
@@ -432,19 +528,32 @@ int main(int argc, char* argv[]){
 
   gStyle->SetTextFont(42);
   cout << "/////////////////////////////////" << endl;
-  cout << "EVENT SUMMARY: " << endl;
+  cout << pink << "EVENT SUMMARY: " << end << endl;
   cout << "NEvents: " << NEvents << endl;
-  cout << "NEvents with minimum: " << NEventsGood << endl;
+  cout << "NEvents with triggerable planes: " << NEventsGood << endl;
+  cout << "NEvents with trigger packets: " << NEventsTrig << endl;
+  cout << "NEvents with trigger packets that have 4+ hits: " << NEventsTrigGoodTP << endl;
+  cout << "NEvents with trigger packets and with a triggerable track: " << NEventsTrigGoodTrack << endl;
+  cout << "NEvents with trigger + scintillator match: " << NEventsTrigScintMatch << endl;
   cout << "/////////////////////////////////" << endl;
 
   fout->cd();
   fout->mkdir("histograms");
   fout->cd("histograms");
-  fracTPscimatch = (TH1D*)TPscimatch->Clone("fracTPscimatch");
-  fracTPscimatch->Divide(TPcands);
+  fracTPscimatch->Divide(TPscimatch, TPcands, 1., 1., "B");
+  effTP->Divide(TPmatch, TPcands, 1., 1., "B");
   TPcands->Write();
+  TPmatch->Write();
   TPscimatch->Write();
   fracTPscimatch->Write();
+  effTP->Write();
+  nomatch_timediff->Write();
+  all_timediff->Write();
+  nomatch_MMmatch->Write();
+  match_MMmatch->Write();
+  all_MMmatch->Write();
+  packetBCID->Write();
+
   earliestBCID->Write();
   avgBCID->Write();
   dEarlyBCID->Write();
