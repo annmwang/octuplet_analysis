@@ -41,6 +41,9 @@ public:
 
   void SetTime(int time, int time_ns);    
   double Time();
+
+  void SetEventNum(int evt);    
+  int EventNum();
   
   friend class PDOToCharge;
   friend class TDOToTime;
@@ -48,6 +51,7 @@ public:
 private:
   std::vector<MMFE8Hits*> m_boards;
   double m_time;
+  int m_evt;
 };
 
 inline MMEventHits::MMEventHits() {}
@@ -151,6 +155,14 @@ inline void MMEventHits::SetTime(int time, int time_ns){
 
 inline double MMEventHits::Time(){
   return m_time;
+}
+
+inline void MMEventHits::SetEventNum(int evt){
+  m_evt = evt;
+}
+
+inline int MMEventHits::EventNum(){
+  return m_evt;
 }
 
 inline MMEventHits operator + (const MMEventHits& evt_hits, 
