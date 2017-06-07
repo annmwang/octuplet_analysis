@@ -10,7 +10,7 @@
 #ifndef TPEventTracks_HH
 #define TPEventTracks_HH
 
-#include "include/TPLinkedTrack.hh"
+#include "include/TPTrack.hh"
 
 class TPEventTracks {
 
@@ -25,8 +25,9 @@ public:
   bool operator += (const TPTrack& track);
   
   int GetNTrack() const;
-  TPLinkedTrack Get() const;
-  TPLinkedTrack operator [] (int itrack) const;
+
+  TPTrack const& Get(int itrack) const;
+  TPTrack const& operator [] (int itrack) const;
 
   
 private:
@@ -60,7 +61,7 @@ inline bool TPEventTracks::AddTrack(const TPTrack& track){
       return true;
     }
   }
-  m_track.push_back(new TPLinkedTrack(track));
+  m_track.push_back(new TPTrack(track));
   return true;
 }
 
@@ -74,16 +75,12 @@ inline int TPEventTracks::GetNTrack() const {
   return int(m_track.size());
 }
 
-inline TPLinkedTrack TPEventTracks::Get() const {
-  TPLinkedTrack tr = TPLinkedTrack(*m_track[0]);
-  for (int i = 1; i < GetNTrack(); i++){
-    tr.AddTrack(*m_track[i]);
-  }
-  return tr;
+inline TPTrack const& TPEventTracks::Get(int itrack) const {
+  return *m_track[itrack];
 }
 
-inline TPLinkedTrack TPEventTracks::operator [] (int itrack) const {
-  return Get();
+inline TPTrack const& TPEventTracks::operator [] (int itrack) const {
+  return Get(itrack);
 }
 
 #endif

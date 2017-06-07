@@ -331,8 +331,6 @@ int main(int argc, char* argv[]){
     NEventsGood++;
     TPcands->Fill(DATA->mm_EventHits.Time());
 
-    // tp packets
-    TPLinkedTrack tr = DATA->tp_EventTracks.Get();
     int Ntptrk = DATA->tp_EventTracks.GetNTrack();
 
     vector <TPTrack> candtracks;
@@ -351,29 +349,24 @@ int main(int argc, char* argv[]){
 
     
     int nTP;
-    int nTrk = Ntptrk;
-    while (nTrk > 0){
+    for (int i = 0; i < Ntptrk; i++){
       vector <MMHit> tpHits;
-      TPTrack tp_track = TPTrack();
+      TPTrack tp_track = DATA->tp_EventTracks.Get(i);
       int nMatch = 0;
-      nTP = tr.GetNHits();
-      if (debug)
-        cout << "hits: " << nTP << endl;
+      nTP = tp_track.GetNHits();
       for (int i = 0; i < nTP; i++){
-        tp_track += tr.Get(i);
-        MMHit planeHit(tr.Get(i).MMFE8(), tr.Get(i).VMM(), tr.Get(i).Channel(), DATA->RunNum);
+        MMHit planeHit(tp_track.Get(i).MMFE8(), tp_track.Get(i).VMM(), tp_track.Get(i).Channel(), DATA->RunNum);
         for (int j = 0; j < fit_clusters.size(); j++){
           if (fit_clusters[j].ContainsTP(planeHit))
             nMatch+= 1;
         }
       }
-      tp_track.SetBCID(tr.BCID());
+//       tp_track.SetBCID(tr.BCID());
+//       tp_track.SetMxLocal(tr.MxLocal());
+//       tp_track.SetTime((int)tr.Time(),(tr.Time()-(int)tr.Time())*pow(10,9));
       candtracks.push_back(tp_track);
       nMatchHits.push_back(nMatch);
       
-      nTrk--;
-      if (nTrk > 0)
-        tr = *tr.GetNext();
     }
 
     int imax;
@@ -383,7 +376,7 @@ int main(int argc, char* argv[]){
       cout << green << "Ntracks " << candtracks.size() << end << endl;
     for (int i = 0; i < candtracks.size(); i++){
       if (debug)
-        cout << blue << "iteration: " << i << " nmatch " << nMatchHits[i] << end << endl;
+        cout << blue << "iteration: " << i << end << endl;
       if (nMatchHits[i] > maxMatch){
         //if (nMatchHits[i] > maxMatch && candtracks[i].GetNHits()>maxN){
         maxMatch = nMatchHits[i];
