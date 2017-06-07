@@ -190,7 +190,7 @@ int main(int argc, char* argv[]){
 
   // tp_sci + 1945 = tp_BCID[0]
 
-  TPcands = new TH1D("Candidate events","Candidate events",200,1494.5*pow(10,6),1495.2*pow(10,6));
+  TPcands = new TH1D("Candidate events with triggerable track","Candidate events with triggerable track",200,1494.5*pow(10,6),1495.2*pow(10,6));
   TPmatch = new TH1D("Trigger candidate events with tp","Trigger candidate events with tp",200,1494.5*pow(10,6),1495.2*pow(10,6));
   effTP = new TH1D("Fraction of trigger cands with tp","Fraction of trigger cands with tp",200,1494.5*pow(10,6),1495.2*pow(10,6));
   TPscimatch = new TH1D("Events with tp and tpsci BCID match","Events with tp and tpsci BCID match",200,1494.5*pow(10,6),1495.2*pow(10,6));
@@ -253,8 +253,8 @@ int main(int argc, char* argv[]){
       continue;
     NEvents++;
 
-    if (DATA->mm_EventHits.EventNum() > 300001)
-      break;
+//     if (DATA->mm_EventHits.EventNum() > 300000)
+//       break;
     
     // Calibrate PDO -> Charge
     PDOCalibrator->Calibrate(DATA->mm_EventHits);
@@ -277,6 +277,8 @@ int main(int argc, char* argv[]){
     int NUV = 0;
 
     bool Gothits = false;
+    
+    // cluster handling 
     vector<MMClusterList> all_clusters;
     for(int i = 0; i < Nboard; i++){
       int ib = DATA->mm_EventHits[i].MMFE8Index();
@@ -319,35 +321,44 @@ int main(int argc, char* argv[]){
       const MMCluster& clus = filtered_allclusters[i];
     }
 
-    if (!(NX1>0 && NX2> 0 && NUV > 0))
-      continue;
-//     if (!track.IsTrigCand()){
-//       //    if (!track.IsFit()||
-//       //!track.IsTrigCand()){
-//       if (debug)
-//         cout << pink << "Event " << evt << " didn't make the cut" << end << endl;
+//     if (!(NX1>0 && NX2> 0 && NUV > 0))
 //       continue;
-//     }
+
+    //------------------------------------------------//
+    // CUT: track quality and trigger candidate cut
+    if (!track.IsFit()||
+        !track.IsTrigCand()){
+      if (debug)
+        cout << pink << "Event " << evt << " didn't make the cut" << end << endl;
+      continue;
+    }
     NEventsGood++;
     TPcands->Fill(DATA->mm_EventHits.Time());
+    //------------------------------------------------//
 
+
+
+
+    //------------------------------------------------//
+    // CUT: require at least one trigger in the time window
     int Ntptrk = DATA->tp_EventTracks.GetNTrack();
 
     vector <TPTrack> candtracks;
     vector <int> nMatchHits;
-
     
     // Didn't find any tracks!
     if (Ntptrk == 0) {
       continue;
       cout << pink << "Event " << evt << " didn't have any trigger matches! " << end << endl;
     }
+    //------------------------------------------------//
+
+
+    // looking for best trigger match
 
     if (debug)
       cout << blue << "Looking for best trigger match" << end << endl;
 
-
-    
     int nTP;
     for (int i = 0; i < Ntptrk; i++){
       vector <MMHit> tpHits;
@@ -361,12 +372,8 @@ int main(int argc, char* argv[]){
             nMatch+= 1;
         }
       }
-//       tp_track.SetBCID(tr.BCID());
-//       tp_track.SetMxLocal(tr.MxLocal());
-//       tp_track.SetTime((int)tr.Time(),(tr.Time()-(int)tr.Time())*pow(10,9));
       candtracks.push_back(tp_track);
       nMatchHits.push_back(nMatch);
-      
     }
 
     int imax;
@@ -378,7 +385,6 @@ int main(int argc, char* argv[]){
       if (debug)
         cout << blue << "iteration: " << i << end << endl;
       if (nMatchHits[i] > maxMatch){
-        //if (nMatchHits[i] > maxMatch && candtracks[i].GetNHits()>maxN){
         maxMatch = nMatchHits[i];
         maxN = candtracks[i].GetNHits();
         imax = i;
@@ -392,27 +398,33 @@ int main(int argc, char* argv[]){
 
     TPTrack bestTrack(candtracks[imax]);
 
+
+    //------------------------------------------------//
+    // CUT: require at least one hit in common with the full list of MM hits
     if (maxMatch < 1)
       continue;
+    //------------------------------------------------//
+
+    //------------------------------------------------//
+    // CUT: get rid of error flag cases
+    if (candtracks[imax].BCID() > 4095) {
+      if (debug)
+        cout << "Error flag cases" << endl;
+      continue;
+    }
+    NEventsTrig++;
+    //------------------------------------------------//
+
+    if (maxN > 3)
+      NEventsTrigGoodTP++;
 
     TPmatch->Fill(DATA->mm_EventHits.Time());
-    NEventsTrig++;
 
-    if (maxN < 4)
-      continue;
-    NEventsTrigGoodTP++;
-    
     all_timediff->Fill(candtracks[imax].Time()-DATA->mm_EventHits.Time());
     all_MMmatch->Fill(maxMatch);
 
-    if (!track.IsFit()||
-        !track.IsTrigCand()){
-      if (debug)
-        cout << pink << "Event " << evt << " didn't make the cut" << end << endl;
-      continue;
-    }
-    NEventsTrigGoodTrack++;
 
+    // ART hit time distribution handling
     int minBCID = 9999;
     double sumBCID = 0.;
     double medBCID;
@@ -456,6 +468,9 @@ int main(int argc, char* argv[]){
       if (debug)
         cout << pink << "Avg BCID: " << sumBCID << end<< endl;
 
+
+      // check for scintillator match
+
       int tpBCID = DATA->sc_EventHits.TPBCID();
       int tpPh = DATA->sc_EventHits.TPph();
       bool foundmatch = false;
@@ -463,19 +478,21 @@ int main(int argc, char* argv[]){
       // otherwise, offset is -(4096-1944)
       for (int i = 0; i < candtracks.size(); i++){
         packetBCID->Fill(deltaBCID(tpBCID, tpPh, candtracks[i].BCID(), dB));
-        if (fabs(deltaBCID(tpBCID, tpPh, candtracks[i].BCID(), dB)) < 10){
-          TPscimatch->Fill(DATA->mm_EventHits.Time());
-          NEventsTrigScintMatch++;
-          foundmatch = true;
-          //cout << pink << "found match" << end << endl;
-          break;
-        }
+//         if (fabs(deltaBCID(tpBCID, tpPh, candtracks[i].BCID(), dB)) < 10){
+//           TPscimatch->Fill(DATA->mm_EventHits.Time());
+//           NEventsTrigScintMatch++;
+//           foundmatch = true;
+//           //cout << pink << "found match" << end << endl;
+//           break;
+//         }
       }
-      if (deltaBCID(tpBCID, tpPh, candtracks[imax].BCID(), dB)< -2150){
-        if (debug)
-          cout << "Error flag cases" << endl;
-        continue;
+
+      if (fabs(deltaBCID(tpBCID, tpPh, candtracks[imax].BCID(), dB)) < 10){
+        TPscimatch->Fill(DATA->mm_EventHits.Time());
+        NEventsTrigScintMatch++;
+        foundmatch = true;
       }
+
       if (!foundmatch){
         nomatch_timediff->Fill(candtracks[imax].Time()-DATA->mm_EventHits.Time());
         nomatch_MMmatch->Fill(maxMatch);
@@ -523,10 +540,9 @@ int main(int argc, char* argv[]){
   cout << "/////////////////////////////////" << endl;
   cout << pink << "EVENT SUMMARY: " << end << endl;
   cout << "NEvents: " << NEvents << endl;
-  cout << "NEvents with triggerable planes: " << NEventsGood << endl;
-  cout << "NEvents with trigger packets: " << NEventsTrig << endl;
-  cout << "NEvents with trigger packets that have 4+ hits: " << NEventsTrigGoodTP << endl;
-  cout << "NEvents with trigger packets and with a triggerable track: " << NEventsTrigGoodTrack << endl;
+  cout << "NEvents with triggerable track: " << NEventsGood << endl;
+  cout << "NEvents with trigger packets that have at least one hit and no errors: " << NEventsTrig << endl;
+  cout << "NEvents with trigger packets that have at least one hit and no errors and have 4 hits: " << NEventsTrigGoodTP << endl;
   cout << "NEvents with trigger + scintillator match: " << NEventsTrigScintMatch << endl;
   cout << "/////////////////////////////////" << endl;
 
@@ -558,57 +574,42 @@ int main(int argc, char* argv[]){
   dEarlyBCIDfull->Write();
   dAvgBCIDfull->Write();
   
-  TCanvas* c2 = new TCanvas("c2","",600,400);
+  TCanvas* c2 = new TCanvas("c2","",800,600);
   vector<int> colors = {kOrange+6,kPink+3,kGreen+2,kCyan-6,kAzure+7,kViolet-8};
 
 
-  // gStyle->SetErrorX(0.);
-  // c2->cd();
-  // c2->Clear();
-  // hitEff->SetMarkerColor(kBlue-7);
-  // hitEff->SetMarkerStyle(20);
-  // hitEff->SetMinimum(0.);
-  // hitEff->Draw("E1 P");
-  // hitEff->GetXaxis()->SetTitle("Board Number");
-  // //hitEff->GetXaxis()->CenterTitle();
-  // hitEff->GetYaxis()->SetTitle("Hit Efficiency");
-  // //hitEff->GetYaxis()->CenterTitle();
-  // hitEff->GetXaxis()->SetTitleOffset(1.3);
-  // hitEff->GetYaxis()->SetTitleOffset(1.3);
-  // hitEff->GetXaxis()->SetLabelSize(0.045);
-  // hitEff->GetXaxis()->SetTitleSize(0.045);    
-  // hitEff->GetYaxis()->SetLabelSize(0.045);
-  // hitEff->GetYaxis()->SetTitleSize(0.045);
-  // c2->Print("HitEfficiencyPlots/HitEff.pdf");
-  // c2->Clear();
-
-
-  // //
-
-  // TLegend* leg = new TLegend(0.8,0.3,0.94,0.5);
-  // hitEff_anglebin[0]->SetMarkerStyle(20);
-  // hitEff_anglebin[0]->SetMinimum(0.3);
-  // hitEff_anglebin[0]->SetMaximum(1.);
-  // hitEff_anglebin[0]->GetXaxis()->SetTitle("Board Number");
-  // //hitEff->GetXaxis()->CenterTitle();
-  // hitEff_anglebin[0]->GetYaxis()->SetTitle("Hit Efficiency");
-  // //hitEff->GetYaxis()->CenterTitle();
-  // hitEff_anglebin[0]->GetXaxis()->SetTitleOffset(1.3);
-  // hitEff_anglebin[0]->GetYaxis()->SetTitleOffset(1.3);
-  // hitEff_anglebin[0]->GetXaxis()->SetLabelSize(0.045);
-  // hitEff_anglebin[0]->GetXaxis()->SetTitleSize(0.045);    
-  // hitEff_anglebin[0]->GetYaxis()->SetLabelSize(0.045);
-  // hitEff_anglebin[0]->GetYaxis()->SetTitleSize(0.045);
-  // hitEff_anglebin[0]->Draw("E1 P");
-  // for (int i = 0; i < nangles-3; i++){
-  //   hitEff_anglebin[i]->SetMarkerColor(colors[i]);
-  //   hitEff_anglebin[i]->SetMarkerStyle(20);
-  //   hitEff_anglebin[i]->Draw("E1 PL same");
-  //   leg->AddEntry(hitEff_anglebin[i],Form("%d#circ #leq #theta < %d#circ",int(track_angle_bins[i]),int(track_angle_bins[i+1])));
-  // }
-  // leg->Draw();
-  // c2->Print("HitEfficiencyPlots/HitEff_angles.pdf");
-  // c2->Clear();
+  gStyle->SetErrorX(0.);
+  gStyle->SetOptStat(0);
+  c2->SetLogy();
+  c2->cd();
+  c2->Clear();
+  TLegend* leg = new TLegend(0.8,0.3,0.94,0.5);
+  all_MMmatch->SetLineColor(kBlue-7);
+  all_MMmatch->SetLineWidth(2);
+  all_MMmatch->SetTitle("");
+  all_MMmatch->GetXaxis()->SetTitle("Number of MM-TP matches");
+  all_MMmatch->GetYaxis()->SetTitle("Events");
+  all_MMmatch->SetMinimum(0.1);
+  //all_MMmatch->GetYaxis()->CenterTitle();
+  all_MMmatch->GetXaxis()->SetTitleOffset(1.0);
+  all_MMmatch->GetYaxis()->SetTitleOffset(1.0);
+  all_MMmatch->GetXaxis()->SetLabelSize(0.045);
+  all_MMmatch->GetXaxis()->SetTitleSize(0.045);    
+  all_MMmatch->GetYaxis()->SetLabelSize(0.045);
+  all_MMmatch->GetYaxis()->SetTitleSize(0.045);
+  all_MMmatch->Draw("");
+  leg->AddEntry(all_MMmatch, "all trig cands");
+  nomatch_MMmatch->SetLineColor(kCyan-6);
+  nomatch_MMmatch->SetLineWidth(2);
+  nomatch_MMmatch->Draw("same");
+  leg->AddEntry(nomatch_MMmatch, "no scint match");
+  match_MMmatch->SetLineColor(kMagenta-8);
+  match_MMmatch->SetLineWidth(2);
+  match_MMmatch->Draw("same");
+  leg->AddEntry(match_MMmatch, "w/ scint match");
+  leg->Draw();
+  c2->Print("nmatch.pdf");
+  c2->Clear();
 
   fout->cd();
   fout->Close();
