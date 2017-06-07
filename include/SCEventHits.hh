@@ -128,7 +128,7 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
   }
 
   if(newhit->Channel() < 12){
-    newhit->CorrectCount();
+    newhit->CorrectCount(m_RunNumber);
     if (newhit->PassCountReqs(m_RunNumber)){
       int Nbot = m_bothits.size();
       for(int i = 0; i < Nbot; i++){
@@ -146,7 +146,7 @@ inline bool SCEventHits::AddHit(const SCHit& hit){
     }
   }
   if(newhit->Channel() >= 16 && newhit->Channel() < 28){
-    newhit->CorrectCount();
+    newhit->CorrectCount(m_RunNumber);
     if (newhit->PassCountReqs(m_RunNumber)){
       int Ntop = m_tophits.size();
       for(int i = 0; i < Ntop; i++){

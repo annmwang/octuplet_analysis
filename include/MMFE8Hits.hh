@@ -34,6 +34,7 @@ public:
   bool operator += (const MMFE8Hits& hits);
   
   bool Contains(const MMHit& hit) const;
+  bool ContainsTP(const MMHit& hit) const;
   int GetIndex(const MMHit& hit) const;
 
   int MMFE8() const;
@@ -155,6 +156,17 @@ inline bool MMFE8Hits::Contains(const MMHit& hit) const {
   int Nhit = GetNHits();
   for(int i = 0; i < Nhit; i++){
     if(Get(i).Channel() == hit.Channel())
+      return true;
+  }
+  return false;
+}
+
+inline bool MMFE8Hits::ContainsTP(const MMHit& hit) const {
+  if(!IsSameMMFE8(hit))
+    return false;
+  int Nhit = GetNHits();
+  for(int i = 0; i < Nhit; i++){
+    if(Get(i).VMM() == hit.VMM())
       return true;
   }
   return false;

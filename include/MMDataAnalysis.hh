@@ -61,6 +61,7 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
   // clear previous event micromega hits;
   mm_EventHits = MMEventHits();
   mm_EventHits.SetTime(mm_Time_sec,mm_Time_nsec);
+  mm_EventHits.SetEventNum(mm_EventNum);
 
   // fill event hits
   for(int i = 0; i < N_mm; i++){
@@ -117,7 +118,8 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
       }
       tp_track.SetMxLocal(tp_mxlocal->at(i));
       tp_track.SetBCID(tp_BCID->at(i));
-      
+      tp_track.SetTime(tp_Time_sec->at(i),tp_Time_nsec->at(i));
+      tp_track.SetEventNum(tp_EventNum->at(i));
       tp_EventTracks.AddTrack(tp_track);
     }
   }

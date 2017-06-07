@@ -36,6 +36,7 @@ public:
   int GetNDuplicates() const;
 
   bool Contains(const MMHit& hit) const;
+  bool ContainsTP(const MMHit& hit) const;
 
   std::vector<MMCluster*>::iterator begin();
   std::vector<MMCluster*>::iterator end();
@@ -144,6 +145,14 @@ inline bool MMClusterList::Contains(const MMHit& hit) const {
   int Nclus = GetNCluster();
   for(int i = 0; i < Nclus; i++)
     if(m_clusters[i]->Contains(hit))
+      return true;
+  return false;
+}
+
+inline bool MMClusterList::ContainsTP(const MMHit& hit) const {
+  int Nclus = GetNCluster();
+  for(int i = 0; i < Nclus; i++)
+    if(m_clusters[i]->ContainsTP(hit))
       return true;
   return false;
 }
