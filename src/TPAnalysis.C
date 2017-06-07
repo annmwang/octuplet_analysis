@@ -367,10 +367,8 @@ int main(int argc, char* argv[]){
       nTP = tp_track.GetNHits();
       for (int i = 0; i < nTP; i++){
         MMHit planeHit(tp_track.Get(i).MMFE8(), tp_track.Get(i).VMM(), tp_track.Get(i).Channel(), DATA->RunNum);
-        for (int j = 0; j < fit_clusters.size(); j++){
-          if (fit_clusters[j].ContainsTP(planeHit))
-            nMatch+= 1;
-        }
+        if (fit_clusters.ContainsTP(planeHit))
+          nMatch+= 1;
       }
       candtracks.push_back(tp_track);
       nMatchHits.push_back(nMatch);

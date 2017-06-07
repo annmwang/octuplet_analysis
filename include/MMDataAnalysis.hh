@@ -89,32 +89,19 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
     
   }
   sc_EventHits.SetTPBCID(tpsci_BCID);
-  if (RunNum >= 3522)
-    sc_EventHits.SetTPph(tpsci_ph);
   if (RunNum >= 3522){
+    sc_EventHits.SetTPph(tpsci_ph);
     tp_EventTracks = TPEventTracks();
     // fill event tracks
     for (int i = 0; i < tp_hit_n->size(); i++){
       TPTrack tp_track = TPTrack();
-      if (!tp_hit_BCID) {
-        for(int j = 0; j < tp_hit_n->at(i); j++){
-          TPHit thit(tp_hit_MMFE8->at(i)[j],
-                     tp_hit_VMM->at(i)[j],
-                     tp_hit_CH->at(i)[j],
-                     -1,
-                     RunNum);
-          tp_track += thit;
-        }
-      }
-      else{
-        for(int j = 0; j < tp_hit_n->at(i); j++){
-          TPHit thit(tp_hit_MMFE8->at(i)[j],
-                     tp_hit_VMM->at(i)[j],
-                     tp_hit_CH->at(i)[j],
-                     tp_hit_BCID->at(i)[j],
-                     RunNum);
-          tp_track += thit;
-        }
+      for(int j = 0; j < tp_hit_n->at(i); j++){
+        TPHit thit(tp_hit_MMFE8->at(i)[j],
+                   tp_hit_VMM->at(i)[j],
+                   tp_hit_CH->at(i)[j],
+                   (tp_hit_BCID) ? (tp_hit_BCID->at(i)[j]) : (-1),
+                   RunNum);
+        tp_track += thit;
       }
       tp_track.SetMxLocal(tp_mxlocal->at(i));
       tp_track.SetBCID(tp_BCID->at(i));
