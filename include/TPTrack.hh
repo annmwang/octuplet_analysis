@@ -44,9 +44,13 @@ public:
   int NU();
   int NV();
 
+  size_t size() const;
   int GetNHits() const;
   TPHit const& Get(int ihit) const;
   TPHit const& operator [] (int ihit) const;
+
+  std::vector<TPHit*>::iterator begin();
+  std::vector<TPHit*>::iterator end();
 
 private:
   std::vector<TPHit*> m_hits;
@@ -87,6 +91,14 @@ inline TPTrack::~TPTrack(){
   int N = GetNHits();
   for(int i = 0; i < N; i++)
     delete m_hits[i];
+}
+
+inline std::vector<TPHit*>::iterator TPTrack::begin(){
+  return m_hits.begin();
+}
+
+inline std::vector<TPHit*>::iterator TPTrack::end(){
+  return m_hits.end();
 }
 
 inline bool TPTrack::AddHit(const TPHit& hit){
@@ -198,6 +210,10 @@ inline int TPTrack::NV() {
 
 inline int TPTrack::GetNHits() const {
   return int(m_hits.size());
+}
+
+inline size_t TPTrack::size() const {
+  return m_hits.size();
 }
 
 inline TPHit const& TPTrack::Get(int ihit) const {
