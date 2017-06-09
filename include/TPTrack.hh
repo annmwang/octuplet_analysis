@@ -43,6 +43,7 @@ public:
   int NX();
   int NU();
   int NV();
+  bool IsTrigCand();
 
   size_t size() const;
   int GetNHits() const;
@@ -250,6 +251,15 @@ inline TPTrack operator + (const TPHit& hit_a,
   TPTrack ret(hit_a);
   ret += hit_b;
   return ret;
+}
+
+inline bool TPTrack::IsTrigCand(){
+  bool x01 = false, x67 = false;
+  for (int i = 0; i < m_hits.size(); i++){
+    if      (Get(i).MMFE8Index() == 0 || Get(i).MMFE8Index() == 1) x01 = true;
+    else if (Get(i).MMFE8Index() == 6 || Get(i).MMFE8Index() == 7) x67 = true;
+  }
+  return (x01 && x67 && NU()+NV() >= 2);
 }
 
 #endif
