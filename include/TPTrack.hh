@@ -55,7 +55,7 @@ public:
 private:
   std::vector<TPHit*> m_hits;
 
-  int m_mxlocal;
+  double m_mxlocal;
   int m_BCID;
   double m_time;
   int m_evt;
