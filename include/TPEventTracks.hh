@@ -61,6 +61,7 @@ inline TPTrack* TPEventTracks::Highlander(const MMClusterList& clusters){
         nmatch++;
       }
     }
+    m_track[it]->SetNMatch(nmatch);
     if (nmatch > mostmatch){
       mostmatch = nmatch;
       the_one = m_track[it];
