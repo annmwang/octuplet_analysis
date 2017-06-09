@@ -12,6 +12,7 @@
 #define MMFE8Hits_HH
 
 #include "include/MMLinkedHit.hh"
+#include "include/TPTrack.hh"
 
 class MMFE8Hits {
 
@@ -23,6 +24,7 @@ public:
   
   ~MMFE8Hits();
 
+  bool IsSameMMFE8(const TPHit& hit) const;
   bool IsSameMMFE8(const MMHit& hit) const;
   bool IsSameMMFE8(const MMFE8Hits& hits) const;
 
@@ -35,6 +37,7 @@ public:
   
   bool Contains(const MMHit& hit) const;
   bool ContainsTP(const MMHit& hit) const;
+  bool ContainsTP(const TPHit& hit) const;
   int GetIndex(const MMHit& hit) const;
 
   int MMFE8() const;
@@ -82,6 +85,16 @@ inline MMFE8Hits::~MMFE8Hits(){
   int N = GetNHits();
   for(int i = 0; i < N; i++)
     delete m_hits[i];
+}
+
+inline bool MMFE8Hits::IsSameMMFE8(const TPHit& hit) const {
+  if(GetNHits() == 0)
+    return true;
+
+  if(MMFE8() == hit.MMFE8() && hit.MMFE8() > 0)
+    return true;
+
+  return false;
 }
 
 inline bool MMFE8Hits::IsSameMMFE8(const MMHit& hit) const {
@@ -156,6 +169,17 @@ inline bool MMFE8Hits::Contains(const MMHit& hit) const {
   int Nhit = GetNHits();
   for(int i = 0; i < Nhit; i++){
     if(Get(i).Channel() == hit.Channel())
+      return true;
+  }
+  return false;
+}
+
+inline bool MMFE8Hits::ContainsTP(const TPHit& hit) const {
+  if(!IsSameMMFE8(hit))
+    return false;
+  int Nhit = GetNHits();
+  for(int i = 0; i < Nhit; i++){
+    if(Get(i).VMM() == hit.VMM())
       return true;
   }
   return false;

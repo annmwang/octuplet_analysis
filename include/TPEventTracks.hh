@@ -11,6 +11,7 @@
 #define TPEventTracks_HH
 
 #include "include/TPTrack.hh"
+#include "include/MMClusterList.hh"
 
 class TPEventTracks {
 
@@ -33,6 +34,7 @@ public:
   std::vector<TPTrack*>::iterator begin();
   std::vector<TPTrack*>::iterator end();
 
+  TPTrack* Highlander(const MMClusterList& clusters);
   
 private:
   std::vector<TPTrack*> m_track;
@@ -40,6 +42,33 @@ private:
   friend class PDOToCharge;
   friend class TDOToTime;
 };
+
+inline TPTrack* TPEventTracks::Highlander(const MMClusterList& clusters){
+  //
+  // Choose the TPTrack with most hits in common with MMClusterList provided.
+  // If >1 tracks satisfy this, pick the first (theyre sorted by N(hits)).
+  //
+  if (m_track.size() == 0)
+    return nullptr;
+
+  int mostmatch = -1, nmatch = -1;
+  TPTrack* the_one = nullptr;
+
+  for (size_t it = 0; it < m_track.size(); ++it){
+    nmatch = 0;
+    for (size_t ia = 0; ia < m_track[it]->size(); ++ia){
+      if (clusters.ContainsTP(m_track[it]->Get(ia))){
+        nmatch++;
+      }
+    }
+    if (nmatch > mostmatch){
+      mostmatch = nmatch;
+      the_one = m_track[it];
+    }
+  }
+
+  return the_one;
+}
 
 inline TPEventTracks::TPEventTracks() {}
 
