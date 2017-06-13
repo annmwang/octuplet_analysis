@@ -40,7 +40,7 @@ public:
   std::vector<TPTrack*>::iterator begin();
   std::vector<TPTrack*>::iterator end();
 
-  TPTrack* Highlander(const MMClusterList& clusters, bool scimatch, int cut=10);
+  TPTrack* Highlander(const MMClusterList& clusters, bool scimatch=false, int cut=10);
   double deltaBCID(int BCID);
   
 private:
