@@ -46,6 +46,7 @@ public:
   int NU();
   int NV();
   bool IsTrigCand();
+  int BCIDWindow();
 
   size_t size() const;
   int GetNHits() const;
@@ -63,6 +64,7 @@ private:
   double m_time;
   int m_evt;
   int m_nmatch;
+  std::vector<int> m_bcids;
 
 };
 
@@ -277,6 +279,31 @@ inline bool TPTrack::IsTrigCand(){
     else if (Get(i).MMFE8Index() == 6 || Get(i).MMFE8Index() == 7) x67 = true;
   }
   return (x01 && x67 && NU()+NV() >= 2);
+}
+
+inline int TPTrack::BCIDWindow() {
+
+  m_bcids.clear();
+  for (int i = 0; i < m_hits.size(); i++)
+    m_bcids.push_back(Get(i).BCID());
+
+  if (std::find(m_bcids.begin(), m_bcids.end(), -1) != m_bcids.end())
+    return -1;
+
+  int bcid_min = *std::min_element(m_bcids.begin(), m_bcids.end());
+  int bcid_max = *std::max_element(m_bcids.begin(), m_bcids.end());
+  int bcid_win = bcid_max - bcid_min + 1;
+
+  if (bcid_win > 4000){
+    m_bcids.clear();
+    for (int i = 0; i < m_hits.size(); i++)
+      m_bcids.push_back((Get(i).BCID() < 100) ? Get(i).BCID()+4096 : Get(i).BCID());
+    bcid_min = *std::min_element(m_bcids.begin(), m_bcids.end());
+    bcid_max = *std::max_element(m_bcids.begin(), m_bcids.end());
+    bcid_win = bcid_max - bcid_min + 1;
+  }
+
+  return bcid_win;
 }
 
 #endif
