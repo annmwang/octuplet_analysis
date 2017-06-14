@@ -316,6 +316,7 @@ inline int TPTrack::BCIDWindow() {
   int bcid_max = *std::max_element(m_bcids.begin(), m_bcids.end());
   int bcid_win = bcid_max - bcid_min + 1;
 
+  m_bcids.clear();
   return bcid_win;
 }
 
@@ -330,6 +331,7 @@ inline double TPTrack::BCIDAverage() {
       m_bcids.push_back((Get(i).BCID() < 100) ? Get(i).BCID()+4096 : Get(i).BCID());
   }
 
+  m_bcids.clear();
   return std::accumulate(m_bcids.begin(), m_bcids.end(), 0.0) / (double)(m_bcids.size());
 }
 
