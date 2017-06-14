@@ -331,8 +331,11 @@ inline double TPTrack::BCIDAverage() {
       m_bcids.push_back((Get(i).BCID() < 100) ? Get(i).BCID()+4096 : Get(i).BCID());
   }
 
+  double sum = std::accumulate(m_bcids.begin(), m_bcids.end(), 0.0);
+  double avg = sum / (double)(m_bcids.size());
+
   m_bcids.clear();
-  return std::accumulate(m_bcids.begin(), m_bcids.end(), 0.0) / (double)(m_bcids.size());
+  return avg;
 }
 
 #endif
