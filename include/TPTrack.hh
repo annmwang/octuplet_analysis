@@ -49,6 +49,7 @@ public:
   bool IsTrigCand();
   bool WrapsAround();
   int BCIDWindow();
+  int BCIDEarliest();
   double BCIDAverage();
 
   size_t size() const;
@@ -318,6 +319,23 @@ inline int TPTrack::BCIDWindow() {
 
   m_bcids.clear();
   return bcid_win;
+}
+
+inline int TPTrack::BCIDEarliest() {
+  m_bcids.clear();
+  for (int i = 0; i < m_hits.size(); i++)
+    m_bcids.push_back(Get(i).BCID());
+
+  if (WrapsAround()){
+    m_bcids.clear();
+    for (int i = 0; i < m_hits.size(); i++)
+      m_bcids.push_back((Get(i).BCID() < 100) ? Get(i).BCID()+4096 : Get(i).BCID());
+  }
+
+  int bcid_min = *std::min_element(m_bcids.begin(), m_bcids.end());
+
+  m_bcids.clear();
+  return bcid_min;
 }
 
 inline double TPTrack::BCIDAverage() {
