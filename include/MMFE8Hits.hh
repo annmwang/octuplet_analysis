@@ -12,7 +12,7 @@
 #define MMFE8Hits_HH
 
 #include "include/MMLinkedHit.hh"
-#include "include/TPTrack.hh"
+#include "include/TPHit.hh"
 
 class MMFE8Hits {
 
