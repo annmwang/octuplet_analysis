@@ -25,6 +25,9 @@ public:
   double VMMChannel() const;
   int BCID() const;
   int RunNumber() const;
+  int isX() const;
+  int isU() const;
+  int isV() const;
 
   void SetMMFE8(int mmfe8);
   void SetMMFE8Index(int RunNumber);
@@ -101,6 +104,23 @@ inline int TPHit::BCID() const {
 
 inline int TPHit::RunNumber() const {
   return m_RunNumber;
+}
+
+inline int TPHit::isX() const {
+  return (MMFE8Index() == 0 ||
+          MMFE8Index() == 1 ||
+          MMFE8Index() == 6 ||
+          MMFE8Index() == 7);
+}
+
+inline int TPHit::isU() const {
+  return (MMFE8Index() == 2 ||
+          MMFE8Index() == 4);
+}
+
+inline int TPHit::isV() const {
+  return (MMFE8Index() == 3 ||
+          MMFE8Index() == 5);
 }
 
 inline void TPHit::SetMMFE8(int mmfe8){
