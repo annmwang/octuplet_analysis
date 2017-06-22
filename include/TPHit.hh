@@ -42,8 +42,6 @@ private:
   int m_RunNumber;
 };
 
-#endif
-
 inline TPHit::TPHit(){
   m_MMFE8 = -1;
   m_VMM = -1;
@@ -163,4 +161,6 @@ inline void TPHit::SetMMFE8Index(int RunNumber) {
     std::cout << "Need to add RunNumber settings to include/TPHit.hh! Error!" << std::endl;
   }
 }
+
+#endif
 
