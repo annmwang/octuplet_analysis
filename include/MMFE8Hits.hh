@@ -48,12 +48,16 @@ public:
   int isV() const;
 
   int GetNHits() const;
+  size_t size() const;
   MMLinkedHit const& Get(int ihit) const;
   MMLinkedHit const& operator [] (int ihit) const;
 
   int GetNDuplicates() const;
 
   MMFE8Hits GetDuplicates() const;
+
+  std::vector<MMLinkedHit*>::iterator begin();
+  std::vector<MMLinkedHit*>::iterator end();
   
 private:
   std::vector<MMLinkedHit*> m_hits;
@@ -227,13 +231,29 @@ inline int MMFE8Hits::MMFE8Index() const {
   return m_hits[0]->MMFE8Index();
 }
 
-inline int MMFE8Hits::isX() const { return (MMFE8Index() == 0 || MMFE8Index() == 1 ||
-                                            MMFE8Index() == 6 || MMFE8Index() == 7); }
-inline int MMFE8Hits::isU() const { return (MMFE8Index() == 2 || MMFE8Index() == 4); }
-inline int MMFE8Hits::isV() const { return (MMFE8Index() == 3 || MMFE8Index() == 5); }
+inline int MMFE8Hits::isX() const {
+  return (MMFE8Index() == 0 ||
+          MMFE8Index() == 1 ||
+          MMFE8Index() == 6 ||
+          MMFE8Index() == 7);
+}
+
+inline int MMFE8Hits::isU() const {
+  return (MMFE8Index() == 2 ||
+          MMFE8Index() == 4);
+}
+
+inline int MMFE8Hits::isV() const {
+  return (MMFE8Index() == 3 ||
+          MMFE8Index() == 5);
+}
 
 inline int MMFE8Hits::GetNHits() const {
   return int(m_hits.size());
+}
+
+inline size_t MMFE8Hits::size() const {
+  return m_hits.size();
 }
 
 inline MMLinkedHit const& MMFE8Hits::Get(int ihit) const {
@@ -259,6 +279,14 @@ inline MMFE8Hits MMFE8Hits::GetDuplicates() const {
     if(m_hits[i]->GetNHits() > 1)
       dups.AddLinkedHit(*m_hits[i]);
   return dups;
+}
+
+inline std::vector<MMLinkedHit*>::iterator MMFE8Hits::begin(){
+  return m_hits.begin();
+}
+
+inline std::vector<MMLinkedHit*>::iterator MMFE8Hits::end(){
+  return m_hits.end();
 }
 
 inline MMFE8Hits operator + (const MMFE8Hits& hits_a,
