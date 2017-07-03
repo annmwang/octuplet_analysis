@@ -114,7 +114,7 @@ inline void GeoOctuplet::Init(){
   //origin.SetXYZ(102.3, 100., 11.2);
   origin.SetXYZ(102.3, 100., 11.2+2.7);
   m_planes[i]->SetOrigin(origin);
-  ;  m_planes[i]->SetStripAlpha(0.);
+  m_planes[i]->SetStripAlpha(0.);
   m_planes[i]->SetSignChannel(1);
 
   i++;
@@ -305,7 +305,7 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
 
     m_RunNum = RunNumber;
   }
-  if(RunNumber >= 3518){
+  if(RunNumber >= 3518 && RunNumber < 3524){
     m_MMFE82Index.clear(); 
     m_MMFE82Index[118] = 0;
     m_MMFE82Index[116] = 1;
@@ -324,6 +324,52 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
     m_Index2MMFE8[4] = 106;
     m_Index2MMFE8[5] = 107;
     m_Index2MMFE8[6] = 117;
+    m_Index2MMFE8[7] = 105;
+
+    m_RunNum = RunNumber;
+  }
+  if(RunNumber == 3524){
+    m_MMFE82Index.clear(); 
+    m_MMFE82Index[118] = 0;
+    m_MMFE82Index[116] = 1;
+    m_MMFE82Index[102] = 2;
+    m_MMFE82Index[119] = 3;
+    m_MMFE82Index[106] = 4;
+    m_MMFE82Index[107] = 5;
+    m_MMFE82Index[101] = 6;
+    m_MMFE82Index[105] = 7;
+
+    m_Index2MMFE8.clear();
+    m_Index2MMFE8[0] = 118;
+    m_Index2MMFE8[1] = 116;
+    m_Index2MMFE8[2] = 102;
+    m_Index2MMFE8[3] = 119;
+    m_Index2MMFE8[4] = 106;
+    m_Index2MMFE8[5] = 107;
+    m_Index2MMFE8[6] = 101;
+    m_Index2MMFE8[7] = 105;
+
+    m_RunNum = RunNumber;
+  }
+  if(RunNumber >= 3525){
+    m_MMFE82Index.clear(); 
+    m_MMFE82Index[118] = 0;
+    m_MMFE82Index[111] = 1;
+    m_MMFE82Index[120] = 2;
+    m_MMFE82Index[119] = 3;
+    m_MMFE82Index[106] = 4;
+    m_MMFE82Index[107] = 5;
+    m_MMFE82Index[101] = 6;
+    m_MMFE82Index[105] = 7;
+
+    m_Index2MMFE8.clear();
+    m_Index2MMFE8[0] = 118;
+    m_Index2MMFE8[1] = 111;
+    m_Index2MMFE8[2] = 120;
+    m_Index2MMFE8[3] = 119;
+    m_Index2MMFE8[4] = 106;
+    m_Index2MMFE8[5] = 107;
+    m_Index2MMFE8[6] = 101;
     m_Index2MMFE8[7] = 105;
 
     m_RunNum = RunNumber;

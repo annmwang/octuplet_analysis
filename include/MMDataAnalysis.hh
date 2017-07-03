@@ -91,7 +91,7 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
   sc_EventHits.SetTPBCID(tpsci_BCID);
   if (RunNum >= 3522){
     sc_EventHits.SetTPph(tpsci_ph);
-    tp_EventTracks = TPEventTracks();
+    tp_EventTracks = TPEventTracks(RunNum);
     // fill event tracks
     for (int i = 0; i < tp_hit_n->size(); i++){
       TPTrack tp_track = TPTrack();
