@@ -12,9 +12,10 @@
 
 #include "include/PDOToCharge.hh"
 #include "include/TDOToTime.hh"
-#include "include/MMDataAnalysis.hh"
+//#include "include/MMDataAnalysis.hh"
 #include "include/MMPacmanAlgo.hh"
 #include "include/GeoOctuplet.hh"
+#include "include/MMDataAnalysis.hh"
 #include "include/SimpleTrackFitter.hh"
 #include "include/ScintillatorClusterFilterer.hh"
 
