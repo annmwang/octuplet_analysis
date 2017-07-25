@@ -141,7 +141,7 @@ inline int SCHit::PassCountReqs(int RunNumber) {
     else if (m_CH > 15) return (int)(m_Count >  130.0 && m_Count  < 190.0);
     else                return (int)(m_Count >= 150.0 && m_Count <= 200.0);
   }
-  else if (RunNumber >= 3522 && RunNumber < 3524) {
+  else if (RunNumber >= 3522) {
     if      (m_CH < 12) return (int)(m_Count >  135.0 && m_Count  < 195.0);
     else if (m_CH > 15) return (int)(m_Count >  155.0 && m_Count  < 215.0);
     else                return (int)(m_Count >= 175.0 && m_Count <= 225.0);

@@ -255,7 +255,7 @@ inline void MMHit::SetMMFE8Index(int RunNumber) {
     else if (m_MMFE8 == 118) m_MMFE8index = 6;
     else if (m_MMFE8 == 105) m_MMFE8index = 7;
   }
-  else if (RunNumber >= 3518) {
+  else if (RunNumber >= 3518 && RunNumber < 3524) {
     if      (m_MMFE8 == 118) m_MMFE8index = 0;
     else if (m_MMFE8 == 116) m_MMFE8index = 1;
     else if (m_MMFE8 == 102) m_MMFE8index = 2;
@@ -263,6 +263,26 @@ inline void MMHit::SetMMFE8Index(int RunNumber) {
     else if (m_MMFE8 == 106) m_MMFE8index = 4;
     else if (m_MMFE8 == 107) m_MMFE8index = 5;
     else if (m_MMFE8 == 117) m_MMFE8index = 6;
+    else if (m_MMFE8 == 105) m_MMFE8index = 7;
+  }
+  else if (RunNumber == 3524) {
+    if      (m_MMFE8 == 118) m_MMFE8index = 0;
+    else if (m_MMFE8 == 116) m_MMFE8index = 1;
+    else if (m_MMFE8 == 102) m_MMFE8index = 2;
+    else if (m_MMFE8 == 119) m_MMFE8index = 3;
+    else if (m_MMFE8 == 106) m_MMFE8index = 4;
+    else if (m_MMFE8 == 107) m_MMFE8index = 5;
+    else if (m_MMFE8 == 101) m_MMFE8index = 6;
+    else if (m_MMFE8 == 105) m_MMFE8index = 7;
+  }
+  else if (RunNumber >= 3525) {
+    if      (m_MMFE8 == 118) m_MMFE8index = 0;
+    else if (m_MMFE8 == 111) m_MMFE8index = 1;
+    else if (m_MMFE8 == 120) m_MMFE8index = 2;
+    else if (m_MMFE8 == 119) m_MMFE8index = 3;
+    else if (m_MMFE8 == 106) m_MMFE8index = 4;
+    else if (m_MMFE8 == 107) m_MMFE8index = 5;
+    else if (m_MMFE8 == 101) m_MMFE8index = 6;
     else if (m_MMFE8 == 105) m_MMFE8index = 7;
   }
   else {

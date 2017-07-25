@@ -50,6 +50,7 @@ public:
   bool WrapsAround();
   int BCIDWindow();
   int BCIDEarliest();
+  int BCIDLatest();
   double BCIDAverage();
 
   size_t size() const;
@@ -326,6 +327,9 @@ inline int TPTrack::BCIDEarliest() {
   for (int i = 0; i < m_hits.size(); i++)
     m_bcids.push_back(Get(i).BCID());
 
+  if (std::find(m_bcids.begin(), m_bcids.end(), -1) != m_bcids.end())
+    return -1;
+
   if (WrapsAround()){
     m_bcids.clear();
     for (int i = 0; i < m_hits.size(); i++)
@@ -343,6 +347,9 @@ inline double TPTrack::BCIDAverage() {
   for (int i = 0; i < m_hits.size(); i++)
     m_bcids.push_back(Get(i).BCID());
 
+  if (std::find(m_bcids.begin(), m_bcids.end(), -1) != m_bcids.end())
+    return -1;
+
   if (WrapsAround()){
     m_bcids.clear();
     for (int i = 0; i < m_hits.size(); i++)
@@ -354,6 +361,26 @@ inline double TPTrack::BCIDAverage() {
 
   m_bcids.clear();
   return avg;
+}
+
+inline int TPTrack::BCIDLatest() {
+  m_bcids.clear();
+  for (int i = 0; i < m_hits.size(); i++)
+    m_bcids.push_back(Get(i).BCID());
+
+  if (std::find(m_bcids.begin(), m_bcids.end(), -1) != m_bcids.end())
+    return -1;
+
+  if (WrapsAround()){
+    m_bcids.clear();
+    for (int i = 0; i < m_hits.size(); i++)
+      m_bcids.push_back((Get(i).BCID() < 100) ? Get(i).BCID()+4096 : Get(i).BCID());
+  }
+
+  int bcid_max = *std::max_element(m_bcids.begin(), m_bcids.end());
+
+  m_bcids.clear();
+  return bcid_max;
 }
 
 #endif

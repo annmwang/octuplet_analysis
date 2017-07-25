@@ -17,7 +17,8 @@ class TPEventTracks {
 
 public:
   TPEventTracks();
-  TPEventTracks(const TPTrack& track);
+  TPEventTracks(int RunNumber);
+  TPEventTracks(int RunNumber, const TPTrack& track);
   
   ~TPEventTracks();
 
@@ -41,24 +42,43 @@ public:
   std::vector<TPTrack*>::iterator end();
 
   TPTrack* Highlander(const MMClusterList& clusters, bool scimatch=false, int cut=10);
-  double deltaBCID(int BCID);
-  
+  double deltaBCID(double BCID);
+  double AverageX(TPTrack& track, const GeoOctuplet& geometry);  
+  double AverageU(TPTrack& track, const GeoOctuplet& geometry);  
+  double AverageV(TPTrack& track, const GeoOctuplet& geometry);  
+  double Xpos(const TPHit& hit, const GeoOctuplet& geometry);  
+  double AverageZ(TPTrack& track, const GeoOctuplet& geometry);  
+  double AverageZU(TPTrack& track, const GeoOctuplet& geometry);  
+  double AverageZV(TPTrack& track, const GeoOctuplet& geometry);  
+  double Zpos(const TPHit& hit, const GeoOctuplet& geometry);  
+
 private:
   std::vector<TPTrack*> m_track;
 
+  int m_RunNum;
   double m_sciBCID; 
   int m_offset;
+
+  const GeoOctuplet* m_geometry;
 
   friend class PDOToCharge;
   friend class TDOToTime;
 };
 
 inline TPEventTracks::TPEventTracks() {
+  m_RunNum = -1;
   m_sciBCID = -1;
   m_offset = -1;
 }
 
-inline TPEventTracks::TPEventTracks(const TPTrack& track){
+inline TPEventTracks::TPEventTracks(int RunNumber) {
+  m_RunNum = RunNumber;
+  m_sciBCID = -1;
+  m_offset = -1;
+}
+
+inline TPEventTracks::TPEventTracks(int RunNumber, const TPTrack& track){
+  m_RunNum = RunNumber;
   m_sciBCID = -1;
   m_offset = -1;
   AddTrack(track);
@@ -149,7 +169,7 @@ inline TPTrack* TPEventTracks::Highlander(const MMClusterList& clusters, bool sc
   for (size_t it = 0; it < m_track.size(); ++it){
     nmatch = 0;
     if (scimatch && m_sciBCID > 0 && m_offset != -1){
-      if (fabs(deltaBCID(m_track[it]->BCID())) < cut)
+      if (fabs(deltaBCID((double)m_track[it]->BCID())) < cut)
         nscimatch++;
       else
         continue;
@@ -172,11 +192,143 @@ inline TPTrack* TPEventTracks::Highlander(const MMClusterList& clusters, bool sc
   return the_one;
 }
 
-inline double TPEventTracks::deltaBCID(int BCID) {
+inline double TPEventTracks::deltaBCID(double BCID) {
   if ((m_sciBCID - BCID) < 0)
     return m_sciBCID - BCID + m_offset;
   else
     return m_sciBCID - BCID + (m_offset - 4096);
 }
 
+inline double TPEventTracks::Xpos(const TPHit& hit, const GeoOctuplet& geometry) {
+  // makes x position
+  m_geometry = &geometry;
+  double x_pos = m_geometry->Get(hit.MMFE8Index()).LocalXatYend(hit.Channel())+m_geometry->Get(hit.MMFE8Index()).Origin().X();
+  m_geometry = nullptr;
+
+  return x_pos;
+}
+
+inline double TPEventTracks::Zpos(const TPHit& hit, const GeoOctuplet& geometry) {
+  // makes z position
+  m_geometry = &geometry;
+  double z_pos = m_geometry->Get(hit.MMFE8Index()).Origin().Z();
+  m_geometry = nullptr;
+
+  return z_pos;
+}
+
+inline double TPEventTracks::AverageX(TPTrack& track, const GeoOctuplet& geometry) {
+  // makes x avg position of x planes
+
+  std::vector<double> m_xpos;
+
+  for (int i = 0; i < track.size(); i++){
+    if (track.Get(i).isX())
+      m_xpos.push_back(Xpos(track.Get(i),geometry));
+  }
+
+  if (std::find(m_xpos.begin(), m_xpos.end(), -1) != m_xpos.end())
+    return -1;
+
+  double sum_x = std::accumulate(m_xpos.begin(), m_xpos.end(), 0.0);
+  double avg_x = sum_x / (double)(m_xpos.size());
+
+  return avg_x;
+}
+
+inline double TPEventTracks::AverageU(TPTrack& track, const GeoOctuplet& geometry) {
+  // makes x avg position of u planes
+
+  std::vector<double> m_xpos;
+
+  for (int i = 0; i < track.size(); i++){
+    if (track.Get(i).isU())
+      m_xpos.push_back(Xpos(track.Get(i),geometry));
+  }
+
+  if (std::find(m_xpos.begin(), m_xpos.end(), -1) != m_xpos.end())
+    return -1;
+
+  double sum_x = std::accumulate(m_xpos.begin(), m_xpos.end(), 0.0);
+  double avg_x = sum_x / (double)(m_xpos.size());
+
+  return avg_x;
+}
+
+inline double TPEventTracks::AverageV(TPTrack& track, const GeoOctuplet& geometry) {
+  // makes x avg position of v planes
+
+  std::vector<double> m_xpos;
+
+  for (int i = 0; i < track.size(); i++){
+    if (track.Get(i).isV())
+      m_xpos.push_back(Xpos(track.Get(i),geometry));
+  }
+
+  if (std::find(m_xpos.begin(), m_xpos.end(), -1) != m_xpos.end())
+    return -1;
+
+  double sum_x = std::accumulate(m_xpos.begin(), m_xpos.end(), 0.0);
+  double avg_x = sum_x / (double)(m_xpos.size());
+
+  return avg_x;
+}
+
+inline double TPEventTracks::AverageZ(TPTrack& track, const GeoOctuplet& geometry) {
+  // makes z avg position of x planes
+
+  std::vector<double> m_zpos;
+
+  for (int i = 0; i < track.size(); i++){
+    if (track.Get(i).isX())
+      m_zpos.push_back(Zpos(track.Get(i),geometry));
+  }
+
+  if (std::find(m_zpos.begin(), m_zpos.end(), -1) != m_zpos.end())
+    return -1;
+
+  double sum_z = std::accumulate(m_zpos.begin(), m_zpos.end(), 0.0);
+  double avg_z = sum_z / (double)(m_zpos.size());
+
+
+  return avg_z;
+}
+inline double TPEventTracks::AverageZU(TPTrack& track, const GeoOctuplet& geometry) {
+  // makes z avg position of u planes
+
+  std::vector<double> m_zpos;
+
+  for (int i = 0; i < track.size(); i++){
+    if (track.Get(i).isU())
+      m_zpos.push_back(Zpos(track.Get(i),geometry));
+  }
+
+  if (std::find(m_zpos.begin(), m_zpos.end(), -1) != m_zpos.end())
+    return -1;
+
+  double sum_z = std::accumulate(m_zpos.begin(), m_zpos.end(), 0.0);
+  double avg_z = sum_z / (double)(m_zpos.size());
+
+
+  return avg_z;
+}
+inline double TPEventTracks::AverageZV(TPTrack& track, const GeoOctuplet& geometry) {
+  // makes z avg position of v planes
+
+  std::vector<double> m_zpos;
+
+  for (int i = 0; i < track.size(); i++){
+    if (track.Get(i).isV())
+      m_zpos.push_back(Zpos(track.Get(i),geometry));
+  }
+
+  if (std::find(m_zpos.begin(), m_zpos.end(), -1) != m_zpos.end())
+    return -1;
+
+  double sum_z = std::accumulate(m_zpos.begin(), m_zpos.end(), 0.0);
+  double avg_z = sum_z / (double)(m_zpos.size());
+
+
+  return avg_z;
+}
 #endif
