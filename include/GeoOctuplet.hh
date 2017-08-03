@@ -384,7 +384,7 @@ inline int GeoOctuplet::IsFiducial(const MMTrack& track){
     x_proj = track.ConstX() + track.SlopeX()*z_proj;
     y_proj = track.ConstY() + track.SlopeY()*z_proj;
     if (std::fabs(x_proj - pl->Origin().X()) > 102.3) return 0;
-    if (std::fabs(y_proj - pl->Origin().Y()) > 102.3) return 0;
+    if (std::fabs(y_proj - pl->Origin().Y()) > 100.0) return 0;
   }
   return 1;
 }
