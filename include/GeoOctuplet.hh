@@ -39,6 +39,7 @@ public:
   int RunNumber() const;
   void SetRunNumber(int RunNumber);
 
+  int IsFiducial(const MMTrack& track);
   double GetResidualX(const MMCluster& clus,
                       const MMTrack& track);
 
@@ -374,6 +375,18 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
 
     m_RunNum = RunNumber;
   }
+}
+
+inline int GeoOctuplet::IsFiducial(const MMTrack& track){
+  double x_proj = 0, y_proj = 0, z_proj = 0;
+  for (auto pl: m_planes){
+    z_proj = pl->Origin().Z();
+    x_proj = track.ConstX() + track.SlopeX()*z_proj;
+    y_proj = track.ConstY() + track.SlopeY()*z_proj;
+    if (std::fabs(x_proj - pl->Origin().X()) > 102.3) return 0;
+    if (std::fabs(y_proj - pl->Origin().Y()) > 100.0) return 0;
+  }
+  return 1;
 }
 
 inline double GeoOctuplet::GetResidualX(const MMCluster& clus,
