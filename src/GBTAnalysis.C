@@ -1,4 +1,3 @@
-//
 ///  \file   GBTAnalysis.C
 ///
 ///  \author Ann Miao Wang
@@ -34,6 +33,14 @@
 #include "include/ScintillatorClusterFilterer.hh"
 
 using namespace std;
+
+double channel_from_x_mid(double xpos, int board, GeoOctuplet* geo){
+  int SignChannel = geo->Get(board).SignChannel();
+  double xorigin  = geo->Get(board).Origin().X();
+  double alpha    = geo->Get(board).StripAlpha();
+  double channel  = ((xpos - xorigin - tan(alpha)*100) / (SignChannel*0.4)) + 256.5;
+  return channel;
+}
 
 int deltaBCID(int sciBCID, int sciph, int hitBCID, int offset){
   if ((sciBCID-hitBCID) < 0){
@@ -257,6 +264,8 @@ int main(int argc, char* argv[]){
   }
   bool debug = false;
   bool sim = false;
+  int ndisp = 0;
+
   bool b_input = false;
   bool b_out   = false;
   bool b_pdo   = false;
@@ -385,17 +394,39 @@ int main(int argc, char* argv[]){
 
   TH1D* TP_yres;
   TH1D* TP_yres_1U1V;
+  TH1D* TP_yres_1U1V_smallangle;
   TH1D* TP_yres_1U1V_adj;
   TH1D* TP_yres_1U1V_apart;
   TH1D* TP_yres_2U1V;
   TH1D* TP_yres_1U2V;
   TH1D* TP_yres_2U2V;
+  TH2D* TP_yres_vs_thetay_2U2V;
+  TH2D* TP_yres_vs_thetax_2U2V;
+  
+  TH1D* TP_yres_corr;
+  TH1D* TP_yres_corr_1U1V;
+  TH1D* TP_yres_corr_1U1V_smallangle;
+  TH1D* TP_yres_corr_1U1V_adj;
+  TH1D* TP_yres_corr_1U1V_apart;
+  TH1D* TP_yres_corr_2U1V;
+  TH1D* TP_yres_corr_1U2V;
+  TH1D* TP_yres_corr_2U2V;
 
   TH1D* MM_y_1U1V;
   TH2D* MM_y_1U1V_ib;
+  TH2D* MM_y_1U1V_time;
   TH2D* MM_y_1U1V_thetay;
+  TH2D* MM_x_y;
+  TH2D* MM_y_1U1V_x;
+  TH1D* MM_x_1U1V;
+  TH1D* MM_thetay;
+  TH2D* MM_y_2U2V_thetay;
+
+  TH1D* MM_y_1U1V_thetay_0p5_1D;
+
   TH1D* MM_y_1U1V_adj;
   TH1D* MM_y_1U1V_apart;
+
   TH1D* MM_y_2U1V;
   TH1D* MM_y_1U2V;
   TH1D* MM_y_2U2V;
@@ -440,6 +471,8 @@ int main(int argc, char* argv[]){
 
   TH1D* hARTwin;
   TH1D* hARTrpairs;
+  TH1D* hARTphase;
+  TH1D* hARTphase_avg;
 
   TH1D* passedTrig;
   TH1D* totalTrig;
@@ -453,57 +486,97 @@ int main(int argc, char* argv[]){
   TH1D* earliestBCID;
   TH1D* avgBCID;
 
-  // tp_sci + 1945 = tp_BCID[0]
+  double t0, tf;
+  // run 3522
+  t0 = 1494529235;
+  tf = 1495127430;
+//   // run 3530
+//   t0 = 1500495684;
+//   tf = 1500912122;
+//   // run 3528
+//   t0 = 1499006282;
+//   tf = 1499438280;
+//    // run 3527
+//   t0 = 1498515411;
+//   tf = 1499004849;
 
-  TPcands = new TH1D("Candidate events with triggerable track","Candidate events with triggerable track",200,1494.5*pow(10,6),1495.2*pow(10,6));
-  TPmatch = new TH1D("Trigger candidate events with tp","Trigger candidate events with tp",200,1494.5*pow(10,6),1495.2*pow(10,6));
-  effTP = new TH1D("Fraction of trigger cands with tp","Fraction of trigger cands with tp",200,1494.5*pow(10,6),1495.2*pow(10,6));
-  TPscimatch = new TH1D("Events with tp and tpsci BCID match","Events with tp and tpsci BCID match",200,1494.5*pow(10,6),1495.2*pow(10,6));
-  fracTPscimatch = new TH1D("Fraction of events with tp and tpsci BCID match","Fraction of events with tp and tpsci BCID match",200,1494.5*pow(10,6),1495.2*pow(10,6));
+  TPcands = new TH1D("tpcands","Candidate events with triggerable track",100,t0,tf);
+  TPmatch = new TH1D("tpcands_wtp","Trigger candidate events with tp",100,t0,tf);
+  TPcands->Sumw2();
+  TPmatch->Sumw2();
+  effTP = new TH1D("tpcandsfrac_wtp","Fraction of trigger cands with tp",100,t0,tf);
+  TPscimatch = new TH1D("tpscimatch","Events with tp and tpsci BCID match",100,t0,tf);
+  fracTPscimatch = new TH1D("tpscimatchfrac","Fraction of events with tp and tpsci BCID match", 100, t0,tf);
 
-  nomatch_timediff = new TH1D("Timestamp difference for those without the scintillator match",
+  nomatch_timediff = new TH1D("timediff_nomatch",
                               "Timestamp difference for those without the scintillator match",
                               100,-0.08,0.14);
-  all_timediff = new TH1D("Timestamp difference for all candidate events with tp",
+  all_timediff = new TH1D("timediff_allcands_wtp",
                               "Timestamp difference for all candidate events with tp",
                               100,-0.08,0.14);
 
-  nomatch_MMmatch = new TH1D("Number of TP hits matched with MM for those without the scintillator match",
+  nomatch_MMmatch = new TH1D("ntp_nomatch",
                               "Number of TP hits matched with MM for those without the scintillator match",
                               9,-0.5,8.5);
-  match_MMmatch = new TH1D("Number of TP hits matched with MM for those with the scintillator match",
+  match_MMmatch = new TH1D("ntp_scimatch",
                            "Number of TP hits matched with MM for those with the scintillator match",
                            9,-0.5,8.5);
-  all_MMmatch = new TH1D("Number of TP hits matched with MM for all candidate events with tp",
+  all_MMmatch = new TH1D("ntp_allmatch",
                               "Number of TP hits matched with MM for all candidate events with tp",
                               9,-0.5,8.5);
 
-  TP_theta = new TH1D("TP theta","TP theta",50, -30, 20);
-  MM_theta = new TH1D("MM theta","MM theta",50, -30, 20);
-  TP_phi = new TH1D("TP phi","TP phi",100, -100, 100);
-  MM_phi = new TH1D("MM phi","MM phi",100, -100, 100);
+  TP_theta = new TH1D("TP_theta","TP theta",50, -30, 20);
+  MM_theta = new TH1D("MM_theta","MM theta",50, -30, 20);
+  TP_phi = new TH1D("TP_phi","TP phi",100, -100, 100);
+  MM_phi = new TH1D("MM_phi","MM phi",100, -100, 100);
 
-  TP_xres = new TH1D("TP x residual","TP x residual", 63, -10.5,10.5);
-  TP_angres = new TH1D("TP angular residual","TP angular residual",100, -100,100);
-  TP_y = new TH1D("TP y distribution","TP y distribution",801, -300.5,500.5);
-  MM_y = new TH1D("MM y distribution","MM y distribution",801, -300.5,500.5);
+  TP_xres = new TH1D("TP_xres","TP x residual", 63, -10.5,10.5);
+  TP_xres->StatOverflows(kTRUE);
+  TP_angres = new TH1D("TP_angres","TP angular residual",100, -100,100);
+  TP_angres->StatOverflows(kTRUE);
+  TP_y = new TH1D("TP_y","TP y distribution",801, -300.5,500.5);
+  MM_y = new TH1D("MM_y","MM y distribution",801, -300.5,500.5);
 
-  TP_yres = new TH1D("TP y residual","TP y residual",200, -1000.5,1000.5);
-  TP_yres_1U1V = new TH1D("TP y residual 1u1v","TP y residual 1u1v",200, -1000.5,1000.5);
-  TP_yres_1U1V_adj = new TH1D("TP y residual 1u1v adj","TP y residual 1u1v adj",200, -1000.5,1000.5);
-  TP_yres_1U1V_apart = new TH1D("TP y residual 1u1v apart","TP y residual 1u1v apart",200, -1000.5,1000.5);
-  TP_yres_1U2V = new TH1D("TP y residual 1u2v","TP y residual 1u2v",200, -1000.5,1000.5);
-  TP_yres_2U1V = new TH1D("TP y residual 2u1v","TP y residual 2u1v",200, -1000.5,1000.5);
-  TP_yres_2U2V = new TH1D("TP y residual 2u2v","TP y residual 2u2v",200, -1000.5,1000.5);
+  TP_yres = new TH1D("TP_yres","TP y residual",200, -350.5,350.5);
+  TP_yres->StatOverflows(kTRUE);
+  TP_yres_1U1V = new TH1D("TP_yres_1u1v","TP y residual 1u1v",200, -350.5,350.5);
+  TP_yres_1U1V_smallangle = new TH1D("TP_yres_1u1v small angle","TP y residual 1u1v small angle",200, -350.5,350.5);
+  TP_yres_1U1V_adj = new TH1D("TP_yres_1u1v adj","TP y residual 1u1v adj",200, -350.5,350.5);
+  TP_yres_1U1V_apart = new TH1D("TP_yres_1u1v apart","TP y residual 1u1v apart",200, -350.5,350.5);
+  TP_yres_1U2V = new TH1D("TP_yres_1u2v","TP y residual 1u2v",200, -350.5,350.5);
+  TP_yres_2U1V = new TH1D("TP_yres_2u1v","TP y residual 2u1v",200, -350.5,350.5);
+  TP_yres_2U2V = new TH1D("TP_yres_2u2v","TP y residual 2u2v",200, -350.5,350.5);
+  TP_yres_vs_thetay_2U2V = new TH2D("TP_yres_v_thetay_2u2v","",100, -350.5, 350.5, 100, -TMath::Pi(), TMath::Pi());
+  TP_yres_vs_thetax_2U2V = new TH2D("TP_yres_v_thetax_2u2v","",100, -350.5, 350.5, 100, -TMath::Pi(), TMath::Pi());
 
-  TP_y_1U = new TH1D("TP y distribution 1u","TP y distribution 1u",801, -300.5,500.5);
-  TP_y_2U = new TH1D("TP y distribution 2u","TP y distribution 2u",801, -300.5,500.5);
-  TP_y_1V = new TH1D("TP y distribution 1v","TP y distribution 1v",801, -300.5,500.5);
-  TP_y_2V = new TH1D("TP y distribution 2v","TP y distribution 2v",801, -300.5,500.5);
+  TP_yres_corr = new TH1D("TP_yres_corr","TP y residual corr",200, -350.5,350.5);
+  TP_yres_corr->StatOverflows(kTRUE);
+  TP_yres_corr_1U1V = new TH1D("TP_yres_corr_1u1v","TP y residual corr 1u1v",200, -350.5,350.5);
+  TP_yres_corr_1U1V_smallangle = new TH1D("TP_yres_corr_1u1v small angle","TP y residual corr 1u1v small angle",200, -350.5,350.5);
+  TP_yres_corr_1U1V_adj = new TH1D("TP_yres_corr_1u1v_adj","TP y residual corr 1u1v adj",200, -350.5,350.5);
+  TP_yres_corr_1U1V_apart = new TH1D("TP_yres_corr_1u1v_apart","TP y residual corr 1u1v apart",200, -350.5,350.5);
+  TP_yres_corr_1U2V = new TH1D("TP_yres_corr_1u2v","TP y residual corr 1u2v",200, -350.5,350.5);
+  TP_yres_corr_2U1V = new TH1D("TP_yres_corr_2u1v","TP y residual corr 2u1v",200, -350.5,350.5);
+  TP_yres_corr_2U2V = new TH1D("TP_yres_corr_2u2v","TP y residual corr 2u2v",200, -350.5,350.5);
 
-  MM_y_1U1V = new TH1D("MM y  1u1v","MM y  1u1v",801, -300.5, 500.5);
-  MM_y_1U1V_ib = new TH2D("MM y  1u1v vs board","MM y  1u1v vs board",801, -300.5, 500.5, 8, -0.5, 7.5);
-  MM_y_1U1V_thetay = new TH2D("MM y  1u1v vs y track angle","MM y  1u1v vs y track angle",801, -300.5, 500.5, 40, -TMath::Pi(), TMath::Pi());
+  TP_y_1U = new TH1D("TP_ydist_1u","TP_ydist_1u",801, -300.5,500.5);
+  TP_y_2U = new TH1D("TP_ydist_2u","TP y distribution 2u",801, -300.5,500.5);
+  TP_y_1V = new TH1D("TP_ydist_1v","TP y distribution 1v",801, -300.5,500.5);
+  TP_y_2V = new TH1D("TP_ydist_2v","TP y distribution 2v",801, -300.5,500.5);
+
+  MM_x_y = new TH2D("MM_x_y","MM x y",100, -300.5, 500.5, 100, -300.5, 500.5);
+  MM_y_1U1V = new TH1D("MM_y_1u1v","MM y  1u1v",100, -300.5, 500.5);
+  MM_y_1U1V_ib = new TH2D("MM_y_1u1v vs board","MM y  1u1v vs board",100, -300.5, 500.5, 8, -0.5, 7.5);
+  MM_y_1U1V_time = new TH2D("time_1u1v","time 1u1v",100, -300.5, 500.5,200,1494.5*pow(10,6),1495.2*pow(10,6));
+
+  MM_y_1U1V_thetay = new TH2D("MM_y_1u1v vs y track angle","MM y  1u1v vs y track angle",100, -300.5, 500.5, 40, -TMath::Pi(), TMath::Pi());
+  MM_y_1U1V_x = new TH2D("MM_y_1u1v_vs_x","MM y  1u1v vs x",100, -300.5, 500.5, 100, -300.5, 500.5);
+  MM_y_2U2V_thetay = new TH2D("MM_y_2u2v_vs_y_track_angle","MM y  2u2v vs y track angle",100, -300.5, 500.5, 40, -TMath::Pi(), TMath::Pi());
+
+  MM_y_1U1V_thetay_0p5_1D = new TH1D("MM y  1u1v vs y track angle","MM y  1u1v vs y track angle",100, -300.5, 500.5);
+  MM_x_1U1V = new TH1D("MM x  1u1v","MM x  1u1v",100, -300.5, 500.5);
+  MM_thetay= new TH1D("MM y track angle","MM y track angle", 40, -TMath::Pi(), TMath::Pi());
+
   MM_y_1U1V_adj = new TH1D("MM y  1u1v adj","MM y  1u1v adj",801, -300.5, 500.5);
   MM_y_1U1V_apart = new TH1D("MM y  1u1v apart","MM y  1u1v apart",801, -300.5, 500.5);
   MM_y_1U2V = new TH1D("MM y  1u2v","MM y  1u2v",801, -300.5, 500.5);
@@ -517,44 +590,48 @@ int main(int argc, char* argv[]){
   TP_y_2U1V = new TH1D("TP y  2u1v","TP y  2u1v",801, -300.5, 500.5);
   TP_y_2U2V = new TH1D("TP y  2u2v","TP y  2u2v",801, -300.5, 500.5);
 
-  MM_y_1U = new TH1D("MM y distribution 1u","MM y distribution 1u",801, -300.5,500.5);
-  MM_y_2U = new TH1D("MM y distribution 2u","MM y distribution 2u",801, -300.5,500.5);
-  MM_y_1V = new TH1D("MM y distribution 1v","MM y distribution 1v",801, -300.5,500.5);
-  MM_y_2V = new TH1D("MM y distribution 2v","MM y distribution 2v",801, -300.5,500.5);
+  MM_y_1U = new TH1D("MM_ydist_1u","MM y distribution 1u",801, -300.5,500.5);
+  MM_y_2U = new TH1D("MM_ydist_2u","MM y distribution 2u",801, -300.5,500.5);
+  MM_y_1V = new TH1D("MM_ydist_1v","MM y distribution 1v",801, -300.5,500.5);
+  MM_y_2V = new TH1D("MM_ydist_2v","MM y distribution 2v",801, -300.5,500.5);
 
-  TP_xres_angres = new TH2D("TP x residual v. angular residual","TP x residual v. angular residual",63,-10.5,10.5,1000,-100,100);
-  TP_xres_angres_full = new TH2D("TP x residual v. angular residual full","TP x residual v. angular residual full",483,-80.5,80.5,4000,-800,800);
-  TP_xres_angres_within5 = new TH2D("TP x residual v. angular residual within 5 srips","TP x residual v. angular residual within 5 strips",63,-10.5,10.5,1000,-100,100);
-  TP_xres_angres_outside5 = new TH2D("TP x residual v. angular residual outside 5 srips","TP x residual v. angular residual outside 5 strips",63,-10.5,10.5,1000,-100,100);
+  TP_xres_angres = new TH2D("TP_xres_v_angres","TP x residual v. angular residual",63,-10.5,10.5,1000,-100,100);
+  TP_xres_angres->StatOverflows(kTRUE);
+  TP_xres_angres_full = new TH2D("TP_xres_v_angres_full","TP x residual v. angular residual full",483,-80.5,80.5,4000,-800,800);
+  TP_xres_angres_full->StatOverflows(kTRUE);
+  TP_xres_angres_within5 = new TH2D("TP_xres_v_angres_within_5_strips","TP x residual v. angular residual within 5 strips",63,-10.5,10.5,1000,-100,100);
+  TP_xres_angres_outside5 = new TH2D("TP_xres_v_angres_outside_5_strips","TP x residual v. angular residual outside 5 strips",63,-10.5,10.5,1000,-100,100);
 
-  packetBCID = new TH1D("Delta tp BCID","Delta tp BCID",10001, -5000,5000);
+  packetBCID = new TH1D("Delta_tp_BCID","Delta tp BCID",10001, -5000,5000);
 
-  dEarlyBCID = new TH1D("Delta Earliest BCID","Delta Earliest BCID",19, -9.5,9.5);
-  dEarlyBCIDph = new TH1D("Delta Earliest BCID phase","Delta Earliest BCID phase",304, -9.5,9.5);
+  dEarlyBCID = new TH1D("Delta_Earliest_BCID","Delta Earliest BCID",19, -9.5,9.5);
+  dEarlyBCIDph = new TH1D("Delta_Earliest_BCID_phase","Delta Earliest BCID phase",304, -9.5,9.5);
 
-  dAvgBCID = new TH1D("Delta Avg BCID","Delta Avg BCID",19, -9.5,9.5);
-  dAvgBCIDph = new TH1D("Delta Avg BCID phase","Delta Avg BCID phase",304, -9.5,9.5);
+  dAvgBCID = new TH1D("Delta_Avg_BCID","Delta Avg BCID",19, -9.5,9.5);
+  dAvgBCIDph = new TH1D("Delta_Avg_BCID_phase","Delta Avg BCID phase",304, -9.5,9.5);
 
-  dMedBCID = new TH1D("Delta Med BCID","Delta Med BCID",19, -9.5,9.5);
-  dMedBCIDph = new TH1D("Delta Med BCID phase","Delta Med BCID phase",304, -9.5,9.5);
+  dMedBCID = new TH1D("Delta_Med_BCID","Delta Med BCID",19, -9.5,9.5);
+  dMedBCIDph = new TH1D("Delta_Med_BCID_phase","Delta Med BCID phase",304, -9.5,9.5);
 
-  dLatestBCID = new TH1D("Delta Latest BCID","Delta Latest BCID",19, -9.5,9.5);
-  dLatestBCIDph = new TH1D("Delta Latest BCID phase","Delta Latest BCID phase",304, -9.5,9.5);
+  dLatestBCID = new TH1D("Delta_Latest_BCID","Delta Latest BCID",19, -9.5,9.5);
+  dLatestBCIDph = new TH1D("Delta_Latest_BCID_phase","Delta Latest BCID phase",304, -9.5,9.5);
 
-  hARTwin = new TH1D("ART window","ART window",13, -0.5,12.5);
-  hARTrpairs = new TH1D("ART rpairs","ART rpairs",25, -12.5,12.5);
+  hARTwin = new TH1D("ART_window","ART window",13, -0.5,12.5);
+  hARTphase = new TH1D("ART_phase","ART phase",17, -8.5,8.5);
+  hARTphase_avg = new TH1D("ART_phase_avg","ART phase avg",17, -8.5,8.5);
+  hARTrpairs = new TH1D("ART_rpairs","ART rpairs",25, -12.5,12.5);
   passedTrig = new TH1D("passed_trig","passed_trig",8, 1.5,9.5);
   totalTrig = new TH1D("total_trig","total_trig",8, 1.5,9.5);
   trigEff = new TH1D("trigEff","trigEff",8, 1.5,9.5);
 
-  earliestBCID = new TH1D("earliest BCID","earliest BCID",5000, -1.,10000.);
-  avgBCID = new TH1D("avg BCID","avg BCID",5000, -1.,10000.);
+  earliestBCID = new TH1D("earliest_BCID","earliest BCID",5000, -1.,10000.);
+  avgBCID = new TH1D("avg_BCID","avg BCID",5000, -1.,10000.);
 
-  dEarlyBCIDfull = new TH1D("delta earliest BCID full","delta earliest BCID full",5000, -10000.,10000.);
-  dAvgBCIDfull = new TH1D("delta avg BCID full","delta avg BCID full",5000, -10000.,10000.);
+  dEarlyBCIDfull = new TH1D("delta_earliest_BCID_full","delta earliest BCID full",5000, -10000.,10000.);
+  dAvgBCIDfull = new TH1D("delta_avg_BCID_full","delta avg BCID full",5000, -10000.,10000.);
 
   for (int i = 4; i < 9; i++){
-    TH1D* dummy = new TH1D(Form("Delta Avg BCID for %d hits",i),Form("Delta Avg BCID for %d hits",i),19,-9.5,9.5);
+    TH1D* dummy = new TH1D(Form("Delta_Avg_BCID_for_%d_hits",i),Form("Delta Avg BCID for %d hits",i),19,-9.5,9.5);
     AvgBCID_n.push_back(dummy);
   }
 
@@ -566,8 +643,8 @@ int main(int argc, char* argv[]){
   for(int evt = 0; evt < Nevent; evt++){
     DATA->GetEntry(evt);
 
-//     if (evt > 10000)
-//       break;
+//    if (evt > 1000)
+//      break;
 
     if (debug)
       cout << "Event " << evt << endl;
@@ -599,12 +676,21 @@ int main(int argc, char* argv[]){
     // initialize cluster making
     FILTER->SetRunNumber(DATA->RunNum);
 
+    // set tbegin, tend
+
     // Set delta scintillator 
     int dB;
     if (DATA->RunNum == 3522){
       dB = 1944;
     }
-    else {
+    else if (DATA->RunNum == 3530){
+      dB = 1160;
+    }
+    else if (DATA->RunNum == 3528){
+      dB = 1846;
+      //      dB = 2250;
+    }
+    else if (DATA->RunNum == 3527){
       dB = 1042;
     }
     if (debug)
@@ -646,7 +732,7 @@ int main(int argc, char* argv[]){
     MMClusterList filtered_allclusters = FILTER->FilterClustersScint(fit_clusters, *GEOMETRY, botPair.first->Channel(), evt);
     
     MMTrack track = FITTER->Fit(filtered_allclusters, *GEOMETRY);
-
+    
     // Fun event displays
     if (DATA->mm_EventNum == 2579 || DATA->mm_EventNum == 2625 || DATA->mm_EventNum == 3402){
       TCanvas* can;
@@ -663,10 +749,14 @@ int main(int argc, char* argv[]){
         cout << pink << "Event " << evt << " didn't make the cut" << end << endl;
       continue;
     }
+
     NEventsGood++;
     TPcands->Fill(DATA->mm_EventHits.Time());
+
+
     //------------------------------------------------//
 
+    MM_thetay->Fill(TMath::ATan(track.SlopeY()));
     DATA->tp_EventTracks.SetSciBCID(DATA->sc_EventHits.TPBCID(),DATA->sc_EventHits.TPph());
     DATA->tp_EventTracks.SetSciOffset(dB);
 
@@ -680,8 +770,9 @@ int main(int argc, char* argv[]){
     
     // Didn't find any tracks!
     if (Ntptrk == 0) {
+      if (debug)
+        cout << pink << "Event " << evt << " didn't have any trigger matches! " << end << endl;
       continue;
-      cout << pink << "Event " << evt << " didn't have any trigger matches! " << end << endl;
     }
     //------------------------------------------------//
 
@@ -689,6 +780,10 @@ int main(int argc, char* argv[]){
     // looking for best trigger match
     if (DATA->tp_EventTracks.Highlander(fit_clusters, true, 16)==nullptr)
       continue;
+
+    TPmatch->Fill(DATA->mm_EventHits.Time());
+
+
     TPTrack bestTrack = *DATA->tp_EventTracks.Highlander(fit_clusters, true, 16);
     MMClusterList clusters_tp;
     for (auto art: bestTrack)
@@ -700,7 +795,9 @@ int main(int argc, char* argv[]){
       can->Write();
       delete can;
     }
-    
+
+    NEventsTrig++;
+
     int maxMatch = bestTrack.NMatch();
 
     //------------------------------------------------//
@@ -728,14 +825,7 @@ int main(int argc, char* argv[]){
         cout << "Error flag cases" << endl;
       continue;
     }
-    NEventsTrig++;
     //------------------------------------------------//
-
-    TPmatch->Fill(DATA->mm_EventHits.Time());
-
-    all_timediff->Fill(bestTrack.Time()-DATA->mm_EventHits.Time());
-    all_MMmatch->Fill(maxMatch);
-
 
     // ART hit time distribution handling
 
@@ -790,6 +880,8 @@ int main(int argc, char* argv[]){
       
     earliestBCID->Fill(bestTrack.BCIDEarliest());
     avgBCID->Fill(bestTrack.BCIDAverage());
+    hARTphase->Fill(bestTrack.BCIDEarliestA()-bestTrack.BCIDEarliestB());
+    hARTphase_avg->Fill(bestTrack.BCIDAverageA()-bestTrack.BCIDAverageB());
 
     // RESOLUTIONS! //
 
@@ -812,12 +904,15 @@ int main(int argc, char* argv[]){
 
     double dtheta = tp_theta-mm_theta;
     TP_xres_angres_full->Fill(dX,dtheta*1000);    
+    
+    if (debug)
+      cout << blue << "found angular res" << end << endl;
 
-    if (DATA->mm_EventNum == 2579 || DATA->mm_EventNum == 2625 || DATA->mm_EventNum == 3402){
-      cout << "Evt: " << DATA->mm_EventNum << endl;
-      cout << "dtheta " << dtheta*1000 << endl;
-      cout << "dX " << dX << endl;
-    }
+//     if (DATA->mm_EventNum == 2579 || DATA->mm_EventNum == 2625 || DATA->mm_EventNum == 3402){
+//       cout << "Evt: " << DATA->mm_EventNum << endl;
+//       cout << "dtheta " << dtheta*1000 << endl;
+//       cout << "dX " << dX << endl;
+//     }
 
     //------------------------------------------------//
     // CUT: if x plane art hits not within 24*0.4 = 9.6 mm of the MM track
@@ -827,18 +922,33 @@ int main(int argc, char* argv[]){
     // CUT: if x plane art hits not within 12*0.4 = 4.8 mm of the MM track
     // CUT: if uv plane art hits not within 25*0.4 = 10 mm of the MM track
     bool outofvmm = false;
+//     for (auto art: bestTrack){
+//       int ip = art->MMFE8Index();
+//       double artx = GEOMETRY->Get(ip).LocalXatYend(art->Channel())+GEOMETRY->Get(ip).Origin().X();
+//       double mmx = track.PointZ(GEOMETRY->Get(ip).Origin().Z()).X();
+//       if (debug)
+//         cout << blue << "art: " << artx << " mmx " << mmx << " ip " << ip << " zpos " << GEOMETRY->Get(ip).Origin().Z() <<end << endl;
+//       if ( (fabs(artx-mmx) > 9.6 && art->isX()) || (fabs(artx-mmx) > 14.8 && (art->isU() || art->isV())))
+//         outofvmm = true;
+//     }
+
     for (auto art: bestTrack){
       int ip = art->MMFE8Index();
-      double artx = GEOMETRY->Get(ip).LocalXatYend(art->Channel())+GEOMETRY->Get(ip).Origin().X();
-      double mmx = track.PointZ(GEOMETRY->Get(ip).Origin().Z()).X();
-      if (debug)
-        cout << blue << "art: " << artx << " mmx " << mmx << " ip " << ip << " zpos " << GEOMETRY->Get(ip).Origin().Z() <<end << endl;
-      if ( (fabs(artx-mmx) > 9.6 && art->isX()) || (fabs(artx-mmx) > 14.8 && (art->isU() || art->isV())))
+      double artx_ch = art->Channel();
+      double mmx_ch = channel_from_x_mid(track.PointZ(GEOMETRY->Get(ip).Origin().Z()).X(), ip, GEOMETRY);
+      if ( (fabs(artx_ch-mmx_ch) > 24 && art->isX()))
         outofvmm = true;
+//       if ( (fabs(artx_ch-mmx_ch) > 24 && art->isX()) || (fabs(artx_ch-mmx_ch) > 37  && (art->isU() || art->isV())))
+//         outofvmm = true;
     }
+
     if (outofvmm){
       continue;
     }
+
+    
+    if (debug)
+      cout << blue << "made out of vmm cuts" << end << endl;
 
     //------------------------------------------------//
     // TP y resolution
@@ -846,8 +956,10 @@ int main(int argc, char* argv[]){
 
     double avgX_U, avgZ_U;
     double avgX_V, avgZ_V;
-    double dY;
-    double mmY;
+    double MXG, MU, MV;
+    double dY, dY_corr, dY_dum;
+    double mmY, mmY_X;
+    double NSW_phi, CRT_phi;
 
     double A,B;
     A = (1/TMath::Sin(1.5/180.*TMath::Pi()));
@@ -859,7 +971,18 @@ int main(int argc, char* argv[]){
     avgX_V = DATA->tp_EventTracks.AverageV(bestTrack, *GEOMETRY);
     avgZ_V = DATA->tp_EventTracks.AverageZV(bestTrack, *GEOMETRY);
 
-    // cout << blue << "NU " << bestTrack.NU() << " NV " << bestTrack.NV() << end << endl;
+    // slopes
+    MXG = DATA->tp_EventTracks.MXG(bestTrack, *GEOMETRY, 0., track);
+    MU = DATA->tp_EventTracks.MU(bestTrack, *GEOMETRY, 0., track);
+    MV = DATA->tp_EventTracks.MV(bestTrack, *GEOMETRY, 0., track);
+
+    // IP
+    double IPx = track.PointY(0.).X();
+    double IPy = track.PointY(0.).Y();
+    double IPz = track.PointY(0.).Z();
+
+
+    // counting UV config fractions
     if (bestTrack.NU() == 2 && bestTrack.NV() == 2)
       NTrig2U2V++;
     else if (bestTrack.NU() == 1 && bestTrack.NV() == 2)
@@ -875,8 +998,19 @@ int main(int argc, char* argv[]){
 
 
     if (bestTrack.NU() == 0){
-      dY = B*(avgX_V-tpX) + 217.9;
-      mmY = track.PointZ( (bestTrack.NV()*avgZ_V+bestTrack.NX()*tpZ)/(bestTrack.NV()+bestTrack.NX()) ).Y();
+      double avgZ_VX = (avgZ_V+tpZ)/2;
+      // slope def
+      dY = (avgZ_VX-IPz) * (-B*(MXG-MV)) + 217.9;
+      // old def
+      dY_dum = track_tp.PointZ( avgZ_VX ).Y();
+      dY_corr = -B*(tpX-avgX_V + (avgZ_V-tpZ)*track.SlopeX()) + 217.9;
+      if (debug) {
+        cout << blue << "y value: " << dY << end << endl;
+        cout << blue << "y value dum : " << dY_dum << end << endl;
+        cout << pink << "y value corrected: " << dY_corr << end << endl;
+      }
+      mmY = track.PointZ( avgZ_VX ).Y();
+      mmY_X = track.PointZ( avgZ_VX ).X();
       if (bestTrack.NV() == 1){
         TP_y_1V->Fill(dY);
       }
@@ -886,8 +1020,24 @@ int main(int argc, char* argv[]){
       }
     }
     else if (bestTrack.NV() == 0){
-      dY = -B*(avgX_U-tpX) + 217.9;
-      mmY = track.PointZ( (bestTrack.NU()*avgZ_U+bestTrack.NX()*tpZ)/(bestTrack.NU()+bestTrack.NX()) ).Y();
+      double avgZ_UX = (avgZ_U+tpZ)/2;
+      // slope def
+      dY = (avgZ_UX-IPz)*(-B*(MU-MXG)) + 217.9;
+      // old def
+      dY_dum = track_tp.PointZ( avgZ_UX ).Y();
+      dY_corr = -B*(avgX_U-tpX + (tpZ-avgZ_U)*track.SlopeX()) + 217.9;
+      if (debug){
+        cout << blue << "y value: " << dY << end << endl;
+        cout << blue << "y value dum : " << dY_dum << end << endl;
+        cout << pink << "y value corrected: " << dY_corr << end << endl;
+      }
+//       cout << blue << "delta_z: " << (tpZ-avgZ_U) << end << endl;
+//       cout << blue << "u plane: " << avgZ_U << end << endl;
+//       cout << blue << "z plane: " << tpZ << end << endl;
+//       cout << blue << "mx local: " << bestTrack.MxLocal() << end << endl;
+//       cout << blue << "y value: " << dY << end << endl;
+      mmY = track.PointZ( avgZ_UX ).Y();
+      mmY_X = track.PointZ( avgZ_UX ).X();
       if (bestTrack.NU() == 1)
         TP_y_1U->Fill(dY);
       else{
@@ -896,34 +1046,71 @@ int main(int argc, char* argv[]){
       }
     }
     else{
-      dY = -B*(avgX_U-avgX_V)/2 + 217.9;
-      mmY = track.PointZ( (bestTrack.NU()*avgZ_U+bestTrack.NV()*avgZ_V)/(bestTrack.NU()+bestTrack.NV()) ).Y();
-      TP_yres->Fill(dY - mmY);
-      if (bestTrack.NV() == 1 && bestTrack.NU() == 1){
+      double avgZ_UV = (avgZ_U+avgZ_V)/2;
+      // slope def
+      dY = (avgZ_UV-IPz)*(-B*(MU-MV))/2 + 217.9;
+      // old def
+      dY_dum = track_tp.PointZ( avgZ_UV ).Y();
+      dY_corr = -B*(avgX_U-avgX_V + (avgZ_V-avgZ_U)*bestTrack.MxLocal())/2 + 217.9;
+      if (debug) {
+        cout << blue << "y value: " << dY << end << endl;
+        cout << blue << "y value dum: " << dY_dum << end << endl;
+        cout << pink << "y value corrected: " << dY_corr << end << endl;
+      }
 
-        TP_yres_1U1V->Fill(dY-mmY);
+
+      mmY = track.PointZ( avgZ_UV ).Y();
+      mmY_X = track.PointZ( avgZ_UV ).X();
+      if (bestTrack.NV() == 1 && bestTrack.NU() == 1){
+        TP_yres_1U1V->Fill(dY_dum-mmY);
+        TP_yres_corr_1U1V->Fill(dY_corr-mmY);
         MM_y_1U1V->Fill(mmY);
+        MM_x_1U1V->Fill(mmY_X);
         TP_y_1U1V->Fill(dY);
-        int dib = -1;
+        int ib1 = -1;
+        int ib2 = -1;
+        vector <int> ib_x;
         for (auto art: bestTrack){
+          if (art->isX())
+            ib_x.push_back(art->MMFE8Index());
           if (art->isU() || art->isV()) {
-            if (dib == -1){
-              dib = art->MMFE8Index();
-              MM_y_1U1V_ib->Fill(mmY, dib);
-              MM_y_1U1V_thetay->Fill(mmY, TMath::ATan(track.SlopeY()));
-            }
-            else {
-              dib = dib - art->MMFE8Index();
-            }
+            if (ib1 < 0)
+              ib1 = art->MMFE8Index();
+            else
+              ib2 = art->MMFE8Index();
           }
         }
-        if ( fabs(dib) < 2 ){
-          TP_yres_1U1V_adj->Fill(dY-mmY);
+        if ( fabs(ib1-ib2) < 2 && ( (ib1 < 4 && ib2 < 4) || (ib1 >3 && ib2 > 3)) ){
+          if (mmY >  20. && mmY < 40. && TMath::ATan(track.SlopeY()) > 0.6){
+            if (ndisp < 10){
+            ndisp++;
+            TCanvas* can;
+            can = Plot_Track2D(Form("track2D_%05d_all", DATA->mm_EventNum), track, *GEOMETRY, &fit_clusters);
+            can->Write();
+            delete can;
+            }
+          }
+          for (int k = 0; k < ib_x.size(); k++){
+            MM_y_1U1V_ib->Fill(mmY, ib_x[k]);
+          }
+          MM_y_1U1V_time->Fill(mmY, DATA->mm_EventHits.Time());
+          MM_y_1U1V_thetay->Fill(mmY, TMath::ATan(track.SlopeY()));
+          MM_y_1U1V_x->Fill(mmY, mmY_X);
+          if ( fabs(TMath::ATan(track.SlopeY())) < 0.5){
+            MM_y_1U1V_thetay_0p5_1D->Fill(mmY);
+          }
+          TP_yres_1U1V_adj->Fill(dY_dum-mmY);
+          TP_yres_corr_1U1V_adj->Fill(dY_corr-mmY);
           MM_y_1U1V_adj->Fill(mmY);
           TP_y_1U1V_adj->Fill(dY);
+          if (fabs(TMath::ATan(track.SlopeX())) < 0.1){
+            TP_yres_1U1V_smallangle->Fill(dY_dum-mmY);
+            TP_yres_corr_1U1V_smallangle->Fill(dY_corr-mmY);
+          }
         }
         else{
-          TP_yres_1U1V_apart->Fill(dY-mmY);
+          TP_yres_1U1V_apart->Fill(dY_dum-mmY);
+          TP_yres_corr_1U1V_apart->Fill(dY_corr-mmY);
           MM_y_1U1V_apart->Fill(mmY);
           TP_y_1U1V_apart->Fill(dY);
         }
@@ -931,30 +1118,39 @@ int main(int argc, char* argv[]){
 //         cout << "y-coordinate: " << dY << endl;
       }
       if (bestTrack.NV() == 2 && bestTrack.NU() == 1){
-        TP_yres_1U2V->Fill(dY-mmY);
+        TP_yres_1U2V->Fill(dY_dum-mmY);
+        TP_yres_corr_1U2V->Fill(dY_corr-mmY);
         MM_y_1U2V->Fill(mmY);
         TP_y_1U2V->Fill(dY);
       }
       if (bestTrack.NV() == 1 && bestTrack.NU() == 2){
-        TP_yres_2U1V->Fill(dY-mmY);
+        TP_yres_2U1V->Fill(dY_dum-mmY);
+        TP_yres_corr_2U1V->Fill(dY_corr-mmY);
         MM_y_2U1V->Fill(mmY);
         TP_y_2U1V->Fill(dY);
       }
       if (bestTrack.NV() == 2 && bestTrack.NU() == 2){
-        TP_yres_2U2V->Fill(dY-mmY);
+        MM_y_2U2V_thetay->Fill(mmY, TMath::ATan(track.SlopeY()));
+
+        TP_yres_2U2V->Fill(dY_dum-mmY);
+        TP_yres_corr_2U2V->Fill(dY_corr-mmY);
         MM_y_2U2V->Fill(mmY);
         TP_y_2U2V->Fill(dY);
+        TP_yres_vs_thetay_2U2V->Fill(dY_corr-mmY,TMath::ATan(track.SlopeY()));
+        TP_yres_vs_thetax_2U2V->Fill(dY_corr-mmY,TMath::ATan(track.SlopeX()));
       }
       MM_y->Fill(mmY);
-      if (bestTrack.NV() == 2 && bestTrack.NU() == 2)
-        TP_y->Fill(dY);
+      TP_y->Fill(dY);
     }
-
+    MM_x_y->Fill(mmY, mmY_X);
+    TP_y->Fill(dY);
+    TP_yres->Fill(dY_dum - mmY);
+    TP_yres_corr->Fill(dY_corr - mmY);
     double tp_phi = -1;
-    double mm_phi = TMath::ATan(track.SlopeY());
+    //double mm_phi = TMath::ATan(track.SlopeX()/track.SlopeY());
 
-    TP_phi->Fill(tp_phi/TMath::Pi()*180);
-    MM_phi->Fill(mm_phi/TMath::Pi()*180);
+    //TP_phi->Fill(tp_phi/TMath::Pi()*180);
+    //MM_phi->Fill(mm_phi/TMath::Pi()*180);
     //    TP_yres->Fill(dY - mmY);
 
 
@@ -1000,6 +1196,7 @@ int main(int argc, char* argv[]){
   cout << "NTrigs with 2U2V: " << NTrig2U2V << endl;
   cout << "NTrigs with 1U2V: " << NTrig1U2V << endl;
   cout << "NTrigs with 2U1V: " << NTrig2U1V << endl;
+  cout << "NTrigs with 1U1V: " << NTrig1U1V << endl;
   cout << "NTrigs with 2U: " << NTrig2U << endl;
   cout << "NTrigs with 2V: " << NTrig2V << endl;
   cout << "/////////////////////////////////" << endl;
@@ -1042,19 +1239,36 @@ int main(int argc, char* argv[]){
   dLatestBCID->Write();
   dLatestBCIDph->Write();
   hARTwin->Write();
+  hARTphase->Write();
+  hARTphase_avg->Write();
   hARTrpairs->Write();
   TP_xres->Write();
   TP_angres->Write();
   TP_yres->Write();
   TP_yres_1U1V->Write();
+  TP_yres_1U1V_smallangle->Write();
   TP_yres_1U1V_adj->Write();
   TP_yres_1U1V_apart->Write();
   TP_yres_1U2V->Write();
   TP_yres_2U1V->Write();
   TP_yres_2U2V->Write();
+  TP_yres_corr->Write();
+  TP_yres_corr_1U1V->Write();
+  TP_yres_corr_1U1V_smallangle->Write();
+  TP_yres_corr_1U1V_adj->Write();
+  TP_yres_corr_1U1V_apart->Write();
+  TP_yres_corr_1U2V->Write();
+  TP_yres_corr_2U1V->Write();
+  TP_yres_corr_2U2V->Write();
+  MM_x_y->Write();
   MM_y_1U1V->Write();
+  MM_x_1U1V->Write();
   MM_y_1U1V_ib->Write();
   MM_y_1U1V_thetay->Write();
+  MM_y_1U1V_time->Write();
+  MM_y_1U1V_x->Write();
+  MM_y_2U2V_thetay->Write();
+  MM_y_1U1V_thetay_0p5_1D->Write();
   MM_y_1U1V_adj->Write();
   MM_y_1U1V_apart->Write();
   MM_y_1U2V->Write();
@@ -1066,8 +1280,11 @@ int main(int argc, char* argv[]){
   TP_y_1U2V->Write();
   TP_y_2U1V->Write();
   TP_y_2U2V->Write();
+  TP_yres_vs_thetax_2U2V->Write();
+  TP_yres_vs_thetay_2U2V->Write();
   TP_theta->Write();
   MM_theta->Write();
+  MM_thetay->Write();
   TP_phi->Write();
   MM_phi->Write();
   MM_y->Write();
@@ -1109,7 +1326,8 @@ int main(int argc, char* argv[]){
   le->AddEntry(MM_theta, "MM");
   le->AddEntry(TP_theta,"TP");
   le->Draw();
-  c1->Print("theta_dist.pdf");
+  c1->Print(Form("run_%d.pdf(",GEOMETRY->RunNumber()),"pdf");
+  //  c1->Print("theta_dist.pdf");
   c1->Clear();
 
 
@@ -1126,7 +1344,8 @@ int main(int argc, char* argv[]){
   dEarlyBCID->GetYaxis()->SetLabelSize(0.045);
   dEarlyBCID->GetYaxis()->SetTitleSize(0.045);
   dEarlyBCID->Draw("");
-  c1->Print("earlyBCID.pdf");
+  c1->Print(Form("run_%d.pdf",GEOMETRY->RunNumber()),"pdf");
+  //  c1->Print("earlyBCID.pdf");
   c1->Clear();
 
   dEarlyBCIDph->SetLineColor(kBlue-7);
@@ -1142,7 +1361,8 @@ int main(int argc, char* argv[]){
   dEarlyBCIDph->GetYaxis()->SetLabelSize(0.045);
   dEarlyBCIDph->GetYaxis()->SetTitleSize(0.045);
   dEarlyBCIDph->Draw("");
-  c1->Print("earlyBCIDph.pdf");
+  c1->Print(Form("run_%d.pdf",GEOMETRY->RunNumber()),"pdf");
+  //  c1->Print("earlyBCIDph.pdf");
   c1->Clear();
 
   dAvgBCID->SetLineColor(colors[1]);
@@ -1158,7 +1378,8 @@ int main(int argc, char* argv[]){
   dAvgBCID->GetYaxis()->SetLabelSize(0.045);
   dAvgBCID->GetYaxis()->SetTitleSize(0.045);
   dAvgBCID->Draw("");
-  c1->Print("avgBCID.pdf");
+  //  c1->Print("avgBCID.pdf");
+  c1->Print(Form("run_%d.pdf",GEOMETRY->RunNumber()),"pdf");
   c1->Clear();
 
   dAvgBCIDph->SetLineColor(colors[1]);
@@ -1174,7 +1395,8 @@ int main(int argc, char* argv[]){
   dAvgBCIDph->GetYaxis()->SetLabelSize(0.045);
   dAvgBCIDph->GetYaxis()->SetTitleSize(0.045);
   dAvgBCIDph->Draw("");
-  c1->Print("avgBCIDph.pdf");
+  c1->Print(Form("run_%d.pdf",GEOMETRY->RunNumber()),"pdf");
+  //  c1->Print("avgBCIDph.pdf");
   c1->Clear();
 
   c1->SetLogy();
@@ -1182,7 +1404,7 @@ int main(int argc, char* argv[]){
   TP_angres->SetLineColor(kBlue-7);
   TP_angres->SetLineWidth(3);
   TP_angres->SetTitle("");
-  TP_angres->GetXaxis()->SetTitle("#theta_{local}-#theta_{MM} (mrad)");
+  TP_angres->GetXaxis()->SetTitle("#theta_{local}#minus#theta_{MM} (mrad)");
   TP_angres->GetYaxis()->SetTitle("Entries");
   TP_angres->GetXaxis()->SetTitleOffset(1.0);
   TP_angres->GetYaxis()->SetTitleOffset(2.0);
@@ -1191,17 +1413,31 @@ int main(int argc, char* argv[]){
   TP_angres->GetYaxis()->SetLabelSize(0.045);
   TP_angres->GetYaxis()->SetTitleSize(0.045);
   TP_angres->Draw("");
+  TLatex run;
+  run.SetTextSize(0.04);
+  run.SetTextAlign(13);  //align at top                                                                                                  
+  run.SetNDC();
+  run.DrawLatex(0.7,0.95,Form("Run %d",GEOMETRY->RunNumber()));
+  TLatex road;
+  road.SetTextSize(0.04);
+  road.SetTextAlign(13);  //align at top                                                                                                  
+  road.SetNDC();
+  road.DrawLatex(0.2,0.95,"1/4-VMM road");
   TLatex latex4;
-  latex4.SetTextSize(0.06);
+  latex4.SetTextColor(kRed);
+  latex4.SetTextSize(0.03);
   latex4.SetTextAlign(13);  //align at top   
-  //  latex4.DrawLatex(0.1,0.8,Form("#sigma = %3.1f",TP_angres->GetRMS())); 
-  c1->Print("TP_angres.pdf");
+  latex4.SetNDC();
+  latex4.DrawLatex(0.3,0.8,Form("RMS = %3.1f mrad",TP_angres->GetRMS())); 
+  //  latex4.DrawLatex(0.3,0.8,Form("RMS = %3.1f #pm %3.1f mrad",TP_angres->GetRMS(),TP_angres->GetRMSError())); 
+  c1->Print(Form("run_%d.pdf",GEOMETRY->RunNumber()),"pdf");
+  //  c1->Print("TP_angres.pdf");
   c1->Clear();
 
   TP_xres->SetLineColor(kBlue-7);
   TP_xres->SetLineWidth(3);
   TP_xres->SetTitle("");
-  TP_xres->GetXaxis()->SetTitle("<x_{TP}>-x_{MM} (mm)");
+  TP_xres->GetXaxis()->SetTitle("#LTx_{TP}#GT-x_{MM} (mm)");
   TP_xres->GetYaxis()->SetTitle("Entries");
   TP_xres->GetXaxis()->SetTitleOffset(1.0);
   TP_xres->GetYaxis()->SetTitleOffset(2.0);
@@ -1210,11 +1446,17 @@ int main(int argc, char* argv[]){
   TP_xres->GetYaxis()->SetLabelSize(0.045);
   TP_xres->GetYaxis()->SetTitleSize(0.045);
   TP_xres->Draw("");
+  run.DrawLatex(0.7,0.95,Form("Run %d",GEOMETRY->RunNumber()));
+  road.DrawLatex(0.2,0.95,"1/4-VMM road");
   TLatex latex3;
-  latex3.SetTextSize(0.06);
+  latex3.SetTextColor(kRed);
+  latex3.SetTextSize(0.03);
   latex3.SetTextAlign(13);  //align at top   
-  //  latex3.DrawLatex(6.75,.35,Form("#sigma = %3.1f",TP_xres->GetRMS())); 
-  c1->Print("TP_xres.pdf");
+  latex3.SetNDC();
+  latex3.DrawLatex(0.3,.8,Form("RMS = %3.1f mm",TP_xres->GetRMS())); 
+  //  latex3.DrawLatex(0.3,.8,Form("RMS = %3.1f #pm %3.1f mm",TP_xres->GetRMS(),TP_xres->GetRMSError())); 
+  c1->Print(Form("run_%d.pdf",GEOMETRY->RunNumber()),"pdf");
+  //  c1->Print("TP_xres.pdf");
   c1->Clear();
 
   c1->SetLogy(0);
@@ -1222,8 +1464,8 @@ int main(int argc, char* argv[]){
   TP_xres_angres_full->SetLineColor(kBlue-7);
   TP_xres_angres_full->SetLineWidth(3);
   TP_xres_angres_full->SetTitle("");
-  TP_xres_angres_full->GetXaxis()->SetTitle("<x_{TP}>-x_{MM} (mm)");
-  TP_xres_angres_full->GetYaxis()->SetTitle("#theta_{local}-#theta_{MM} (mrad)");
+  TP_xres_angres_full->GetXaxis()->SetTitle("#LTx_{TP}#GT#minusx_{MM} (mm)");
+  TP_xres_angres_full->GetYaxis()->SetTitle("#theta_{local}#minus#theta_{MM} (mrad)");
   TP_xres_angres_full->GetXaxis()->SetTitleOffset(1.0);
   TP_xres_angres_full->GetYaxis()->SetTitleOffset(2.0);
   TP_xres_angres_full->GetXaxis()->SetLabelSize(0.045);
@@ -1231,14 +1473,23 @@ int main(int argc, char* argv[]){
   TP_xres_angres_full->GetYaxis()->SetLabelSize(0.045);
   TP_xres_angres_full->GetYaxis()->SetTitleSize(0.045);
   TP_xres_angres_full->Draw("colz");
-  c1->Print("TP_xres_angres_full.pdf");
+  run.DrawLatex(0.7,0.95,Form("Run %d",GEOMETRY->RunNumber()));
+  road.DrawLatex(0.2,0.95,"1-VMM road");
+  TLatex latex5;
+  latex5.SetTextColor(kRed);
+  latex5.SetTextSize(0.03);
+  latex5.SetTextAlign(13);  //align at top                                                                                                                            
+  latex5.SetNDC();
+  latex5.DrawLatex(0.3,0.8,Form("x-RMS = %3.1f mm, y-RMS = %3.1f mrad",TP_xres_angres_full->GetRMS(1),TP_xres_angres_full->GetRMS(2)));
+  c1->Print(Form("run_%d.pdf",GEOMETRY->RunNumber()),"pdf");
+  //  c1->Print("TP_xres_angres_full.pdf");
   c1->Clear();
 
   TP_xres_angres->SetLineColor(kBlue-7);
   TP_xres_angres->SetLineWidth(3);
   TP_xres_angres->SetTitle("");
-  TP_xres_angres->GetXaxis()->SetTitle("<x_{TP}>-x_{MM} (mm)");
-  TP_xres_angres->GetYaxis()->SetTitle("#theta_{local}-#theta_{MM} (mrad)");
+  TP_xres_angres->GetXaxis()->SetTitle("#LTx_{TP}#GT#minusx_{MM} (mm)");
+  TP_xres_angres->GetYaxis()->SetTitle("#theta_{local}#minus#theta_{MM} (mrad)");
   TP_xres_angres->GetXaxis()->SetTitleOffset(1.0);
   TP_xres_angres->GetYaxis()->SetTitleOffset(2.0);
   TP_xres_angres->GetXaxis()->SetLabelSize(0.045);
@@ -1246,14 +1497,23 @@ int main(int argc, char* argv[]){
   TP_xres_angres->GetYaxis()->SetLabelSize(0.045);
   TP_xres_angres->GetYaxis()->SetTitleSize(0.045);
   TP_xres_angres->Draw("colz");
-  c1->Print("TP_xres_angres.pdf");
+  run.DrawLatex(0.7,0.95,Form("Run %d",GEOMETRY->RunNumber()));
+  road.DrawLatex(0.2,0.95,"1/4-VMM road");
+  TLatex latex6;
+  latex6.SetTextColor(kRed);
+  latex6.SetTextSize(0.03);
+  latex6.SetTextAlign(13);  //align at top                                                                                                                            
+  latex6.SetNDC();
+  latex6.DrawLatex(0.3,0.8,Form("x-RMS = %3.1f mm, y-RMS = %3.1f mrad",TP_xres_angres->GetRMS(1),TP_xres_angres->GetRMS(2)));
+  c1->Print(Form("run_%d.pdf)",GEOMETRY->RunNumber()),"pdf");
+  //  c1->Print("TP_xres_angres.pdf");
   c1->Clear();
 
   TP_xres_angres_within5->SetLineColor(kBlue-7);
   TP_xres_angres_within5->SetLineWidth(3);
   TP_xres_angres_within5->SetTitle("");
-  TP_xres_angres_within5->GetXaxis()->SetTitle("<x_{TP}>-x_{MM} (mm)");
-  TP_xres_angres_within5->GetYaxis()->SetTitle("#theta_{TP}-#theta_{MM} (mrad)");
+  TP_xres_angres_within5->GetXaxis()->SetTitle("#LTx_{TP}#GT#minusx_{MM} (mm)");
+  TP_xres_angres_within5->GetYaxis()->SetTitle("#theta_{TP}#minus#theta_{MM} (mrad)");
   TP_xres_angres_within5->GetXaxis()->SetTitleOffset(1.0);
   TP_xres_angres_within5->GetYaxis()->SetTitleOffset(2.0);
   TP_xres_angres_within5->GetXaxis()->SetLabelSize(0.045);
@@ -1261,14 +1521,21 @@ int main(int argc, char* argv[]){
   TP_xres_angres_within5->GetYaxis()->SetLabelSize(0.045);
   TP_xres_angres_within5->GetYaxis()->SetTitleSize(0.045);
   TP_xres_angres_within5->Draw("colz");
-  c1->Print("TP_xres_angres_within5.pdf");
+  run.DrawLatex(0.7,0.95,Form("Run %d",GEOMETRY->RunNumber()));
+  TLatex latex7;
+  latex7.SetTextColor(kRed);
+  latex7.SetTextSize(0.03);
+  latex7.SetTextAlign(13);  //align at top                                                                                                                            
+  latex7.SetNDC();
+  latex7.DrawLatex(0.3,0.8,Form("x-RMS = %3.1f mm, y-RMS = %3.1f mrad",TP_xres_angres_within5->GetRMS(1),TP_xres_angres_within5->GetRMS(2)));
+  //  c1->Print("TP_xres_angres_within5.pdf");
   c1->Clear();
 
   TP_xres_angres_outside5->SetLineColor(kBlue-7);
   TP_xres_angres_outside5->SetLineWidth(3);
   TP_xres_angres_outside5->SetTitle("");
-  TP_xres_angres_outside5->GetXaxis()->SetTitle("<x_{TP}>-x_{MM} (mm)");
-  TP_xres_angres_outside5->GetYaxis()->SetTitle("#theta_{TP}-#theta_{MM} (mrad)");
+  TP_xres_angres_outside5->GetXaxis()->SetTitle("#LTx_{TP}#GT#minusx_{MM} (mm)");
+  TP_xres_angres_outside5->GetYaxis()->SetTitle("#theta_{TP}#minus#theta_{MM} (mrad)");
   TP_xres_angres_outside5->GetXaxis()->SetTitleOffset(1.0);
   TP_xres_angres_outside5->GetYaxis()->SetTitleOffset(2.0);
   TP_xres_angres_outside5->GetXaxis()->SetLabelSize(0.045);
@@ -1276,6 +1543,13 @@ int main(int argc, char* argv[]){
   TP_xres_angres_outside5->GetYaxis()->SetLabelSize(0.045);
   TP_xres_angres_outside5->GetYaxis()->SetTitleSize(0.045);
   TP_xres_angres_outside5->Draw("colz");
+  run.DrawLatex(0.7,0.95,Form("Run %d",GEOMETRY->RunNumber()));
+  TLatex latex8;
+  latex8.SetTextColor(kRed);
+  latex8.SetTextSize(0.03);
+  latex8.SetTextAlign(13);  //align at top                                                                                                                            
+  latex8.SetNDC();
+  latex8.DrawLatex(0.3,0.8,Form("x-RMS = %3.1f mm, y-RMS = %3.1f mrad",TP_xres_angres_outside5->GetRMS(1),TP_xres_angres_outside5->GetRMS(2)));
   c1->Print("TP_xres_angres_outside5.pdf");
   c1->Clear();
 
