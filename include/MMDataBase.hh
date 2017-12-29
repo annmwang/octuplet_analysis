@@ -41,6 +41,8 @@ public :
    vector<int>     *mm_PDO;
    vector<int>     *mm_TDO;
    vector<int>     *mm_BCID;
+   vector<int>     *mm_trigBCID;
+   vector<int>     *mm_trigphase;
    vector<int>     *mm_MMFE8;
    vector<int>     *mm_FIFOcount;
    Int_t           tp_n;
@@ -80,6 +82,8 @@ public :
    TBranch        *b_mm_PDO;   //!
    TBranch        *b_mm_TDO;   //!
    TBranch        *b_mm_BCID;   //!
+   TBranch        *b_mm_trigBCID;   //!
+   TBranch        *b_mm_trigphase;   //!
    TBranch        *b_mm_MMFE8;   //!
    TBranch        *b_mm_FIFOcount;   //!
    TBranch        *b_tp_n;   //!
@@ -207,6 +211,8 @@ inline void MMDataBase::Init(TTree *tree)
    fChain->SetBranchAddress("mm_PDO", &mm_PDO, &b_mm_PDO);
    fChain->SetBranchAddress("mm_TDO", &mm_TDO, &b_mm_TDO);
    fChain->SetBranchAddress("mm_BCID", &mm_BCID, &b_mm_BCID);
+   fChain->SetBranchAddress("mm_trigBCID", &mm_trigBCID, &b_mm_trigBCID);
+   fChain->SetBranchAddress("mm_trigphase", &mm_trigphase, &b_mm_trigphase);
    fChain->SetBranchAddress("mm_MMFE8", &mm_MMFE8, &b_mm_MMFE8);
    fChain->SetBranchAddress("mm_FIFOcount", &mm_FIFOcount, &b_mm_FIFOcount);
    fChain->SetBranchAddress("tp_n", &tp_n, &b_tp_n);

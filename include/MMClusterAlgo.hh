@@ -87,9 +87,9 @@ inline bool MMClusterAlgo::IsGoodHit(const MMHit& hit){
     return false;
 
   // BCID
-  if(fabs(hit.BCID() - m_trig_BCID) > m_max_BCID_diff)
+  if(fabs(hit.BCID() - hit.TrigBCID()) > m_max_BCID_diff)
     return false;
-  if(fabs(hit.BCID() - m_trig_BCID) < m_min_BCID_diff)
+  if(fabs(hit.BCID() - hit.TrigBCID()) < m_min_BCID_diff)
     return false;
 
   // TDO - add back

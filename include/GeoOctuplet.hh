@@ -352,7 +352,7 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
 
     m_RunNum = RunNumber;
   }
-  if(RunNumber >= 3525){
+  if(RunNumber >= 3525 && RunNumber < 3540){
     m_MMFE82Index.clear(); 
     m_MMFE82Index[118] = 0;
     m_MMFE82Index[111] = 1;
@@ -372,6 +372,29 @@ inline void GeoOctuplet::SetRunNumber(int RunNumber) {
     m_Index2MMFE8[5] = 107;
     m_Index2MMFE8[6] = 101;
     m_Index2MMFE8[7] = 105;
+
+    m_RunNum = RunNumber;
+  }
+  if(RunNumber >= 3540){
+    m_MMFE82Index.clear();
+    m_MMFE82Index[119] = 0;
+    m_MMFE82Index[124] = 1;
+    m_MMFE82Index[122] = 2;
+    m_MMFE82Index[126] = 3;
+    m_MMFE82Index[106] = 4;
+    m_MMFE82Index[109] = 5;
+    m_MMFE82Index[125] = 6;
+    m_MMFE82Index[123] = 7;
+
+    m_Index2MMFE8.clear();
+    m_Index2MMFE8[0] = 119;
+    m_Index2MMFE8[1] = 124;
+    m_Index2MMFE8[2] = 122;
+    m_Index2MMFE8[3] = 126;
+    m_Index2MMFE8[4] = 106;
+    m_Index2MMFE8[5] = 109;
+    m_Index2MMFE8[6] = 125;
+    m_Index2MMFE8[7] = 123;
 
     m_RunNum = RunNumber;
   }

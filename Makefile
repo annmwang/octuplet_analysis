@@ -17,7 +17,7 @@ CC_FILES := $(wildcard src/*.C)
 HH_FILES := $(wildcard include/*.hh) 
 OBJ_FILES := $(addprefix $(OUTOBJ),$(notdir $(CC_FILES:.C=.o)))
 
-all: RunMMAnalysisTemplate.x RunMMAnalysis.x RunMMAnalysis_v2.x MakeClusterTree.x RunAlignment.x HitEffAnalysis.x ResolutionAnalysis.x TPAnalysis.x GBTAnalysis.x
+all: RunMMAnalysisTemplate.x RunMMAnalysis.x RunMMAnalysis_v2.x MakeClusterTree.x RunAlignment.x HitEffAnalysis.x ResolutionAnalysis.x TPAnalysis.x GBTAnalysis.x TPCAnalysis.x
 
 RunMMAnalysisTemplate.x:  $(SRCDIR)RunMMAnalysisTemplate.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o RunMMAnalysisTemplate.x $(GLIBS) $ $<
@@ -39,6 +39,10 @@ ResolutionAnalysis.x:  $(SRCDIR)ResolutionAnalysis.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o ResolutionAnalysis.x $(GLIBS) $ $<
 	touch ResolutionAnalysis.x
 
+TPCAnalysis.x:  $(SRCDIR)TPCAnalysis.C $(HH_FILES)
+	$(CXX) $(CXXFLAGS) -o TPCAnalysis.x $(GLIBS) $ $<
+	touch TPCAnalysis.x
+
 TPAnalysis.x:  $(SRCDIR)TPAnalysis.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o TPAnalysis.x $(GLIBS) $ $<
 	touch TPAnalysis.x
@@ -54,6 +58,7 @@ MakeClusterTree.x:  $(SRCDIR)MakeClusterTree.C $(HH_FILES)
 RunAlignment.x:  $(SRCDIR)RunAlignment.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o RunAlignment.x $(GLIBS) $ $<
 	touch RunAlignment.x
+
 clean:
 	rm -f $(OUTOBJ)*.o
 	rm -f *.x
