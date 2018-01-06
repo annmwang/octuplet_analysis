@@ -61,6 +61,7 @@ public:
   void RotateZ(double phiz, int iplane);
 
   void SetAlignment(const std::string& align_filename);
+  void SetAlignmentPaolo(int debug=0);
 
 private:
   void Init();
@@ -679,6 +680,55 @@ inline void GeoOctuplet::SetAlignment(const std::string& align_filename){
   RotateZ(align.rotZ_7, 7);
 
   f.Close();
+}
+
+inline void GeoOctuplet::SetAlignmentPaolo(int debug){
+
+  if (debug)
+    std::cout << "Setting alignment constants via Paolo" << std::endl;
+
+  // constants via oct_anaplus.C
+  double delta = 0;
+  double orig[8];
+  double z_board[8],z_bary[8];
+  orig[0]=204.6-.08;
+  orig[1]=0.+.08;
+  orig[2]=0.-0.07;
+  orig[3]=204.6+0.07;
+  orig[4]=0.-0.13;
+  orig[5]=204.6+0.07;
+  orig[6]=204.6-.06;
+  orig[7]=0.+0.06;
+  z_board[0]=0.;
+  z_board[1]=11.2-.35;
+  z_board[2]=32.4;
+  z_board[3]=43.6-.2;
+  z_board[4]=113.6+.6;
+  z_board[5]=124.8;
+  z_board[6]=146.7+0.2;
+  z_board[7]=157.2;
+  z_bary[0]=z_board[0]-2.7;
+  z_bary[1]=z_board[1]+2.7;
+  z_bary[2]=z_board[2]-2.7;
+  z_bary[3]=z_board[3]+2.7;
+  z_bary[4]=z_board[4]-2.7;
+  z_bary[5]=z_board[5]+2.7;
+  z_bary[6]=z_board[6]-2.7;
+  z_bary[7]=z_board[7]+2.7;
+
+  for (int i = 0; i < 8; i++){
+    delta = orig[i] - (Get(i).SignChannel()==1 ? 0 : 2)*Get(i).Origin().X();
+    TranslateX(delta, i);
+    if (debug)
+      std::cout << Form("TranslateX :: Plane %d -> %f", i, delta) << std::endl;
+  }
+  for (int i = 0; i < 8; i++){
+    delta = z_bary[i] - Get(i).Origin().Z();
+    TranslateZ(delta, i);
+    if (debug)
+      std::cout << Form("TranslateZ :: Plane %d -> %f", i, delta) << std::endl;
+  }
+
 }
 
 #endif
