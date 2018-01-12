@@ -114,6 +114,12 @@ int main(int argc, char* argv[]){
 
   if(b_align)
     GEOMETRY->SetAlignment(AlignFileName);
+  //GEOMETRY->SetAlignmentPaolo(1);
+
+  // zboard, post-alignment
+  std::vector<double> zboard = {};
+  for (int i = 0; i < GEOMETRY->GetNPlanes(); i++)
+    zboard.push_back(GEOMETRY->Get(i).Origin().Z() + 2.7*(i%2==0 ? 1 : -1));
 
   TFile* f = new TFile(inputFileName, "READ");
   if(!f){
@@ -245,7 +251,11 @@ int main(int argc, char* argv[]){
   double deltaT = 800.0;
   double vdrift = 1.0 / 20; // mm per ns
   std::vector<double> xs;
+  std::vector<double> zs_dbc;
   std::vector<double> zs;
+  std::vector<double> xs_sus;
+  std::vector<double> zs_sus;
+  std::vector<double> zs_sus_dbc;
   std::vector<double> neighbor_xs;
   std::vector<double> neighbor_zs;
   double residual = 0.0;
@@ -266,16 +276,20 @@ int main(int argc, char* argv[]){
 //                                       124.8,
 //                                       146.7,
 //                                       156.5};
-  const std::vector<double> zboard = {0.0,
-                                      11.2,
-                                      32.4,
-                                      43.6,
-                                      113.6,
-                                      124.8,
-                                      146.0,
-                                      157.2};
+
+//   const std::vector<double> zboard = {0.0,
+//                                       11.2,
+//                                       32.4,
+//                                       43.6,
+//                                       113.6,
+//                                       124.8,
+//                                       146.0,
+//                                       157.2};
   TMultiGraph* utpc_mg      = 0;
   TGraph*      utpc_graph   = 0;
+  TGraph*      utpc_dbc     = 0;
+  TGraph*      utpc_sus     = 0;
+  TGraph*      utpc_sus_dbc = 0;
   TGraph*      utpc_bary    = 0;
   TGraph*      utpc_pred    = 0;
   TGraph*      utpc_others  = 0;
@@ -335,7 +349,7 @@ int main(int argc, char* argv[]){
       clus_list.Reset();
     clusters_perboard.clear();
     
-    if (evt > 100000)
+    if (evt > 1000)
       break;
 
     // calibrate
@@ -369,7 +383,6 @@ int main(int argc, char* argv[]){
         h2[Form("strip_pdo_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.PDO());
         h2[Form("strip_tdo_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.TDO());
 
-        //std::cout << hit.Time() << std::endl;
         h2[Form("strip_tdoc_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.Time());
         h2[Form("strip_dbc_vs_ch_%i",  ibo)]->Fill(hit.Channel(),   hit.TrigBCID() - hit.BCID());
         h2[Form("strip_time_vs_ch_%i", ibo)]->Fill(hit.Channel(),  (hit.TrigBCID() - hit.BCID())*25 + hit.Time());
@@ -617,27 +630,54 @@ int main(int argc, char* argv[]){
 
       // utpc points
       xs.clear();
+      zs_dbc.clear();
       zs.clear();
+      xs_sus.clear();
+      zs_sus.clear();
+      zs_sus_dbc.clear();
       for (auto hit: *clus){
         x_utpc  = plane.Origin().X() + plane.LocalXatYbegin(hit->Channel());
-        t_utpc  = deltaT - ((hit->TrigBCID() - hit->BCID())*25 + hit->Time());
-        if (DATA->mm_EventNum < 100)
-          std::cout << Form("%d %d %8.2f vs %8.2f", 
-                            DATA->mm_EventNum, ibo, t_utpc*vdrift, constant + vdrift*(25*hit->BCID() - hit->Time())) << std::endl;
+        // t_utpc  = deltaT - ((hit->TrigBCID() - hit->BCID())*25 + hit->Time());
+        t_utpc  = hit->DriftTime(deltaT);
         z_utpc  = zboard[ibo] + vdrift*t_utpc*sign;
         // z_utpc  = zboard[ibo] + sign*(constant + vdrift*(25*hit->BCID() - hit->Time()));
         z_track = (x_utpc - track_N1.ConstX()) / track_N1.SlopeX();
         h2[Form("strip_zres_vs_ch_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
         xs.push_back(x_utpc);
         zs.push_back(z_utpc);
+
+        if (hit->SuspiciousBCID()){
+          xs_sus.push_back(x_utpc);
+          zs_sus.push_back(z_utpc);
+        }
+
+        if (evt < 0)
+          std::cout << Form("%d %d %d %d %f %d", DATA->mm_EventNum, ibo, hit->TrigBCID(), hit->BCID(), hit->Time(), hit->TDO()) << std::endl;
+
+        if (DATA->mm_EventNum < 0)
+          std::cout << Form("%d %d %8.2f vs %8.2f", DATA->mm_EventNum, ibo, t_utpc*vdrift, constant + vdrift*(25*hit->BCID() - hit->Time())) << std::endl;
+
+        // only dBC
+        // t_utpc  = deltaT - ((hit->TrigBCID() - hit->BCID())*25);
+        t_utpc  = hit->DriftTime(deltaT) + hit->Time();
+        z_utpc  = zboard[ibo] + vdrift*t_utpc*sign;
+        zs_dbc.push_back(z_utpc);
+        if (hit->SuspiciousBCID())
+          zs_sus_dbc.push_back(z_utpc);
       }
 
       // local utpc fit
-      delete utpc_fit;
-      delete utpc_graph;
+      //delete utpc_fit;
+      //delete utpc_graph;
       utpc_graph = new TGraph(int(xs.size()), &xs[0], &zs[0]);
       utpc_graph->Fit("pol1", "Q");
       utpc_fit = utpc_graph->GetFunction("pol1");
+      utpc_graph->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
+      utpc_graph->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
+      utpc_graph->SetName(Form("utpc_full_%06i_Board%i", DATA->mm_EventNum, ibo));
+      utpc_graph->SetMarkerStyle(kFullCircle);
+      utpc_graph->SetLineStyle(0);
+      utpc_graph->GetHistogram()->SetLineStyle(0);
       double slope, offset, x_fit, x_track, z_half;
       // std::tie(slope, offset) = fit(xs, zs);
       slope  = 1.0/utpc_fit->GetParameter(1);
@@ -650,16 +690,51 @@ int main(int argc, char* argv[]){
       h2[Form("track_N1_theta_x_vs_utpc_%i", ibo)]->Fill(theta(track.SlopeX()), residual);
 
       // event display
-      if (evt > 150)
+      if (evt > 500)
         continue;
 
       can = new TCanvas(Form("utpc_%06i_Board%i", DATA->mm_EventNum, ibo), Form("utpc_%06i_Board%i", DATA->mm_EventNum, ibo), 800, 800);
-      utpc_graph = new TGraph(int(xs.size()), &xs[0], &zs[0]);
-      utpc_graph->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
-      utpc_graph->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
-      utpc_graph->SetName(Form("utpc_gr_%06i_Board%i", DATA->mm_EventNum, ibo));
-      utpc_graph->SetLineStyle(0);
-      utpc_graph->GetHistogram()->SetLineStyle(0);
+
+      // graph of the utpc points (only dBC)
+      utpc_dbc = new TGraph(int(xs.size()), &xs[0], &zs_dbc[0]);
+      utpc_dbc->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
+      utpc_dbc->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
+      utpc_dbc->SetName(Form("utpc_dbc_%06i_Board%i", DATA->mm_EventNum, ibo));
+      utpc_dbc->SetMarkerStyle(kOpenCircle);
+      utpc_dbc->SetLineStyle(0);
+      utpc_dbc->GetHistogram()->SetLineStyle(0);
+
+      if (xs_sus.size() > 0){
+
+        // graph of the suspicious utpc points
+        utpc_sus = new TGraph(int(xs_sus.size()), &xs_sus[0], &zs_sus[0]);
+        utpc_sus->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
+        utpc_sus->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
+        utpc_sus->SetName(Form("utpc_sus_%06i_Board%i", DATA->mm_EventNum, ibo));
+        utpc_sus->SetMarkerSize(1.5);
+        utpc_sus->SetMarkerStyle(kMultiply);
+        utpc_sus->SetLineStyle(0);
+        utpc_sus->GetHistogram()->SetLineStyle(0);
+        
+        // graph of the suspicious utpc points (only dBC()
+        utpc_sus_dbc = new TGraph(int(xs_sus.size()), &xs_sus[0], &zs_sus_dbc[0]);
+        utpc_sus_dbc->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
+        utpc_sus_dbc->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
+        utpc_sus_dbc->SetName(Form("utpc_susdbc_%06i_Board%i", DATA->mm_EventNum, ibo));
+        utpc_sus_dbc->SetMarkerSize(1.5);
+        utpc_sus_dbc->SetMarkerStyle(kMultiply);
+        utpc_sus_dbc->SetLineStyle(0);
+        utpc_sus_dbc->GetHistogram()->SetLineStyle(0);
+
+      }
+
+      // graph of the utpc points
+      //utpc_graph = new TGraph(int(xs.size()), &xs[0], &zs[0]);
+      //utpc_graph->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
+      //utpc_graph->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
+      //utpc_graph->SetName(Form("utpc_full_%06i_Board%i", DATA->mm_EventNum, ibo));
+      //utpc_graph->SetLineStyle(0);
+      //utpc_graph->GetHistogram()->SetLineStyle(0);
       fout->cd("event_displays");
 
       // graph of the barycenter x
@@ -669,8 +744,9 @@ int main(int argc, char* argv[]){
       utpc_bary->SetLineStyle(0);
       utpc_bary->GetHistogram()->SetLineStyle(0);
       utpc_bary->SetMarkerStyle(kFullStar);
-      utpc_bary->SetMarkerColor(kViolet);
+      utpc_bary->SetMarkerColor(kBlue);
       utpc_bary->SetMarkerSize(2);
+      utpc_bary->SetName(Form("utpc_bary_%06i_Board%i", DATA->mm_EventNum, ibo));
 
       // graph of the utpc x
       std::vector<double> utpc_x = { x_fit };
@@ -681,6 +757,7 @@ int main(int argc, char* argv[]){
       utpc_pred->SetMarkerStyle(kOpenCircle);
       utpc_pred->SetMarkerColor(kRed);
       utpc_pred->SetMarkerSize(2);
+      utpc_pred->SetName(Form("utpc_fit_%06i_Board%i", DATA->mm_EventNum, ibo));
 
       // draw other boards for reference
       neighbor_xs.clear();
@@ -693,7 +770,7 @@ int main(int argc, char* argv[]){
         neighbor_zs.push_back(GEOMETRY->Get(jbo).Origin().Z());
       }
       utpc_others = new TGraph(int(neighbor_xs.size()), &neighbor_xs[0], &neighbor_zs[0]);
-      utpc_others->SetMarkerColor(210);
+      utpc_others->SetMarkerColor(kBlue);
 
       // draw predicted track
       double zmin, zmax;
@@ -706,18 +783,18 @@ int main(int argc, char* argv[]){
       double xmin = track_N1.ConstX() + zmin*track_N1.SlopeX();
       double xmax = track_N1.ConstX() + zmax*track_N1.SlopeX();
       utpc_ref = new TLine(xmin, zmin, xmax, zmax);
-      utpc_ref->SetLineColor(210);
+      utpc_ref->SetLineColor(kBlue);
       utpc_ref->SetLineWidth(2);
 
       // draw drift gap
       double drift_gap = 5.4;
       utpc_horiz1 = new TLine(std::min(xmin, xmax)-2, zboard[ibo],                std::max(xmin, xmax)+2, zboard[ibo]);
       utpc_horiz2 = new TLine(std::min(xmin, xmax)-2, zboard[ibo]+sign*drift_gap, std::max(xmin, xmax)+2, zboard[ibo]+sign*drift_gap);
-      utpc_horiz1->SetLineColor(12);
+      utpc_horiz1->SetLineColor(1);
       utpc_horiz1->SetLineWidth(2);
-      utpc_horiz2->SetLineColor(12);
+      utpc_horiz2->SetLineColor(1);
       utpc_horiz2->SetLineWidth(2);
-      utpc_horiz2->SetLineStyle(9);
+      // utpc_horiz2->SetLineStyle(9);
 
       can->Draw();
       can->SetFillColor(10);
@@ -727,16 +804,21 @@ int main(int argc, char* argv[]){
       utpc_fit->SetLineWidth(2);
       utpc_fit->SetLineColor(kRed);
 
-      std::cout << std::endl;
-      std::cout << Form("Evt %i, Board %i", DATA->mm_EventNum, ibo) << std::endl;
-      std::cout << Form("Fit results: (x, z) = (%.1f, %.1f)", x_fit, z_half) << std::endl;
-      std::cout << Form("Analytic : m = %8.2f, b = %8.2f", slope, offset) << std::endl;
-      std::cout << Form("Fitted   : m = %8.2f, b = %8.2f", utpc_fit->GetParameter(1), utpc_fit->GetParameter(0)) << std::endl;
-      std::cout << std::endl;
+      //std::cout << std::endl;
+      //std::cout << Form("Evt %i, Board %i", DATA->mm_EventNum, ibo) << std::endl;
+      //std::cout << Form("Fit results: (x, z) = (%.1f, %.1f)", x_fit, z_half) << std::endl;
+      //std::cout << Form("Analytic : m = %8.2f, b = %8.2f", slope, offset) << std::endl;
+      //std::cout << Form("Fitted   : m = %8.2f, b = %8.2f", utpc_fit->GetParameter(1), utpc_fit->GetParameter(0)) << std::endl;
+      //std::cout << std::endl;
 
       utpc_mg = new TMultiGraph();
 
       utpc_mg->Add(utpc_graph);
+      utpc_mg->Add(utpc_dbc);
+      if (xs_sus.size() > 0){
+        utpc_mg->Add(utpc_sus);
+        utpc_mg->Add(utpc_sus_dbc);
+      }
       utpc_mg->Add(utpc_bary);
       utpc_mg->Add(utpc_pred);
       // utpc_mg->Add(utpc_others);
@@ -754,13 +836,8 @@ int main(int argc, char* argv[]){
       utpc_fit->Draw("same");
 
       can->Write();
-      continue;
       delete can;
-      delete utpc_mg;
-      delete utpc_ref;
-      delete utpc_others;
-      delete utpc_graph;
-      delete utpc_fit;
+
     }
  
   }
