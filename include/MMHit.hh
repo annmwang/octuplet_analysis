@@ -27,6 +27,7 @@ public:
   int PDO() const;
   int TDO() const;
   int BCID() const;
+  int SuspiciousBCID() const;
   int TrigBCID() const;
   int TrigPhase() const;
   int FIFOcount() const;
@@ -34,6 +35,8 @@ public:
 
   double Charge() const;
   double Time() const;
+  double DriftTime(double T) const;
+  double DeltaBC() const;
 
   bool IsChargeCalib() const;
   bool IsTimeCalib() const;
@@ -173,6 +176,10 @@ inline int MMHit::BCID() const {
   return m_BCID;
 }
 
+inline int MMHit::SuspiciousBCID() const {
+  return m_BCID % 4 == 1;
+}
+
 inline int MMHit::TrigBCID() const {
   return m_trigBCID;
 }
@@ -195,6 +202,14 @@ inline double MMHit::Charge() const {
 
 inline double MMHit::Time() const {
   return m_time;
+}
+
+inline double MMHit::DriftTime(double T) const {
+  return T - 25*DeltaBC() - Time();
+}
+
+inline double MMHit::DeltaBC() const {
+  return TrigBCID() + TrigPhase()/5.0 - BCID();
 }
 
 inline bool MMHit::IsChargeCalib() const {
