@@ -121,12 +121,12 @@ int main(int argc, char* argv[]){
   TFile* f = new TFile(inputFileName, "READ");
   if(!f){
     cout << "Error: unable to open input file " << inputFileName << endl;
-    return false;
+    return 0;
   }
   TTree* T = (TTree*) f->Get("ClusterTree");
   if(!T){
     cout << "Error: cannot find tree ClusterTree in " << inputFileName << endl;
-    return false;
+    return 0;
   }
 
   GeoOctuplet GEO;
