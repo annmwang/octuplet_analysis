@@ -14,6 +14,8 @@
 #include "TLatex.h"
 #include "TGraph.h"
 #include "TF1.h"
+#include "TMatrixD.h"
+#include "TFitResult.h"
 #include <iostream>
 #include <algorithm>
 #include <stdlib.h>
@@ -38,6 +40,7 @@ void progress(double time_diff, int nprocessed, int ntotal);
 double channel_from_x(double xpos, int board, GeoOctuplet* geo, int begin);
 double theta(double slope);
 std::tuple<double, double> fit(std::vector<double> xs, std::vector<double> zs);
+std::tuple<double, double, double, double, double, double> fit_root(std::vector<double> xs, std::vector<double> zs);
 int OkayForTPC(MMCluster* clus);
 
 int main(int argc, char* argv[]){
@@ -66,6 +69,7 @@ int main(int argc, char* argv[]){
   bool b_pdo   = false;
   bool b_tdo   = false;
   bool b_align = false;
+  bool b_paolo = false;
   for (int i=1;i<argc-1;i++){
     if (strncmp(argv[i],"-i",2)==0){
       sscanf(argv[i+1],"%s", inputFileName);
@@ -87,6 +91,9 @@ int main(int argc, char* argv[]){
       sscanf(argv[i+1],"%s", AlignFileName);
       b_align = true;
     }
+    if (strncmp(argv[i+1],"-g",2)==0){
+      b_paolo = true;
+    }
   }
 
   if(!b_input) std::cout << "Error at Input: please specify  input file (-i flag)" << std::endl;
@@ -96,7 +103,7 @@ int main(int argc, char* argv[]){
   const int nboards = 8;
   int nboardshit = 0;
   int i = 0, ibo = 0, ich = 0, test = 0;
-  int jbo = 0;
+  //int jbo = 0;
   int debug = 0;
 
   // class defs
@@ -114,7 +121,8 @@ int main(int argc, char* argv[]){
 
   if(b_align)
     GEOMETRY->SetAlignment(AlignFileName);
-  //GEOMETRY->SetAlignmentPaolo(1);
+  if(b_paolo)
+    GEOMETRY->SetAlignmentPaolo(1);
 
   // zboard, post-alignment
   std::vector<double> zboard = {};
@@ -175,6 +183,12 @@ int main(int argc, char* argv[]){
     name = Form("track_N1_theta_x_vs_residual_%i", ibo);
     h2[name.Data()] = new TH2D(name, ";x theta;x_{cluster} - x_{track, proj.};Tracks", 100, -35, 35, 200, -5.0, 5.0);
 
+    name = Form("track_N1_x_vs_residual_%i", ibo);
+    h2[name.Data()] = new TH2D(name, ";x_{cluster};x_{cluster} - x_{track, proj.};Tracks", 100, -20, 220, 200, -5.0, 5.0);
+
+    name = Form("track_N1_x_vs_residual_10deg_%i", ibo);
+    h2[name.Data()] = new TH2D(name, ";x_{cluster};x_{cluster} - x_{track, proj.};Tracks", 100, -20, 220, 200, -5.0, 5.0);
+
     name = Form("track_N1_theta_x_vs_utpc_%i", ibo);
     h2[name.Data()] = new TH2D(name, ";x theta;x_{utpc} - x_{track, proj.};Tracks", 100, -35, 35, 200, -5.0, 5.0);
   }
@@ -188,10 +202,15 @@ int main(int argc, char* argv[]){
     h2[Form("strip_tdoc_vs_ch_%i", ibo)] = new TH2D(Form("strip_tdoc_vs_ch_%i", ibo), ";strip number;TDO corr. [ns];strip", 512, 0.5, 512.5, 110, -10,  100);
     h2[Form("strip_dbc_vs_ch_%i",  ibo)] = new TH2D(Form("strip_dbc_vs_ch_%i",  ibo), ";strip number;#Delta BC;strip",      512, 0.5, 512.5,  64,   0,   64);
     h2[Form("strip_time_vs_ch_%i", ibo)] = new TH2D(Form("strip_time_vs_ch_%i", ibo), ";strip number;Time [ns];strip",      512, 0.5, 512.5, 100, 300, 1000);
-    h2[Form("strip_zpos_vs_ch_%i", ibo)] = new TH2D(Form("strip_zpos_vs_ch_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 100, -20,   20);
+    h2[Form("strip_zpos_vs_ch_%i", ibo)] = new TH2D(Form("strip_zpos_vs_ch_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5,  60, -10,   20);
+    h2[Form("strip_zdri_vs_ch_%i", ibo)] = new TH2D(Form("strip_zdri_vs_ch_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5,  60, -10,   20);
     h2[Form("strip_zres_vs_ch_%i", ibo)] = new TH2D(Form("strip_zres_vs_ch_%i", ibo), ";strip number;#Delta z [mm];strip",  512, 0.5, 512.5, 200, -15,   15);
   }
   h2["dups_vs_ch"] = new TH2D("dups_vs_ch", ";strip number;MMFE number;Duplicates", 512, 0.5, 512.5, 8, -0.5, 7.5);
+
+  for (ibo = 0; ibo < nboards; ibo++){
+    h2[Form("strip_zpos_vs_ztrack_%i", ibo)] = new TH2D(Form("strip_zpos_vs_ztrack_%i", ibo), ";z_{track};z_{drift} [mm];strip", 100, -5, 10, 100, -2, 8);
+  }
 
   h2["clus_vs_board"]          = new TH2D("clus_vs_board",          ";MMFE number;clusters;Events",            8, -0.5, 7.5, 32, -0.5, 31.5);
   h2["hits_vs_board"]          = new TH2D("hits_vs_board",          ";MMFE number;strips;Events",              8, -0.5, 7.5, 32, -0.5, 31.5);
@@ -245,11 +264,13 @@ int main(int argc, char* argv[]){
   int EventNum4Hist = 0;
   double z_track = 0.0;
   double z_utpc  = 0.0;
+  double z_utpc_check  = 0.0;
   double t_utpc  = 0.0;
   double x_utpc  = 0.0;
+  double x_clus  = 0.0;
   double sign   = 0.0;
-  double deltaT = 800.0;
   double vdrift = 1.0 / 20; // mm per ns
+  double deltaT = 41.3 / vdrift;
   std::vector<double> xs;
   std::vector<double> zs_dbc;
   std::vector<double> zs;
@@ -285,18 +306,18 @@ int main(int argc, char* argv[]){
 //                                       124.8,
 //                                       146.0,
 //                                       157.2};
-  TMultiGraph* utpc_mg      = 0;
-  TGraph*      utpc_graph   = 0;
-  TGraph*      utpc_dbc     = 0;
-  TGraph*      utpc_sus     = 0;
-  TGraph*      utpc_sus_dbc = 0;
-  TGraph*      utpc_bary    = 0;
-  TGraph*      utpc_pred    = 0;
-  TGraph*      utpc_others  = 0;
-  TF1*         utpc_fit     = 0;
-  TLine*       utpc_ref     = 0;
-  TLine*       utpc_horiz1  = 0;
-  TLine*       utpc_horiz2  = 0;
+  //TMultiGraph* utpc_mg      = 0;
+  //TGraph*      utpc_graph   = 0;
+  //TGraph*      utpc_dbc     = 0;
+  //TGraph*      utpc_sus     = 0;
+  //TGraph*      utpc_sus_dbc = 0;
+  //TGraph*      utpc_bary    = 0;
+  //TGraph*      utpc_pred    = 0;
+  //TGraph*      utpc_others  = 0;
+  //TF1*         utpc_fit     = 0;
+  //TLine*       utpc_ref     = 0;
+  //TLine*       utpc_horiz1  = 0;
+  //TLine*       utpc_horiz2  = 0;
 
   // output
   TFile* fout = new TFile(outputFileName, "RECREATE");
@@ -349,7 +370,7 @@ int main(int argc, char* argv[]){
       clus_list.Reset();
     clusters_perboard.clear();
     
-    if (evt > 1000)
+    if (evt > 500)
       break;
 
     // calibrate
@@ -384,9 +405,9 @@ int main(int argc, char* argv[]){
         h2[Form("strip_tdo_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.TDO());
 
         h2[Form("strip_tdoc_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.Time());
-        h2[Form("strip_dbc_vs_ch_%i",  ibo)]->Fill(hit.Channel(),   hit.TrigBCID() - hit.BCID());
-        h2[Form("strip_time_vs_ch_%i", ibo)]->Fill(hit.Channel(),  (hit.TrigBCID() - hit.BCID())*25 + hit.Time());
-        h2[Form("strip_zpos_vs_ch_%i", ibo)]->Fill(hit.Channel(), vdrift * (deltaT - ((hit.TrigBCID() - hit.BCID())*25 + hit.Time())));
+        h2[Form("strip_dbc_vs_ch_%i",  ibo)]->Fill(hit.Channel(), hit.DeltaBC());
+        h2[Form("strip_time_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.DriftTime(deltaT));
+        h2[Form("strip_zpos_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.DriftTime(deltaT) * vdrift);
       }
     }
 
@@ -492,6 +513,7 @@ int main(int argc, char* argv[]){
 
     // VMM-level efficiency
     // ------------------------------------------------------------------
+    double xclus = 0.0;
     double xproj = 0.0;
     int vmm_min  = 0, vmm_max  = 0;
     int chan_min = 0, chan_max = 0;
@@ -555,9 +577,14 @@ int main(int argc, char* argv[]){
       track_N1 = FITTER->Fit(clusters_N1, *GEOMETRY, DATA->mm_EventNum);
       residual = GEOMETRY->GetResidualX(*clus, track_N1);
       ibo      = GEOMETRY->Index(clus->MMFE8());
+      plane    = GEOMETRY->Get(GEOMETRY->Index(clus->MMFE8()));
+      xclus    = plane.Origin().X() + plane.LocalXatYbegin(clus->Channel());
 
       h2["track_N1_board_vs_residual"]                ->Fill(ibo,                   residual);
       h2[Form("track_N1_theta_x_vs_residual_%i", ibo)]->Fill(theta(track.SlopeX()), residual);
+      h2[Form("track_N1_x_vs_residual_%i",       ibo)]->Fill(xclus,                 residual);
+      if (theta(track.SlopeX()) < -10)
+        h2[Form("track_N1_x_vs_residual_10deg_%i", ibo)]->Fill(xclus, residual);
 
       if (evt < 1000 && clusters_road.size() == 8 && ibo == 4 && residual > 4){
         can = Plot_Track2D(Form("track2D_%05d_wtf_all", DATA->mm_EventNum), track_N1, *GEOMETRY, &clusters_all);
@@ -586,25 +613,13 @@ int main(int argc, char* argv[]){
     track = FITTER->Fit(clusters_road, *GEOMETRY, DATA->mm_EventNum);
     if (std::fabs(theta(track.SlopeX())) < 10)
       continue;
-    if (clusters_road.size() < 8)
+    if (clusters_road.size() < 7)
       continue;
 
-    // fit T0
-    double nboard = 0;
-    double sum_Z = 0;
-    double constant = 0;
-    double zhalf = 2.7;
-    for (auto clus: clusters_road){
-      if (!OkayForTPC(clus))
-        continue;
-      ibo = GEOMETRY->Index(clus->MMFE8());
-      if (ibo == 2 || ibo == 3 || ibo == 4 || ibo == 5) 
-        continue;
-      for (auto hit: *clus)
-        sum_Z += (25*hit->BCID() - hit->Time()) * vdrift / (double)(clus->size());
-      nboard += 1;
-    }
-    constant = zhalf - sum_Z/nboard;
+    int ntpc = 0;
+    double fiducial_x    =  1.8;
+    double fiducial_z_hi =  6.6;
+    double fiducial_z_lo = -0.8;
 
     for (auto clus: clusters_road){
       
@@ -623,12 +638,13 @@ int main(int argc, char* argv[]){
 
       // sign of the drift
       ibo = GEOMETRY->Index(clus->MMFE8());
-      if (ibo == 2 || ibo == 3 || ibo == 4 || ibo == 5) continue;
+      // if (ibo == 2 || ibo == 3 || ibo == 4 || ibo == 5) continue;
       sign = (ibo==0 || ibo==2 || ibo==4 || ibo==6) ? -1.0 : 1.0;
 
       plane = GEOMETRY->Get(ibo);
 
       // utpc points
+      ntpc = 0;
       xs.clear();
       zs_dbc.clear();
       zs.clear();
@@ -636,207 +652,51 @@ int main(int argc, char* argv[]){
       zs_sus.clear();
       zs_sus_dbc.clear();
       for (auto hit: *clus){
-        x_utpc  = plane.Origin().X() + plane.LocalXatYbegin(hit->Channel());
-        // t_utpc  = deltaT - ((hit->TrigBCID() - hit->BCID())*25 + hit->Time());
-        t_utpc  = hit->DriftTime(deltaT);
-        z_utpc  = zboard[ibo] + vdrift*t_utpc*sign;
-        // z_utpc  = zboard[ibo] + sign*(constant + vdrift*(25*hit->BCID() - hit->Time()));
-        z_track = (x_utpc - track_N1.ConstX()) / track_N1.SlopeX();
-        h2[Form("strip_zres_vs_ch_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
-        xs.push_back(x_utpc);
-        zs.push_back(z_utpc);
 
+        x_clus  = plane.Origin().X() + plane.LocalXatYbegin(clus->Channel());
+        x_utpc  = plane.Origin().X() + plane.LocalXatYbegin(hit->Channel());
+        t_utpc  = hit->DriftTime(deltaT);
+
+        if (fabs(x_clus - x_utpc) > fiducial_x)
+          continue;
+        if (vdrift*t_utpc > fiducial_z_hi)
+          continue;
+        if (vdrift*t_utpc < fiducial_z_lo)
+          continue;
+
+        ntpc++;
+        z_utpc  = zboard[ibo] + vdrift * t_utpc * sign;
+        z_track = (x_utpc - track_N1.ConstX()) / track_N1.SlopeX();
+
+        // rose-colored lens for suspicious BCIDs
         if (hit->SuspiciousBCID()){
-          xs_sus.push_back(x_utpc);
-          zs_sus.push_back(z_utpc);
+          z_utpc_check = zboard[ibo] + vdrift * (t_utpc - 25) * sign;
+          if (fabs(z_track - z_utpc_check) < fabs(z_track - z_utpc))
+              z_utpc = z_utpc_check;
         }
 
-        if (evt < 0)
-          std::cout << Form("%d %d %d %d %f %d", DATA->mm_EventNum, ibo, hit->TrigBCID(), hit->BCID(), hit->Time(), hit->TDO()) << std::endl;
-
-        if (DATA->mm_EventNum < 0)
-          std::cout << Form("%d %d %8.2f vs %8.2f", DATA->mm_EventNum, ibo, t_utpc*vdrift, constant + vdrift*(25*hit->BCID() - hit->Time())) << std::endl;
-
-        // only dBC
-        // t_utpc  = deltaT - ((hit->TrigBCID() - hit->BCID())*25);
-        t_utpc  = hit->DriftTime(deltaT) + hit->Time();
-        z_utpc  = zboard[ibo] + vdrift*t_utpc*sign;
-        zs_dbc.push_back(z_utpc);
-        if (hit->SuspiciousBCID())
-          zs_sus_dbc.push_back(z_utpc);
+        h2[Form("strip_zres_vs_ch_%i",     ibo)]->Fill(hit->Channel(), z_utpc - z_track);
+        h2[Form("strip_zdri_vs_ch_%i",     ibo)]->Fill(hit->Channel(), sign*(z_utpc - zboard[ibo]));
+        h2[Form("strip_zpos_vs_ztrack_%i", ibo)]->Fill(sign*(z_track - zboard[ibo]), vdrift*t_utpc);
+        xs.push_back(x_utpc);
+        zs.push_back(z_utpc);
       }
 
-      // local utpc fit
-      //delete utpc_fit;
-      //delete utpc_graph;
-      utpc_graph = new TGraph(int(xs.size()), &xs[0], &zs[0]);
-      utpc_graph->Fit("pol1", "Q");
-      utpc_fit = utpc_graph->GetFunction("pol1");
-      utpc_graph->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
-      utpc_graph->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
-      utpc_graph->SetName(Form("utpc_full_%06i_Board%i", DATA->mm_EventNum, ibo));
-      utpc_graph->SetMarkerStyle(kFullCircle);
-      utpc_graph->SetLineStyle(0);
-      utpc_graph->GetHistogram()->SetLineStyle(0);
+      if (ntpc < 3)
+        continue;
+
+      // local fit
       double slope, offset, x_fit, x_track, z_half;
-      // std::tie(slope, offset) = fit(xs, zs);
-      slope  = 1.0/utpc_fit->GetParameter(1);
-      offset = -1.0*utpc_fit->GetParameter(0)/utpc_fit->GetParameter(1);
-      z_half = plane.Origin().Z();
-      x_fit = slope*z_half + offset;
-      x_track = track_N1.SlopeX()*z_half + track_N1.ConstX();
+      double cov00, cov01, cov10, cov11;
+      std::tie(slope, offset, cov00, cov01, cov10, cov11) = fit_root(xs, zs);
+      z_half   = plane.Origin().Z();
+      x_fit    = slope*z_half + offset;
+      x_track  = track_N1.SlopeX()*z_half + track_N1.ConstX();
       residual = x_fit - x_track;
       h2["track_N1_board_vs_utpc"]->Fill(ibo, residual);
       h2[Form("track_N1_theta_x_vs_utpc_%i", ibo)]->Fill(theta(track.SlopeX()), residual);
 
-      // event display
-      if (evt > 500)
-        continue;
-
-      can = new TCanvas(Form("utpc_%06i_Board%i", DATA->mm_EventNum, ibo), Form("utpc_%06i_Board%i", DATA->mm_EventNum, ibo), 800, 800);
-
-      // graph of the utpc points (only dBC)
-      utpc_dbc = new TGraph(int(xs.size()), &xs[0], &zs_dbc[0]);
-      utpc_dbc->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
-      utpc_dbc->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
-      utpc_dbc->SetName(Form("utpc_dbc_%06i_Board%i", DATA->mm_EventNum, ibo));
-      utpc_dbc->SetMarkerStyle(kOpenCircle);
-      utpc_dbc->SetLineStyle(0);
-      utpc_dbc->GetHistogram()->SetLineStyle(0);
-
-      if (xs_sus.size() > 0){
-
-        // graph of the suspicious utpc points
-        utpc_sus = new TGraph(int(xs_sus.size()), &xs_sus[0], &zs_sus[0]);
-        utpc_sus->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
-        utpc_sus->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
-        utpc_sus->SetName(Form("utpc_sus_%06i_Board%i", DATA->mm_EventNum, ibo));
-        utpc_sus->SetMarkerSize(1.5);
-        utpc_sus->SetMarkerStyle(kMultiply);
-        utpc_sus->SetLineStyle(0);
-        utpc_sus->GetHistogram()->SetLineStyle(0);
-        
-        // graph of the suspicious utpc points (only dBC()
-        utpc_sus_dbc = new TGraph(int(xs_sus.size()), &xs_sus[0], &zs_sus_dbc[0]);
-        utpc_sus_dbc->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
-        utpc_sus_dbc->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
-        utpc_sus_dbc->SetName(Form("utpc_susdbc_%06i_Board%i", DATA->mm_EventNum, ibo));
-        utpc_sus_dbc->SetMarkerSize(1.5);
-        utpc_sus_dbc->SetMarkerStyle(kMultiply);
-        utpc_sus_dbc->SetLineStyle(0);
-        utpc_sus_dbc->GetHistogram()->SetLineStyle(0);
-
-      }
-
-      // graph of the utpc points
-      //utpc_graph = new TGraph(int(xs.size()), &xs[0], &zs[0]);
-      //utpc_graph->GetXaxis()->SetTitle("x_{#muTPC} [mm]");
-      //utpc_graph->GetYaxis()->SetTitle("z_{#muTPC} [mm]");
-      //utpc_graph->SetName(Form("utpc_full_%06i_Board%i", DATA->mm_EventNum, ibo));
-      //utpc_graph->SetLineStyle(0);
-      //utpc_graph->GetHistogram()->SetLineStyle(0);
-      fout->cd("event_displays");
-
-      // graph of the barycenter x
-      std::vector<double> bary_x = { plane.Origin().X() + plane.LocalXatYbegin(clus->Channel()) };
-      std::vector<double> bary_z = { plane.Origin().Z() };
-      utpc_bary = new TGraph(1, &bary_x[0], &bary_z[0]);
-      utpc_bary->SetLineStyle(0);
-      utpc_bary->GetHistogram()->SetLineStyle(0);
-      utpc_bary->SetMarkerStyle(kFullStar);
-      utpc_bary->SetMarkerColor(kBlue);
-      utpc_bary->SetMarkerSize(2);
-      utpc_bary->SetName(Form("utpc_bary_%06i_Board%i", DATA->mm_EventNum, ibo));
-
-      // graph of the utpc x
-      std::vector<double> utpc_x = { x_fit };
-      std::vector<double> utpc_z = { plane.Origin().Z() };
-      utpc_pred = new TGraph(1, &utpc_x[0], &utpc_z[0]);
-      utpc_pred->SetLineStyle(0);
-      utpc_pred->GetHistogram()->SetLineStyle(0);
-      utpc_pred->SetMarkerStyle(kOpenCircle);
-      utpc_pred->SetMarkerColor(kRed);
-      utpc_pred->SetMarkerSize(2);
-      utpc_pred->SetName(Form("utpc_fit_%06i_Board%i", DATA->mm_EventNum, ibo));
-
-      // draw other boards for reference
-      neighbor_xs.clear();
-      neighbor_zs.clear();
-      for (auto clus_other: clusters_road){
-        jbo = GEOMETRY->Index(clus_other->MMFE8());
-        if (jbo == 2 || jbo == 3 || jbo == 4 || jbo == 5)
-          continue;
-        neighbor_xs.push_back(GEOMETRY->Get(jbo).Origin().X() + GEOMETRY->Get(jbo).LocalXatYend(clus_other->Channel()));
-        neighbor_zs.push_back(GEOMETRY->Get(jbo).Origin().Z());
-      }
-      utpc_others = new TGraph(int(neighbor_xs.size()), &neighbor_xs[0], &neighbor_zs[0]);
-      utpc_others->SetMarkerColor(kBlue);
-
-      // draw predicted track
-      double zmin, zmax;
-      zmin = *std::min_element(zs.begin(), zs.end());
-      zmin = std::min(zmin, zboard[ibo]);
-      zmax = *std::max_element(zs.begin(), zs.end());
-      zmax = std::max(zmax, zboard[ibo]);
-      zmin = zmin - 5;
-      zmax = zmax + 5;
-      double xmin = track_N1.ConstX() + zmin*track_N1.SlopeX();
-      double xmax = track_N1.ConstX() + zmax*track_N1.SlopeX();
-      utpc_ref = new TLine(xmin, zmin, xmax, zmax);
-      utpc_ref->SetLineColor(kBlue);
-      utpc_ref->SetLineWidth(2);
-
-      // draw drift gap
-      double drift_gap = 5.4;
-      utpc_horiz1 = new TLine(std::min(xmin, xmax)-2, zboard[ibo],                std::max(xmin, xmax)+2, zboard[ibo]);
-      utpc_horiz2 = new TLine(std::min(xmin, xmax)-2, zboard[ibo]+sign*drift_gap, std::max(xmin, xmax)+2, zboard[ibo]+sign*drift_gap);
-      utpc_horiz1->SetLineColor(1);
-      utpc_horiz1->SetLineWidth(2);
-      utpc_horiz2->SetLineColor(1);
-      utpc_horiz2->SetLineWidth(2);
-      // utpc_horiz2->SetLineStyle(9);
-
-      can->Draw();
-      can->SetFillColor(10);
-      gStyle->SetOptFit(0000);
-
-      // the fitted utpc points
-      utpc_fit->SetLineWidth(2);
-      utpc_fit->SetLineColor(kRed);
-
-      //std::cout << std::endl;
-      //std::cout << Form("Evt %i, Board %i", DATA->mm_EventNum, ibo) << std::endl;
-      //std::cout << Form("Fit results: (x, z) = (%.1f, %.1f)", x_fit, z_half) << std::endl;
-      //std::cout << Form("Analytic : m = %8.2f, b = %8.2f", slope, offset) << std::endl;
-      //std::cout << Form("Fitted   : m = %8.2f, b = %8.2f", utpc_fit->GetParameter(1), utpc_fit->GetParameter(0)) << std::endl;
-      //std::cout << std::endl;
-
-      utpc_mg = new TMultiGraph();
-
-      utpc_mg->Add(utpc_graph);
-      utpc_mg->Add(utpc_dbc);
-      if (xs_sus.size() > 0){
-        utpc_mg->Add(utpc_sus);
-        utpc_mg->Add(utpc_sus_dbc);
-      }
-      utpc_mg->Add(utpc_bary);
-      utpc_mg->Add(utpc_pred);
-      // utpc_mg->Add(utpc_others);
-      utpc_mg->Draw("ap");
-      utpc_mg->GetXaxis()->SetTitle("x [mm]");
-      utpc_mg->GetYaxis()->SetTitle("z [mm]");
-      utpc_mg->GetXaxis()->SetLimits(std::min(xmin, xmax)-2, std::max(xmin, xmax)+2);
-      utpc_mg->SetMinimum(zmin);
-      utpc_mg->SetMaximum(zmax);
-      utpc_mg->Draw("ap");
-
-      utpc_ref->Draw();
-      utpc_horiz1->Draw();
-      utpc_horiz2->Draw();
-      utpc_fit->Draw("same");
-
-      can->Write();
-      delete can;
+      // uncertainty on x_fit
 
     }
  
@@ -881,11 +741,11 @@ double theta(double slope){
 }
 
 int OkayForTPC(MMCluster* clus){
-  if (clus->size() < 3 || clus->size() > 6)
+  if (clus->size() < 3)
     return 0;
-  for (auto hit: *clus)
-    if (hit->TrigBCID() - hit->BCID() > 34 || hit->TrigBCID() - hit->BCID() < 26)
-      return 0;
+  //for (auto hit: *clus)
+  //  if (hit->TrigBCID() - hit->BCID() > 34 || hit->TrigBCID() - hit->BCID() < 26)
+  //    return 0;
   //for (auto hit: *clus)
   //  if (hit->BCID() % 4 == 1)
   //    return 0;
@@ -902,5 +762,31 @@ std::tuple<double, double> fit(std::vector<double> xs, std::vector<double> zs){
     slope += xs[i] * ( (zs[i] - avg_z) / (sum_sq_z - zs.size()*pow(avg_z, 2)));
   offset = avg_x - slope*avg_z;
   return std::make_pair(slope, offset);
+}
+
+std::tuple<double, double, double, double, double, double> fit_root(std::vector<double> xs, std::vector<double> zs){
+  TGraph* graph = 0;
+  TF1*    fit   = 0;
+  graph = new TGraph(int(xs.size()), &xs[0], &zs[0]);
+  TFitResultPtr result = graph->Fit("pol1", "QS");
+  fit = graph->GetFunction("pol1");
+
+  double slope, offset;
+  slope  = 1.0/fit->GetParameter(1);
+  offset = -1.0*fit->GetParameter(0)/fit->GetParameter(1);
+
+  TMatrixD cov = result->GetCovarianceMatrix();
+  double cov00 = cov[0][0];
+  double cov01 = cov[0][1];
+  double cov10 = cov[1][0];
+  double cov11 = cov[1][1];
+  std::cout << pow(fit->GetParError(0), 2) << " " << pow(fit->GetParError(1), 2) << std::endl;
+  std::cout << cov00 << " " << cov01 << " " << cov10 << " " << cov11 << std::endl;
+  std::cout << std::endl;
+
+  delete fit;
+  delete graph;
+
+  return std::make_tuple(slope, offset, cov00, cov01, cov10, cov11);
 }
 

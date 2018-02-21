@@ -182,5 +182,6 @@ inline void TDOToTime::Calibrate(MMFE8Hits& hits) const {
 }
 
 inline void TDOToTime::Calibrate(MMHit& hit) const {
-  hit.SetTime(GetTime(hit.TDO(), hit.MMFE8(), hit.VMM(), hit.VMMChannel()));
+  // Jonah calib: 10 ns offset (why)
+  hit.SetTime(GetTime(hit.TDO(), hit.MMFE8(), hit.VMM(), hit.VMMChannel()) - 10);
 }
