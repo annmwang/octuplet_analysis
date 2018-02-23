@@ -24,6 +24,8 @@ public:
 
   virtual Int_t GetNEntries();
   virtual Int_t GetEntry(Long64_t entry);
+  virtual Int_t GetTP();
+  virtual void  SetTP(Int_t doTP);
 
   MMEventHits mm_EventHits;
   SCEventHits sc_EventHits;
@@ -31,6 +33,7 @@ public:
 
 private:
   int m_Nentry;
+  int m_doTP;
   
 };
 
@@ -43,12 +46,21 @@ inline MMDataAnalysis::MMDataAnalysis(TTree *tree)
     m_Nentry = tree->GetEntries();
   else
     m_Nentry = 0;
+  m_doTP = 1;
 }
   
 inline MMDataAnalysis::~MMDataAnalysis() {}
 
 inline Int_t MMDataAnalysis::GetNEntries(){
   return m_Nentry;
+}
+
+inline Int_t MMDataAnalysis::GetTP(){
+  return m_doTP;
+}
+
+inline void MMDataAnalysis::SetTP(int doTP){
+  m_doTP = doTP;
 }
 
 inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
@@ -72,6 +84,8 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
     hit.SetPDO(mm_PDO->at(i));
     hit.SetTDO(mm_TDO->at(i));
     hit.SetBCID(mm_BCID->at(i));
+    hit.SetTrigBCID(mm_trigBCID->at(i));
+    hit.SetTrigPhase(mm_trigphase->at(i));
     hit.SetFIFOcount(mm_FIFOcount->at(i));
 
     mm_EventHits += hit;
@@ -88,8 +102,9 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
     sc_EventHits += hit;
     
   }
-  sc_EventHits.SetTPBCID(tpsci_BCID);
-  if (RunNum >= 3522){
+
+  if (GetTP()){
+    sc_EventHits.SetTPBCID(tpsci_BCID);
     sc_EventHits.SetTPph(tpsci_ph);
     tp_EventTracks = TPEventTracks(RunNum);
     // fill event tracks
@@ -110,6 +125,6 @@ inline Int_t MMDataAnalysis::GetEntry(Long64_t entry){
       tp_EventTracks.AddTrack(tp_track);
     }
   }
-  // }
+
   return ret;
 }

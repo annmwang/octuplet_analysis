@@ -25,6 +25,7 @@ int g_RunNum;
 int g_N_track;
 vector<MMCluster*> g_cluster;
 vector<MMClusterList*> g_clusters;
+vector<MMClusterList*> g_clusters_all;
 
 SimpleTrackFitter* g_FITTER;
 
@@ -120,16 +121,17 @@ int main(int argc, char* argv[]){
   TFile* f = new TFile(inputFileName, "READ");
   if(!f){
     cout << "Error: unable to open input file " << inputFileName << endl;
-    return false;
+    return 0;
   }
   TTree* T = (TTree*) f->Get("ClusterTree");
   if(!T){
     cout << "Error: cannot find tree ClusterTree in " << inputFileName << endl;
-    return false;
+    return 0;
   }
 
   GeoOctuplet GEO;
   GEO.SetRunNumber(g_RunNum);
+  g_FITTER = new SimpleTrackFitter();
 
   g_tree = (ClusterTree*) new ClusterTree(T);
   g_N_event = T->GetEntries();
@@ -137,6 +139,7 @@ int main(int argc, char* argv[]){
   g_N_track = 0;
   g_clusters.clear();
   g_cluster.clear();
+  g_clusters_all.clear();
   for(int i = 0; i < g_N_event; i++){
     g_tree->GetEntry(i);
     int Nc = g_tree->N_clus;
@@ -147,36 +150,17 @@ int main(int argc, char* argv[]){
 
     for(int i = 0; i < Nc; i++){
       MMHit clus(g_tree->clus_MMFE8->at(i),
-		 0, g_tree->clus_Channel->at(i));
+                 0, g_tree->clus_Channel->at(i), g_RunNum);
       all_clusters.AddCluster(MMCluster(clus));
     }
-    for(int i = 0; i < Nc; i++){
-      int NX = 0;
-      int NUV = 0;
-      for(int c = 0; c < Nc; c++){
-	if(i != c){
-	  int ib = GEO.Index(all_clusters[c].MMFE8());
-	  if(ib <= 1 || ib >= 6)
-	    NX++;
-	  else
-	    NUV++;
-	}
-      }
-      if(NX < 2 || NUV < 2)
-	continue;
 
-      MMClusterList* clusters = new MMClusterList();
-      MMCluster* cluster = new MMCluster(all_clusters[i]);
-      for(int c = 0; c < Nc; c++)
-	if(i != c)
-	  clusters->AddCluster(all_clusters[c]);
-      g_clusters.push_back(clusters);
-      g_cluster.push_back(cluster);
-      g_N_track++;
-    }
+    MMClusterList* clusters_tmp = new MMClusterList();
+    g_clusters_all.push_back(clusters_tmp);
+    for (auto clus: all_clusters)
+      g_clusters_all.back()->AddCluster(*clus);
   }
 
-  cout << g_N_track << " tracks total" << endl;
+  cout << g_clusters_all.size() << " tracks total" << endl;
 
   g_FITTER = new SimpleTrackFitter();
 
@@ -191,15 +175,15 @@ int main(int argc, char* argv[]){
   minimizer->SetFunction(*functor);
   int ivar = 0;
   for(int i = 0; i < 7; i++){
-    minimizer->SetVariable(ivar, Form("tranX_%d",i+1), 0., 0.001);
+    minimizer->SetVariable(ivar, Form("tranX_%d",i+1), 0., 0.01);
     ivar++;
   }
   for(int i = 0; i < 7; i++){
-    minimizer->SetVariable(ivar, Form("tranY_%d",i+1), 0., 0.001);
+    minimizer->SetVariable(ivar, Form("tranY_%d",i+1), 0., 0.1);
     ivar++;
   }
   for(int i = 0; i < 7; i++){
-    minimizer->SetVariable(ivar, Form("tranZ_%d",i+1), 0., 0.001);
+    minimizer->SetVariable(ivar, Form("tranZ_%d",i+1), 0., 0.1);
     ivar++;
   }
   for(int i = 0; i < 7; i++){
@@ -234,6 +218,18 @@ int main(int argc, char* argv[]){
     for(int i = 0; i < 7; i++)
       minimizer->FixVariable(35+i);
 
+  // no transY on X-planes
+  if(g_tranY)
+    for(int i = 0; i < 7; i++)
+      if (i == 0 || i == 5 || i == 6)
+        minimizer->FixVariable(7+i);
+
+  // tie Z-position of Y-planes together
+  if(g_tranZ)
+    for(int i = 0; i < 7; i++)
+      if (i == 2 || i == 4)
+        minimizer->FixVariable(14+i);
+
   minimizer->Minimize();
 
   double out_tranX[7];
@@ -261,8 +257,14 @@ int main(int argc, char* argv[]){
     out_tranY_err[i] = error[7+i];
   }
   for(int i = 0; i < 7; i++){
-    out_tranZ[i] = param[14+i];
-    out_tranZ_err[i] = error[14+i];
+    if (i == 2 || i == 4){
+      out_tranZ[i] = param[14+i-1];
+      out_tranZ_err[i] = error[14+i-1];
+    }
+    else {
+      out_tranZ[i] = param[14+i];
+      out_tranZ_err[i] = error[14+i];
+    }
   }
   for(int i = 0; i < 7; i++){
     out_rotX[i] = param[21+i];
@@ -276,7 +278,7 @@ int main(int argc, char* argv[]){
     out_rotZ[i] = param[35+i];
     out_rotZ_err[i] = error[35+i];
   }
-  
+
   TFile* fout = new TFile(outputFileName, "RECREATE");
   fout->cd();
 
@@ -338,8 +340,12 @@ double EvaluateMetric(const double* param){
     for(int i = 0; i < 7; i++)
       GEO.TranslateY(param[i+7],i+1);
   if(g_tranZ)
-    for(int i = 0; i < 7; i++)
-      GEO.TranslateZ(param[i+14],i+1);
+    for(int i = 0; i < 7; i++){
+      if (i == 2 || i == 4)
+        GEO.TranslateZ(param[i+14-1] ,i+1);
+      else
+        GEO.TranslateZ(param[i+14] ,i+1);
+    }
   if(g_rotX)
     for(int i = 0; i < 7; i++)
       GEO.RotateX(param[i+21],i+1);
@@ -351,17 +357,15 @@ double EvaluateMetric(const double* param){
       GEO.RotateZ(param[i+35],i+1);
 
   double res, sum_res2 = 0;
-
-  for(int evt = 0; evt < g_N_track; evt++){
+  int evts = (int)(g_clusters_all.size());
+  for(int evt = 0; evt < evts; evt++){
     if(evt%10000 == 0)
-      cout << "Processing event # " << evt << " | " << g_N_track << endl;
-
-    MMTrack track = g_FITTER->Fit(*g_clusters[evt], GEO);
-    res = GEO.GetResidualX(*g_cluster[evt], track);
-    sum_res2 += sqrt(res*res);
-    //sum_res2 += sqrt(fabs(res));
-    //sum_res2 += res*res;
-  }  // end event loop
+      cout << "Processing event # " << evt << " | " << evts << endl;
+    MMTrack track = g_FITTER->Fit(*g_clusters_all[evt], GEO);
+    res = GEO.GetQuadraticSumOfResidualsX(*g_clusters_all[evt], track, false);
+    sum_res2 += res;
+  }
+  sum_res2 = sum_res2 / evts;
 
   if(g_tranX)
     for(int i = 0; i < 7; i++)

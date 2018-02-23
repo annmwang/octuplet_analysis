@@ -105,26 +105,26 @@ inline double PDOToCharge::GetCharge(double PDO, int MMFE8, int VMM, int CH) con
     pair<int,int> key(MMFE8,VMM);
     if(m_MMFE8VMM_to_index.count(key) == 0){
       //PrintError(MMFE8,VMM,CH);
-      return -1.;
+      return -5.;
     }
     int i = m_MMFE8VMM_to_index[key];
 
     if(m_CH_to_index[i].count(CH) == 0){
       //PrintError(MMFE8,VMM,CH);
-      return -1.;
+      return -4.;
     }
     int c = m_CH_to_index[i][CH];
 
     // Pedestal unrealistic value                                                                                                                          
     if (fabs(m_c0[c]-m_A2[c]*m_d21[c]*(m_d21[c]+2.*m_t02[c])) > 200.){
       //PrintError(MMFE8,VMM,CH);
-      return -1.;
+      return -3.;
     }
 
     // Gain unrealistic value                                                                                                                              
     if ((2.*m_A2[c]*m_d21[c] > 20.) | (2.*m_A2[c]*m_d21[c] < 5.)){
       //PrintError(MMFE8,VMM,CH);
-      return -1.;
+      return -2.;
     }
 
     // PDO above fit saturation

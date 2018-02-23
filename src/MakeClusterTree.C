@@ -70,10 +70,6 @@ int main(int argc, char* argv[]){
     return 0;
   }
 
-  // board ID's
-  map<int,int> ib;
-  vector<int> iboards;
-  
   PDOToCharge* PDOCalibrator;
   if(b_pdo)
     PDOCalibrator = new PDOToCharge(PDOFileName);
@@ -86,7 +82,7 @@ int main(int argc, char* argv[]){
   else
     TDOCalibrator = new TDOToTime();
 
-  MMPacmanAlgo* PACMAN = new MMPacmanAlgo();
+  MMPacmanAlgo* PACMAN = new MMPacmanAlgo(5,2.,0.5);
 
   ScintillatorClusterFilterer* FILTERER = new ScintillatorClusterFilterer();
 
@@ -105,6 +101,7 @@ int main(int argc, char* argv[]){
   }
 
   DATA = (MMDataAnalysis*) new MMDataAnalysis(T);
+  DATA->SetTP(0);
 
   int Nevent = DATA->GetNEntries();
   int debug  = 0;
@@ -134,10 +131,6 @@ int main(int argc, char* argv[]){
 
     if(GEOMETRY->RunNumber() < 0){
       GEOMETRY->SetRunNumber(DATA->RunNum);
-
-      iboards = GEOMETRY->MMFE8list();
-      for(int i = 0; i < iboards.size(); i++)
-	ib[iboards[i]] = i;
     }
 
     if(!DATA->sc_EventHits.IsGoodEvent())
@@ -167,6 +160,10 @@ int main(int argc, char* argv[]){
 	all_clusters.push_back(clusters);
     }
 
+    // preselection
+    if (all_clusters.size() < 4)
+      continue;
+
     N_clus = 0;
     clus_MMFE8.clear();
     clus_Index.clear();
@@ -184,14 +181,13 @@ int main(int argc, char* argv[]){
 
     // filter clusters with scintillator roads
     // no need for sum(res2) selection since roads are already restrictive
-    // but we can play with this!
     for (auto botpair: DATA->sc_EventHits.GetBotPair()){
       clusters_fit = FILTERER->FilterClustersScint(clusters_all, *GEOMETRY, botpair.first->Channel(), DATA->mm_EventNum, debug);
 
       N_clus = clusters_fit.GetNCluster();
       for (auto clus: clusters_fit){
         clus_MMFE8  .push_back(clus->MMFE8());
-        clus_Index  .push_back(ib[clus->MMFE8()]);
+        clus_Index  .push_back(clus->MMFE8Index());
         clus_Charge .push_back(clus->Charge());
         clus_Time   .push_back(clus->Time());
         clus_Channel.push_back(clus->Channel());

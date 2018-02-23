@@ -27,11 +27,16 @@ public:
   int PDO() const;
   int TDO() const;
   int BCID() const;
+  int SuspiciousBCID() const;
+  int TrigBCID() const;
+  int TrigPhase() const;
   int FIFOcount() const;
   int RunNumber() const;
 
   double Charge() const;
   double Time() const;
+  double DriftTime(double T) const;
+  double DeltaBC() const;
 
   bool IsChargeCalib() const;
   bool IsTimeCalib() const;
@@ -43,6 +48,8 @@ public:
   void SetPDO(int pdo);
   void SetTDO(int tdo);
   void SetBCID(int bcid);
+  void SetTrigBCID(int bcid);
+  void SetTrigPhase(int phase);
   void SetRunNumber(int RunNumber);
   void SetFIFOcount(int fifo);
   void SetCharge(double q);
@@ -56,6 +63,8 @@ private:
   int m_PDO;
   int m_TDO;
   int m_BCID;
+  int m_trigBCID;
+  int m_trigphase;
   int m_FIFOcount;
   int m_RunNumber;
 
@@ -78,6 +87,8 @@ inline MMHit::MMHit(){
   m_PDO = -1;
   m_TDO = -1;
   m_BCID = -1;
+  m_trigBCID = -1;
+  m_trigphase = -1;
   m_FIFOcount = -1;
   m_RunNumber = -1;
   m_charge = -1;
@@ -96,6 +107,8 @@ inline MMHit::MMHit(int mmfe8, int vmm, double ch, int RunNumber){
   m_PDO = -1;
   m_TDO = -1;
   m_BCID = -1;
+  m_trigBCID = -1;
+  m_trigphase = -1;
   m_FIFOcount = -1;
   m_RunNumber = RunNumber;
   m_charge = -1;
@@ -115,6 +128,8 @@ inline MMHit::MMHit(const MMHit& hit){
   m_PDO = hit.PDO();
   m_TDO = hit.TDO();
   m_BCID = hit.BCID();
+  m_trigBCID = hit.TrigBCID();
+  m_trigphase = hit.TrigPhase();
   m_FIFOcount = hit.FIFOcount();
   m_RunNumber = hit.RunNumber();
 
@@ -161,6 +176,18 @@ inline int MMHit::BCID() const {
   return m_BCID;
 }
 
+inline int MMHit::SuspiciousBCID() const {
+  return m_BCID % 4 == 1;
+}
+
+inline int MMHit::TrigBCID() const {
+  return m_trigBCID;
+}
+
+inline int MMHit::TrigPhase() const {
+  return m_trigphase;
+}
+
 inline int MMHit::FIFOcount() const {
   return m_FIFOcount;
 }
@@ -175,6 +202,14 @@ inline double MMHit::Charge() const {
 
 inline double MMHit::Time() const {
   return m_time;
+}
+
+inline double MMHit::DriftTime(double T) const {
+  return T - 25*DeltaBC() - Time();
+}
+
+inline double MMHit::DeltaBC() const {
+  return TrigBCID() + TrigPhase()/5.0 - BCID();
 }
 
 inline bool MMHit::IsChargeCalib() const {
@@ -213,6 +248,14 @@ inline void MMHit::SetBCID(int bcid){
   m_BCID = bcid;
 }
 
+inline void MMHit::SetTrigBCID(int bcid){
+  m_trigBCID = bcid;
+}
+
+inline void MMHit::SetTrigPhase(int phase){
+  m_trigphase = phase;
+}
+
 inline void MMHit::SetRunNumber(int RunNumber){
   m_RunNumber = RunNumber;
 }
@@ -232,8 +275,6 @@ inline void MMHit::SetTime(double t){
 }
 
 inline void MMHit::SetMMFE8Index(int RunNumber) {
-  // only valid for Run 3513.
-  // lets put this info into the ntuple?
   m_MMFE8index = -1;
   if (RunNumber == 3513) {
     if      (m_MMFE8 == 111) m_MMFE8index = 0;
@@ -275,7 +316,7 @@ inline void MMHit::SetMMFE8Index(int RunNumber) {
     else if (m_MMFE8 == 101) m_MMFE8index = 6;
     else if (m_MMFE8 == 105) m_MMFE8index = 7;
   }
-  else if (RunNumber >= 3525) {
+  else if (RunNumber >= 3525 && RunNumber < 3540) {
     if      (m_MMFE8 == 118) m_MMFE8index = 0;
     else if (m_MMFE8 == 111) m_MMFE8index = 1;
     else if (m_MMFE8 == 120) m_MMFE8index = 2;
@@ -285,8 +326,18 @@ inline void MMHit::SetMMFE8Index(int RunNumber) {
     else if (m_MMFE8 == 101) m_MMFE8index = 6;
     else if (m_MMFE8 == 105) m_MMFE8index = 7;
   }
+  else if (RunNumber >= 3540) {
+    if      (m_MMFE8 == 119) m_MMFE8index = 0;
+    else if (m_MMFE8 == 124) m_MMFE8index = 1;
+    else if (m_MMFE8 == 122) m_MMFE8index = 2;
+    else if (m_MMFE8 == 126) m_MMFE8index = 3;
+    else if (m_MMFE8 == 106) m_MMFE8index = 4;
+    else if (m_MMFE8 == 109) m_MMFE8index = 5;
+    else if (m_MMFE8 == 125) m_MMFE8index = 6;
+    else if (m_MMFE8 == 123) m_MMFE8index = 7;
+  }
   else {
-    std::cout << "Need to add RunNumber settings to include/MMHit.hh! Error!" << std::endl;
+    std::cout << "Need to add RunNumber settings to include/MMHit.hh! Error! You gave: " << RunNumber << std::endl;
   }
 }
 

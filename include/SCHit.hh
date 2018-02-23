@@ -99,7 +99,7 @@ inline void SCHit::CorrectCount(int RunNumber){
     else if (m_CH == 26) m_Count +=  0.3;
     else if (m_CH == 27) m_Count += -1.4;
   }
-  else if (RunNumber >= 3516){
+  else if (RunNumber >= 3516 && RunNumber < 3540){
     if      (m_CH ==  0) m_Count += -2.-0.6;
     else if (m_CH ==  1) m_Count += 3.-1.5;
     else if (m_CH ==  2) m_Count += -5.+0.8;
@@ -128,6 +128,8 @@ inline void SCHit::CorrectCount(int RunNumber){
     else if (m_CH == 26) m_Count += -2.6+0.3;
     else if (m_CH == 27) m_Count += 6.2-1.4;
   }
+  else if (RunNumber > 3540){
+  }
 }
 
 inline int SCHit::PassCountReqs(int RunNumber) {
@@ -141,10 +143,15 @@ inline int SCHit::PassCountReqs(int RunNumber) {
     else if (m_CH > 15) return (int)(m_Count >  130.0 && m_Count  < 190.0);
     else                return (int)(m_Count >= 150.0 && m_Count <= 200.0);
   }
-  else if (RunNumber >= 3522) {
+  else if (RunNumber >= 3522 && RunNumber < 3540) {
     if      (m_CH < 12) return (int)(m_Count >  135.0 && m_Count  < 195.0);
     else if (m_CH > 15) return (int)(m_Count >  155.0 && m_Count  < 215.0);
     else                return (int)(m_Count >= 175.0 && m_Count <= 225.0);
+  }
+  else if (RunNumber >= 3540) {
+    if      (m_CH < 12) return (int)(m_Count >  170.0 && m_Count  < 245.0);
+    else if (m_CH > 15) return (int)(m_Count >  200.0 && m_Count  < 260.0);
+    else                return (int)(m_Count >= 220.0 && m_Count <= 260.0);
   }
   else{
     std::cout << "Need to add RunNumber settings to include/SCHit.hh! Error!" << std::endl;
