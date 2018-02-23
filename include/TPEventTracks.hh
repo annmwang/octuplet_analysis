@@ -168,13 +168,13 @@ inline TPTrack* TPEventTracks::Highlander(const MMClusterList& clusters, bool sc
 
   int mostmatch = -1, nmatch = -1;
   int nscimatch = -1;
-  if (scimatch && m_sciBCID > 0 && m_offset != -1)
+  if (scimatch && m_sciBCID > -1 && m_offset != -1)
     nscimatch = 0;
   TPTrack* the_one = nullptr;
 
   for (size_t it = 0; it < m_track.size(); ++it){
     nmatch = 0;
-    if (scimatch && m_sciBCID > 0 && m_offset != -1){
+    if (scimatch && m_sciBCID > -1 && m_offset != -1){
       if (fabs(deltaBCID((double)m_track[it]->BCID())) < cut)
         nscimatch++;
       else

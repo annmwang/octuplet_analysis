@@ -11,6 +11,7 @@
 #include "TH1D.h"
 #include "TH2D.h"
 #include <iostream>
+#include <sstream>
 #include <stdlib.h>
 #include "TMath.h"
 #include "TColor.h"
@@ -27,10 +28,13 @@
 #include "include/CombinatoricTrackFitter.hh"
 #include "include/CombinatoricChi2TrackFitter.hh"
 #include "include/ScintillatorClusterFilterer.hh"
-
+#include <sys/stat.h>
+#include <sys/param.h>
+#include <unistd.h>
 using namespace std;
 
 int main(int argc, char* argv[]){
+  int runnum;
 
   char inputFileName[400];
   char outputFileName[400];
@@ -214,11 +218,14 @@ int main(int argc, char* argv[]){
 
   //Nevent /= 100;
 
+
   for(int evt = 0; evt < Nevent; evt++){
     DATA->GetEntry(evt);
+    if (evt == 0)
+      runnum = DATA->RunNum;
     if(evt%(Nevent/1000) == 0) 
       cout << "Processing event # " << evt << " | " << Nevent << endl;
-    //if (evt == 10000) break;
+    //    if (evt == 10000) break;
     //cout << "Nevent " << evt << endl;
     if(GEOMETRY->RunNumber() < 0){
       GEOMETRY->SetRunNumber(DATA->RunNum);
@@ -432,6 +439,13 @@ int main(int argc, char* argv[]){
 
   }
 
+  // make directory
+  string dirname = "HitEfficiencyPlots_";
+  cout << runnum << endl;
+  dirname += to_string(runnum);
+    
+  mkdir(dirname.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
   TCanvas* c1 = new TCanvas("c1","",600,400);
   gStyle->SetTextFont(42);
   int ngauss = 3; 
@@ -451,6 +465,7 @@ int main(int argc, char* argv[]){
     else if (ngauss == 2){
       f2 = new TF1("double gaussian and constant","pol0(0)+gaus(1)+gaus(4)",-14.99,14.99);
       f2->SetParameter(0, 0.);
+      f2->SetParLimits(0, 0.1, 5.);
       f2->SetParameter(1, hDeltaX[i]->GetMaximum());
       f2->SetParameter(2, hDeltaX[i]->GetMean());
       f2->SetParameter(3, hDeltaX[i]->GetRMS()/2);
@@ -461,20 +476,32 @@ int main(int argc, char* argv[]){
     else if (ngauss == 3){
       f2 = new TF1("triple gaussian and constant","pol0(0)+gaus(1)+gaus(4)+gaus(7)",-14.99,14.99);
       f2->SetParameter(0, 0.);
+      //f2->SetParLimits(0, 0.1, 5.);
+      f2->SetParLimits(0, 0., 100.);
       f2->SetParameter(1, hDeltaX[i]->GetMaximum());
       f2->SetParameter(2, hDeltaX[i]->GetMean());
       f2->SetParameter(3, hDeltaX[i]->GetRMS()/2);
       f2->SetParameter(4, hDeltaX[i]->GetMaximum()/2.5/1.5);
       f2->SetParameter(5, hDeltaX[i]->GetMean());
-      f2->SetParameter(6, hDeltaX[i]->GetRMS()*1.5);      
-      f2->SetParameter(7, hDeltaX[i]->GetMaximum()/3/1.5);
-      f2->SetParameter(8, hDeltaX[i]->GetMean());
-      f2->SetParameter(9, hDeltaX[i]->GetRMS()*3);   
+      f2->SetParameter(6, hDeltaX[i]->GetRMS()*2);      
+      if (i!=7){
+        f2->SetParameter(7, hDeltaX[i]->GetMaximum()/6/1.5);
+        f2->SetParameter(8, hDeltaX[i]->GetMean());
+        f2->SetParameter(9, hDeltaX[i]->GetRMS()*4);   
+      }
+      else{
+        f2->SetParameter(7, hDeltaX[i]->GetMaximum()/100);
+        f2->SetParameter(8, hDeltaX[i]->GetMean());
+        f2->SetParameter(9, hDeltaX[i]->GetRMS()*6);
+      }
     }
     hDeltaX[i]->Fit(f2,"RQN");
-    cout << "First four fit parameters: " << f2->GetParameter(0) << " " 
-    << f2->GetParameter(1) << " " << f2->GetParameter(2) << " " 
-    << f2->GetParameter(3) << endl;
+//     cout << "First 9 fit parameters: " << f2->GetParameter(0) << " " 
+//     << f2->GetParameter(1) << " " << f2->GetParameter(2) << " " 
+//          << f2->GetParameter(3) << " " << f2->GetParameter(4) << " " 
+//          << f2->GetParameter(5) << " " << f2->GetParameter(6) << " "
+//          << f2->GetParameter(7) << " " << f2->GetParameter(8) << " " 
+//          << f2->GetParameter(9) << endl;
     TF1 *f1 = new TF1("pol0","pol0(0)",-14.9,14.9);
     f1->SetParameter(0,f2->GetParameter(0));
     double backgroundEvents = f1->Integral(-5.,5.);
@@ -504,35 +531,37 @@ int main(int argc, char* argv[]){
     f1->SetLineColor(kRed);
     f2->Draw("same");
     f1->Draw("same");
-    c1->Print(Form("HitEfficiencyPlots/const_gauss_fit_%d.pdf",i));
+    TString temp = dirname;
+    temp.Append(Form("/const_gauss_fit_%d.pdf",i));
+    c1->Print(temp);
 
     // Do this bin by bin for angle bins
-    cout << "SIZE: " << sizeof(track_angle_bins)/sizeof(*track_angle_bins) << endl;
-    for (int j = 0; j < nangles-1; j++){
-      TF1* f3 = nullptr;
-      if (ngauss == 3){
-       f3 = new TF1("triple gaussian and constant","pol0(0)+gaus(1)+gaus(4)+gaus(7)",-14.99,14.99);
-        f3->SetParameter(0, 0.5);
-        f3->SetParLimits(0,0.,1000.);
-        f3->SetParameter(1, hDeltaX[i]->GetMaximum());
-        f3->SetParameter(2, hDeltaX[i]->GetMean());
-        f3->SetParameter(3, hDeltaX[i]->GetRMS()/2);
-        f3->SetParameter(4, hDeltaX[i]->GetMaximum()/2/1.5);
-        f3->SetParameter(5, hDeltaX[i]->GetMean());
-        f3->SetParameter(6, hDeltaX[i]->GetRMS()*1.5);      
-        f3->SetParameter(7, hDeltaX[i]->GetMaximum()/4/1.5);
-        f3->SetParameter(8, hDeltaX[i]->GetMean());
-        f3->SetParameter(9, hDeltaX[i]->GetRMS()*3);   
-      }
-      cout << "Fitting board " << i << " anglebin " << j << endl;
-      hDeltaX_anglebin[j][i]->Fit(f3, "RQ");
-      TF1 *f4 = new TF1("pol0","pol0(0)",-14.9,14.9);
-      f4->SetParameter(0,f3->GetParameter(0));
-      backgroundEvents = f4->Integral(-5.,5.);
-      cout << "background estimation: " << backgroundEvents << endl;
-      tempEvents = passedhits_anglebin[j]->GetBinContent(i+1);
-      passedhits_anglebin[j]->SetBinContent(i+1,tempEvents-backgroundEvents);
-    }
+//     cout << "SIZE: " << sizeof(track_angle_bins)/sizeof(*track_angle_bins) << endl;
+//     for (int j = 0; j < nangles-1; j++){
+//       TF1* f3 = nullptr;
+//       if (ngauss == 3){
+//        f3 = new TF1("triple gaussian and constant","pol0(0)+gaus(1)+gaus(4)+gaus(7)",-14.99,14.99);
+//         f3->SetParameter(0, 0.5);
+//         f3->SetParLimits(0,0.,1000.);
+//         f3->SetParameter(1, hDeltaX[i]->GetMaximum());
+//         f3->SetParameter(2, hDeltaX[i]->GetMean());
+//         f3->SetParameter(3, hDeltaX[i]->GetRMS()/2);
+//         f3->SetParameter(4, hDeltaX[i]->GetMaximum()/2/1.5);
+//         f3->SetParameter(5, hDeltaX[i]->GetMean());
+//         f3->SetParameter(6, hDeltaX[i]->GetRMS()*1.5);      
+//         f3->SetParameter(7, hDeltaX[i]->GetMaximum()/4/1.5);
+//         f3->SetParameter(8, hDeltaX[i]->GetMean());
+//         f3->SetParameter(9, hDeltaX[i]->GetRMS()*3);   
+//       }
+//       cout << "Fitting board " << i << " anglebin " << j << endl;
+//       hDeltaX_anglebin[j][i]->Fit(f3, "RQ");
+//       TF1 *f4 = new TF1("pol0","pol0(0)",-14.9,14.9);
+//       f4->SetParameter(0,f3->GetParameter(0));
+//       backgroundEvents = f4->Integral(-5.,5.);
+//       cout << "background estimation: " << backgroundEvents << endl;
+//       tempEvents = passedhits_anglebin[j]->GetBinContent(i+1);
+//       passedhits_anglebin[j]->SetBinContent(i+1,tempEvents-backgroundEvents);
+//     }
   }
 
   hitEff->Divide(passedhits,totalhits,1.,1.,"B");
@@ -563,10 +592,9 @@ int main(int argc, char* argv[]){
   for (int i = 0; i < nangles-1; i++)
     nBoardsHit_anglebin[i]->Write();
   nBoards_vs_track_angle->Write();
-  
+  hitEff->Write();
   TCanvas* c2 = new TCanvas("c2","",600,400);
   vector<int> colors = {kOrange+6,kPink+3,kGreen+2,kCyan-6,kAzure+7,kViolet-8};
-
 
   gStyle->SetErrorX(0.);
   c2->cd();
@@ -578,6 +606,8 @@ int main(int argc, char* argv[]){
   hitEff->GetXaxis()->SetTitle("Board Number");
   //hitEff->GetXaxis()->CenterTitle();
   hitEff->GetYaxis()->SetTitle("Hit Efficiency");
+  hitEff->SetMaximum(1.);
+  hitEff->SetMinimum(0.);
   //hitEff->GetYaxis()->CenterTitle();
   hitEff->GetXaxis()->SetTitleOffset(1.3);
   hitEff->GetYaxis()->SetTitleOffset(1.3);
@@ -585,7 +615,9 @@ int main(int argc, char* argv[]){
   hitEff->GetXaxis()->SetTitleSize(0.045);    
   hitEff->GetYaxis()->SetLabelSize(0.045);
   hitEff->GetYaxis()->SetTitleSize(0.045);
-  c2->Print("HitEfficiencyPlots/HitEff.pdf");
+  TString temp = dirname;
+  temp.Append("/HitEff.pdf");
+  c2->Print(temp);
   c2->Clear();
 
 
@@ -613,7 +645,9 @@ int main(int argc, char* argv[]){
     leg->AddEntry(hitEff_anglebin[i],Form("%d#circ #leq #theta < %d#circ",int(track_angle_bins[i]),int(track_angle_bins[i+1])));
   }
   leg->Draw();
-  c2->Print("HitEfficiencyPlots/HitEff_angles.pdf");
+  temp = dirname;
+  temp.Append("/HitEff_angles.pdf");
+  c2->Print(temp);
   c2->Clear();
 
   fout->cd();
