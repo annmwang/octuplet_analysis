@@ -15,6 +15,7 @@
 #include "TMath.h"
 #include "TColor.h"
 #include "TLegend.h"
+#include <chrono>
 
 #include "include/MMPlot.hh"
 #include "include/PDOToCharge.hh"
@@ -198,10 +199,10 @@ int main(int argc, char* argv[]){
 
   nomatch_timediff = new TH1D("Timestamp difference for those without the scintillator match",
                               "Timestamp difference for those without the scintillator match",
-                              100,-0.01,0.06);
+                              100,-0.08,0.14);
   all_timediff = new TH1D("Timestamp difference for all candidate events with tp",
                               "Timestamp difference for all candidate events with tp",
-                              100,-0.01,0.06);
+                              100,-0.08,0.14);
 
   nomatch_MMmatch = new TH1D("Number of TP hits matched with MM for those without the scintillator match",
                               "Number of TP hits matched with MM for those without the scintillator match",
@@ -281,18 +282,11 @@ int main(int argc, char* argv[]){
     // cluster handling 
     vector<MMClusterList> all_clusters;
     for(int i = 0; i < Nboard; i++){
-      int ib = DATA->mm_EventHits[i].MMFE8Index();
-      if (ib < 2)
-        NX1++;
-      else if (ib > 5)
-        NX2++;
+      if (DATA->mm_EventHits[i].GetNHits() == 0)
+        continue;
       else
-        NUV++;
-      if(DATA->mm_EventHits[i].GetNHits() == 0)
-	      continue;
-      else
-	      Gothits = true;
-      
+        Gothits = true;
+
       MMClusterList clusters = PACMAN->Cluster(DATA->mm_EventHits[i]);
       if(clusters.GetNCluster() > 0)
         all_clusters.push_back(clusters);
@@ -321,9 +315,6 @@ int main(int argc, char* argv[]){
       const MMCluster& clus = filtered_allclusters[i];
     }
 
-//     if (!(NX1>0 && NX2> 0 && NUV > 0))
-//       continue;
-
     //------------------------------------------------//
     // CUT: track quality and trigger candidate cut
     if (!track.IsFit()||
@@ -337,12 +328,10 @@ int main(int argc, char* argv[]){
     //------------------------------------------------//
 
 
-
-
     //------------------------------------------------//
     // CUT: require at least one trigger in the time window
     int Ntptrk = DATA->tp_EventTracks.GetNTrack();
-
+    
     vector <TPTrack> candtracks;
     vector <int> nMatchHits;
     
@@ -355,47 +344,8 @@ int main(int argc, char* argv[]){
 
 
     // looking for best trigger match
-
-    if (debug)
-      cout << blue << "Looking for best trigger match" << end << endl;
-
-    int nTP;
-    for (int i = 0; i < Ntptrk; i++){
-      vector <MMHit> tpHits;
-      TPTrack tp_track = DATA->tp_EventTracks.Get(i);
-      int nMatch = 0;
-      nTP = tp_track.GetNHits();
-      for (int i = 0; i < nTP; i++){
-        MMHit planeHit(tp_track.Get(i).MMFE8(), tp_track.Get(i).VMM(), tp_track.Get(i).Channel(), DATA->RunNum);
-        if (fit_clusters.ContainsTP(planeHit))
-          nMatch+= 1;
-      }
-      candtracks.push_back(tp_track);
-      nMatchHits.push_back(nMatch);
-    }
-
-    int imax;
-    int maxMatch = -1;
-    int maxN = -1;
-    if (debug)
-      cout << green << "Ntracks " << candtracks.size() << end << endl;
-    for (int i = 0; i < candtracks.size(); i++){
-      if (debug)
-        cout << blue << "iteration: " << i << end << endl;
-      if (nMatchHits[i] > maxMatch){
-        maxMatch = nMatchHits[i];
-        maxN = candtracks[i].GetNHits();
-        imax = i;
-        if (debug)
-          cout << blue << "Looping through: " << i << " nmatched: " << nMatchHits[i] << " out of "<< maxN <<  end<< endl;
-      }
-    }
-
-    if (debug)
-      cout << blue << "Found best match with " << Ntptrk << " tracks, max hits "<< maxN << " match " << maxMatch << end << endl;    
-
-    TPTrack bestTrack(candtracks[imax]);
-
+    TPTrack bestTrack = *DATA->tp_EventTracks.Highlander(fit_clusters, false);
+    int maxMatch = bestTrack.NMatch();
 
     //------------------------------------------------//
     // CUT: require at least one hit in common with the full list of MM hits
@@ -403,9 +353,10 @@ int main(int argc, char* argv[]){
       continue;
     //------------------------------------------------//
 
+    
     //------------------------------------------------//
     // CUT: get rid of error flag cases
-    if (candtracks[imax].BCID() > 4095) {
+    if (bestTrack.BCID() > 4095) {
       if (debug)
         cout << "Error flag cases" << endl;
       continue;
@@ -413,58 +364,55 @@ int main(int argc, char* argv[]){
     NEventsTrig++;
     //------------------------------------------------//
 
-    if (maxN > 3)
-      NEventsTrigGoodTP++;
-
     TPmatch->Fill(DATA->mm_EventHits.Time());
 
-    all_timediff->Fill(candtracks[imax].Time()-DATA->mm_EventHits.Time());
+    all_timediff->Fill(bestTrack.Time()-DATA->mm_EventHits.Time());
     all_MMmatch->Fill(maxMatch);
 
 
-    // ART hit time distribution handling
-    int minBCID = 9999;
-    double sumBCID = 0.;
-    double medBCID;
-    vector <int> tp_BCIDs;
-    bool valid = false;
-    if (Ntptrk > 0){
-      if (maxN >= 4){
-        for (int i = 0; i < nTP; i++){
-          const TPHit thit = bestTrack.Get(i);
-          if (thit.BCID() > -1){
-            tp_BCIDs.push_back(thit.BCID());
-            valid = true;
-          }
-          if (debug)
-            cout << blue << thit.BCID() << end << endl;
-        }
+//     // ART hit time distribution handling
+//     int minBCID = 9999;
+//     double sumBCID = 0.;
+//     double medBCID;
+//     vector <int> tp_BCIDs;
+//     bool valid = false;
+//     if (Ntptrk > 0){
+//       if (bestTrack.IsTrigCand()){
+//         for (int i = 0; i < bestTrack.GetNHits(); i++){
+//           const TPHit thit = bestTrack.Get(i);
+//           if (thit.BCID() > -1){
+//             tp_BCIDs.push_back(thit.BCID());
+//             valid = true;
+//           }
+//           if (debug)
+//             cout << blue << thit.BCID() << end << endl;
+//         }
         
-        if (valid){
-          int maxBCID = *max_element(tp_BCIDs.begin(),tp_BCIDs.end());
-          int lowBCID = *min_element(tp_BCIDs.begin(),tp_BCIDs.end());
-          bool loopflag = (maxBCID - lowBCID) > 4000;
-          for (int i = 0; i < nTP; i++){
-            if ((tp_BCIDs[i] < 4000) && loopflag){
-              tp_BCIDs[i] = tp_BCIDs[i] + 4096;
-            }
-            sumBCID += tp_BCIDs[i];
-          }
+//         if (valid){
+//           int maxBCID = *max_element(tp_BCIDs.begin(),tp_BCIDs.end());
+//           int lowBCID = *min_element(tp_BCIDs.begin(),tp_BCIDs.end());
+//           bool loopflag = (maxBCID - lowBCID) > 4000;
+//           for (int i = 0; i < bestTrack.GetNHits(); i++){
+//             if ((tp_BCIDs[i] < 4000) && loopflag){
+//               tp_BCIDs[i] = tp_BCIDs[i] + 4096;
+//             }
+//             sumBCID += tp_BCIDs[i];
+//           }
             
-          sumBCID = sumBCID/nTP;
-          minBCID = *min_element(tp_BCIDs.begin(),tp_BCIDs.end());
+//           sumBCID = sumBCID/bestTrack.GetNHits();
+//           minBCID = *min_element(tp_BCIDs.begin(),tp_BCIDs.end());
 
-          sort(tp_BCIDs.begin(), tp_BCIDs.end());
-          double mid =tp_BCIDs.size() / 2;
-          if ((int)mid%2 == 0)
-            medBCID = (tp_BCIDs[mid]+tp_BCIDs[mid+1])/2;
-          else
-            medBCID = tp_BCIDs[mid+0.5];
-        }
-      }
+//           sort(tp_BCIDs.begin(), tp_BCIDs.end());
+//           double mid =tp_BCIDs.size() / 2;
+//           if ((int)mid%2 == 0)
+//             medBCID = (tp_BCIDs[mid]+tp_BCIDs[mid+1])/2;
+//           else
+//             medBCID = tp_BCIDs[mid+0.5];
+//         }
+//       }
 
-      if (debug)
-        cout << pink << "Avg BCID: " << sumBCID << end<< endl;
+//       if (debug)
+//         cout << pink << "Avg BCID: " << sumBCID << end<< endl;
 
 
       // check for scintillator match
@@ -474,8 +422,8 @@ int main(int argc, char* argv[]){
       bool foundmatch = false;
       // if tp sci comes before tp bcid, offset ~ 1944
       // otherwise, offset is -(4096-1944)
-      for (int i = 0; i < candtracks.size(); i++){
-        packetBCID->Fill(deltaBCID(tpBCID, tpPh, candtracks[i].BCID(), dB));
+      for (int i = 0; i < DATA->tp_EventTracks.size(); i++){
+        packetBCID->Fill(deltaBCID(tpBCID, tpPh, DATA->tp_EventTracks.Get(i).BCID(), dB));
 //         if (fabs(deltaBCID(tpBCID, tpPh, candtracks[i].BCID(), dB)) < 10){
 //           TPscimatch->Fill(DATA->mm_EventHits.Time());
 //           NEventsTrigScintMatch++;
@@ -484,55 +432,54 @@ int main(int argc, char* argv[]){
 //           break;
 //         }
       }
-
-      if (fabs(deltaBCID(tpBCID, tpPh, candtracks[imax].BCID(), dB)) < 10){
+      
+      if (fabs(deltaBCID(tpBCID, tpPh, bestTrack.BCID(), dB)) < 10){
         TPscimatch->Fill(DATA->mm_EventHits.Time());
         NEventsTrigScintMatch++;
         foundmatch = true;
       }
-
+      
       if (!foundmatch){
-        nomatch_timediff->Fill(candtracks[imax].Time()-DATA->mm_EventHits.Time());
+        nomatch_timediff->Fill(bestTrack.Time()-DATA->mm_EventHits.Time());
         nomatch_MMmatch->Fill(maxMatch);
       }
       else{
         match_MMmatch->Fill(maxMatch);
       }
-//       all_timediff->Fill(candtracks[imax].Time()-DATA->mm_EventHits.Time());
+//       all_timediff->Fill(bestTrack.Time()-DATA->mm_EventHits.Time());
 //       all_MMmatch->Fill(maxMatch);
       
-      if (valid){
-        if ((tpBCID-minBCID) < 0){
-          dEarlyBCID->Fill((tpBCID-minBCID+dB));
-          dEarlyBCIDph->Fill(tpBCID+tpPh/16.-minBCID+dB);
-          dAvgBCID->Fill(tpBCID-sumBCID+dB);
-          dAvgBCIDph->Fill(tpBCID+tpPh/16.-sumBCID+dB);
-          dMedBCID->Fill(tpBCID-medBCID+dB);
-          dMedBCIDph->Fill(tpBCID+tpPh/16.-medBCID+dB);
-        }
-        else {
-          dEarlyBCID->Fill((tpBCID-minBCID+(dB-4096)));
-          dEarlyBCIDph->Fill(tpBCID+tpPh/16.-minBCID+(dB-4096));
-          dAvgBCID->Fill((tpBCID-sumBCID+(dB-4096)));
-          dAvgBCIDph->Fill(tpBCID+tpPh/16.-sumBCID+(dB-4096));
-          dMedBCID->Fill((tpBCID-medBCID+(dB-4096)));
-          dMedBCIDph->Fill(tpBCID+tpPh/16.-medBCID+(dB-4096));
-        }
-        if ((tpBCID-minBCID+dB) > 2000 && (tpBCID-minBCID+dB) < 2010){
-          cout << tpBCID << endl;
-          cout << minBCID << endl;
-          break;
-        }
-        dEarlyBCIDfull->Fill((tpBCID-minBCID+dB));
-        dAvgBCIDfull->Fill((tpBCID-sumBCID+dB));
+//       if (valid){
+//         if ((tpBCID-minBCID) < 0){
+//           dEarlyBCID->Fill((tpBCID-minBCID+dB));
+//           dEarlyBCIDph->Fill(tpBCID+tpPh/16.-minBCID+dB);
+//           dAvgBCID->Fill(tpBCID-sumBCID+dB);
+//           dAvgBCIDph->Fill(tpBCID+tpPh/16.-sumBCID+dB);
+//           dMedBCID->Fill(tpBCID-medBCID+dB);
+//           dMedBCIDph->Fill(tpBCID+tpPh/16.-medBCID+dB);
+//         }
+//         else {
+//           dEarlyBCID->Fill((tpBCID-minBCID+(dB-4096)));
+//           dEarlyBCIDph->Fill(tpBCID+tpPh/16.-minBCID+(dB-4096));
+//           dAvgBCID->Fill((tpBCID-sumBCID+(dB-4096)));
+//           dAvgBCIDph->Fill(tpBCID+tpPh/16.-sumBCID+(dB-4096));
+//           dMedBCID->Fill((tpBCID-medBCID+(dB-4096)));
+//           dMedBCIDph->Fill(tpBCID+tpPh/16.-medBCID+(dB-4096));
+//         }
+//         if ((tpBCID-minBCID+dB) > 2000 && (tpBCID-minBCID+dB) < 2010){
+//           cout << tpBCID << endl;
+//           cout << minBCID << endl;
+//           break;
+//         }
+//         dEarlyBCIDfull->Fill((tpBCID-minBCID+dB));
+//         dAvgBCIDfull->Fill((tpBCID-sumBCID+dB));
 
-        earliestBCID->Fill(minBCID);
-        avgBCID->Fill(sumBCID);
-      }
+//         earliestBCID->Fill(minBCID);
+//         avgBCID->Fill(sumBCID);
+      //}
       //      break;
-    }
-
   }
+
 
   gStyle->SetTextFont(42);
   cout << "/////////////////////////////////" << endl;

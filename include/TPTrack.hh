@@ -50,8 +50,12 @@ public:
   bool WrapsAround();
   int BCIDWindow();
   int BCIDEarliest();
+  int BCIDEarliestA();
+  int BCIDEarliestB();
   int BCIDLatest();
   double BCIDAverage();
+  double BCIDAverageA();
+  double BCIDAverageB();
 
   size_t size() const;
   int GetNHits() const;
@@ -70,6 +74,8 @@ private:
   int m_evt;
   int m_nmatch;
   std::vector<int> m_bcids;
+  std::vector<int> m_bcids_a;
+  std::vector<int> m_bcids_b;
 
 };
 
@@ -342,6 +348,55 @@ inline int TPTrack::BCIDEarliest() {
   return bcid_min;
 }
 
+inline int TPTrack::BCIDEarliestA() {
+  m_bcids_a.clear();
+  m_bcids.clear();
+  for (int i = 0; i < m_hits.size(); i++){
+    m_bcids.push_back(Get(i).BCID());
+    if (Get(i).MMFE8Index() < 4)
+      m_bcids_a.push_back(Get(i).BCID());
+  }
+
+  if (std::find(m_bcids_a.begin(), m_bcids_a.end(), -1) != m_bcids_a.end())
+    return -1;
+
+  if (WrapsAround()){
+    m_bcids_a.clear();
+    for (int i = 0; i < m_hits.size(); i++)
+      m_bcids_a.push_back((Get(i).BCID() < 100) ? Get(i).BCID()+4096 : Get(i).BCID());
+  }
+
+  int bcid_min = *std::min_element(m_bcids_a.begin(), m_bcids_a.end());
+  
+  m_bcids.clear();
+  m_bcids_a.clear();
+  return bcid_min;
+}
+
+inline int TPTrack::BCIDEarliestB() {
+  m_bcids_b.clear();
+  m_bcids.clear();
+  for (int i = 0; i < m_hits.size(); i++){
+    m_bcids.push_back(Get(i).BCID());
+    if (Get(i).MMFE8Index() > 3)
+      m_bcids_b.push_back(Get(i).BCID());
+  }
+  if (std::find(m_bcids_b.begin(), m_bcids_b.end(), -1) != m_bcids_b.end())
+    return -1;
+
+  if (WrapsAround()){
+    m_bcids_b.clear();
+    for (int i = 0; i < m_hits.size(); i++)
+      m_bcids_b.push_back((Get(i).BCID() < 100) ? Get(i).BCID()+4096 : Get(i).BCID());
+  }
+
+  int bcid_min = *std::min_element(m_bcids_b.begin(), m_bcids_b.end());
+
+  m_bcids.clear();
+  m_bcids_b.clear();
+  return bcid_min;
+}
+
 inline double TPTrack::BCIDAverage() {
   m_bcids.clear();
   for (int i = 0; i < m_hits.size(); i++)
@@ -359,6 +414,58 @@ inline double TPTrack::BCIDAverage() {
   double sum = std::accumulate(m_bcids.begin(), m_bcids.end(), 0.0);
   double avg = sum / (double)(m_bcids.size());
 
+  m_bcids.clear();
+  return avg;
+}
+
+inline double TPTrack::BCIDAverageA() {
+  m_bcids.clear();
+  m_bcids_a.clear();
+  for (int i = 0; i < m_hits.size(); i++){
+    m_bcids.push_back(Get(i).BCID());
+    if (Get(i).MMFE8Index() < 4)
+      m_bcids_a.push_back(Get(i).BCID());
+  }
+
+  if (std::find(m_bcids_a.begin(), m_bcids_a.end(), -1) != m_bcids_a.end())
+    return -1;
+
+  if (WrapsAround()){
+    m_bcids_a.clear();
+    for (int i = 0; i < m_hits.size(); i++)
+      m_bcids_a.push_back((Get(i).BCID() < 100) ? Get(i).BCID()+4096 : Get(i).BCID());
+  }
+
+  double sum = std::accumulate(m_bcids_a.begin(), m_bcids_a.end(), 0.0);
+  double avg = sum / (double)(m_bcids_a.size());
+
+  m_bcids_a.clear();
+  m_bcids.clear();
+  return avg;
+}
+
+inline double TPTrack::BCIDAverageB() {
+  m_bcids.clear();
+  m_bcids_b.clear();
+  for (int i = 0; i < m_hits.size(); i++){
+    m_bcids.push_back(Get(i).BCID());
+    if (Get(i).MMFE8Index() > 3)
+      m_bcids_b.push_back(Get(i).BCID());
+  }
+
+  if (std::find(m_bcids_b.begin(), m_bcids_b.end(), -1) != m_bcids_b.end())
+    return -1;
+
+  if (WrapsAround()){
+    m_bcids_b.clear();
+    for (int i = 0; i < m_hits.size(); i++)
+      m_bcids_b.push_back((Get(i).BCID() < 100) ? Get(i).BCID()+4096 : Get(i).BCID());
+  }
+
+  double sum = std::accumulate(m_bcids_b.begin(), m_bcids_b.end(), 0.0);
+  double avg = sum / (double)(m_bcids_b.size());
+
+  m_bcids_b.clear();
   m_bcids.clear();
   return avg;
 }

@@ -52,6 +52,12 @@ public:
   double AverageZV(TPTrack& track, const GeoOctuplet& geometry);  
   double Zpos(const TPHit& hit, const GeoOctuplet& geometry);  
 
+  // for slopes
+  double MXG(TPTrack& track, const GeoOctuplet& geometry, double IP, const MMTrack& tp_track);  
+  double MU(TPTrack& track, const GeoOctuplet& geometry, double IP, const MMTrack& tp_track);  
+  double MV(TPTrack& track, const GeoOctuplet& geometry, double IP, const MMTrack& tp_track);  
+
+
 private:
   std::vector<TPTrack*> m_track;
 
@@ -162,13 +168,13 @@ inline TPTrack* TPEventTracks::Highlander(const MMClusterList& clusters, bool sc
 
   int mostmatch = -1, nmatch = -1;
   int nscimatch = -1;
-  if (scimatch && m_sciBCID > 0 && m_offset != -1)
+  if (scimatch && m_sciBCID > -1 && m_offset != -1)
     nscimatch = 0;
   TPTrack* the_one = nullptr;
 
   for (size_t it = 0; it < m_track.size(); ++it){
     nmatch = 0;
-    if (scimatch && m_sciBCID > 0 && m_offset != -1){
+    if (scimatch && m_sciBCID > -1 && m_offset != -1){
       if (fabs(deltaBCID((double)m_track[it]->BCID())) < cut)
         nscimatch++;
       else
@@ -207,7 +213,6 @@ inline double TPEventTracks::Xpos(const TPHit& hit, const GeoOctuplet& geometry)
 
   return x_pos;
 }
-
 inline double TPEventTracks::Zpos(const TPHit& hit, const GeoOctuplet& geometry) {
   // makes z position
   m_geometry = &geometry;
@@ -242,8 +247,9 @@ inline double TPEventTracks::AverageU(TPTrack& track, const GeoOctuplet& geometr
   std::vector<double> m_xpos;
 
   for (int i = 0; i < track.size(); i++){
-    if (track.Get(i).isU())
+    if (track.Get(i).isU()){
       m_xpos.push_back(Xpos(track.Get(i),geometry));
+    }
   }
 
   if (std::find(m_xpos.begin(), m_xpos.end(), -1) != m_xpos.end())
@@ -261,8 +267,9 @@ inline double TPEventTracks::AverageV(TPTrack& track, const GeoOctuplet& geometr
   std::vector<double> m_xpos;
 
   for (int i = 0; i < track.size(); i++){
-    if (track.Get(i).isV())
+    if (track.Get(i).isV()) {
       m_xpos.push_back(Xpos(track.Get(i),geometry));
+    }
   }
 
   if (std::find(m_xpos.begin(), m_xpos.end(), -1) != m_xpos.end())
@@ -330,5 +337,79 @@ inline double TPEventTracks::AverageZV(TPTrack& track, const GeoOctuplet& geomet
 
 
   return avg_z;
+}
+inline double TPEventTracks::MXG(TPTrack& track, const GeoOctuplet& geometry, double IP, const MMTrack& tp_track) {
+  // makes mx global position of x planes given IP (z coord)
+
+  std::vector<double> m_xpos;
+
+  for (int i = 0; i < track.size(); i++){
+    if (track.Get(i).isX()){
+      double IPx = tp_track.PointY(IP).X();
+      double IPz = tp_track.PointY(IP).Z();
+      m_xpos.push_back((Xpos(track.Get(i),geometry)-IPx)/(Zpos(track.Get(i),geometry)-IPz));
+//       std::cout << "board: " << track.Get(i).MMFE8Index() << " wtf zpos: " << Zpos(track.Get(i),geometry) << " ipz " << IPz << std::endl;
+//       std::cout << "board: " << track.Get(i).MMFE8Index() << " wtf xpos: " << Xpos(track.Get(i),geometry) << " ipx " << IPx << std::endl;
+//       std::cout << "board: " << track.Get(i).MMFE8Index() << " slope: " << (Xpos(track.Get(i),geometry)-IPx)/(Zpos(track.Get(i),geometry)-IPz) << std::endl;
+    }
+  }
+
+  if (std::find(m_xpos.begin(), m_xpos.end(), -1) != m_xpos.end())
+    return -1;
+
+  double sum_x = std::accumulate(m_xpos.begin(), m_xpos.end(), 0.0);
+  double avg_x = sum_x / (double)(m_xpos.size());
+
+  return avg_x;
+}
+inline double TPEventTracks::MU(TPTrack& track, const GeoOctuplet& geometry, double IP, const MMTrack& tp_track) {
+  // makes mx global position of x planes given IP in z coord
+
+  std::vector<double> m_xpos;
+
+  for (int i = 0; i < track.size(); i++){
+    if (track.Get(i).isU()){
+      double IPx = tp_track.PointY(IP).X();
+      //double IPx = tp_track.PointZ(IP).X() - tan(geometry[2].StripAlpha())*tp_track.PointZ(IP).Y();
+      double IPz = tp_track.PointY(IP).Z();
+      m_xpos.push_back((Xpos(track.Get(i),geometry)-IPx)/(Zpos(track.Get(i),geometry)-IPz));
+//       std::cout << "board: " << track.Get(i).MMFE8Index() << " wtf zpos: " << Zpos(track.Get(i),geometry) << " ipz " << IPz << std::endl;
+//       std::cout << "board: " << track.Get(i).MMFE8Index() << " wtf xpos: " << Xpos(track.Get(i),geometry) << " ipx " << IPx << std::endl;
+//       std::cout << "board: " << track.Get(i).MMFE8Index() << " slope: " << (Xpos(track.Get(i),geometry)-IPx)/(Zpos(track.Get(i),geometry)-IPz) << std::endl;
+    }
+  }
+
+  if (std::find(m_xpos.begin(), m_xpos.end(), -1) != m_xpos.end())
+    return -1;
+
+  double sum_x = std::accumulate(m_xpos.begin(), m_xpos.end(), 0.0);
+  double avg_x = sum_x / (double)(m_xpos.size());
+
+  return avg_x;
+}
+inline double TPEventTracks::MV(TPTrack& track, const GeoOctuplet& geometry, double IP, const MMTrack& tp_track) {
+  // makes mx global position of x planes given IP
+
+  std::vector<double> m_xpos;
+
+  for (int i = 0; i < track.size(); i++){
+    if (track.Get(i).isV()){
+      double IPx = tp_track.PointY(IP).X();
+      //double IPx = tp_track.PointZ(IP).X() - tan(geometry[3].StripAlpha())*tp_track.PointZ(IP).Y();
+      double IPz = tp_track.PointY(IP).Z();
+      m_xpos.push_back((Xpos(track.Get(i),geometry)-IPx)/(Zpos(track.Get(i),geometry)-IPz));
+//       std::cout << "board: " << track.Get(i).MMFE8Index() << " wtf zpos: " << Zpos(track.Get(i),geometry) << " ipz " << IPz << std::endl;
+//       std::cout << "board: " << track.Get(i).MMFE8Index() << " wtf xpos: " << Xpos(track.Get(i),geometry) << " ipx " << IPx << std::endl;
+//       std::cout << "board: " << track.Get(i).MMFE8Index() << " slope: " << (Xpos(track.Get(i),geometry)-IPx)/(Zpos(track.Get(i),geometry)-IPz) << std::endl;
+    }
+  }
+
+  if (std::find(m_xpos.begin(), m_xpos.end(), -1) != m_xpos.end())
+    return -1;
+
+  double sum_x = std::accumulate(m_xpos.begin(), m_xpos.end(), 0.0);
+  double avg_x = sum_x / (double)(m_xpos.size());
+
+  return avg_x;
 }
 #endif
