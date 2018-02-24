@@ -46,7 +46,7 @@ public:
   int NX();
   int NU();
   int NV();
-  bool IsTrigCand();
+  bool IsTrigCand(int m_nx = 2, int m_nuv = 2);
   bool WrapsAround();
   int BCIDWindow();
   int BCIDEarliest();
@@ -283,13 +283,13 @@ inline TPTrack operator + (const TPHit& hit_a,
   return ret;
 }
 
-inline bool TPTrack::IsTrigCand(){
+inline bool TPTrack::IsTrigCand(int m_nx, int m_nuv){
   bool x01 = false, x67 = false;
   for (int i = 0; i < m_hits.size(); i++){
     if      (Get(i).MMFE8Index() == 0 || Get(i).MMFE8Index() == 1) x01 = true;
     else if (Get(i).MMFE8Index() == 6 || Get(i).MMFE8Index() == 7) x67 = true;
   }
-  return (x01 && x67 && NU()+NV() >= 2);
+  return (x01 && x67 && NU()+NV() >= m_nuv && NX() > m_nx);
 }
 
 inline bool TPTrack::WrapsAround(){

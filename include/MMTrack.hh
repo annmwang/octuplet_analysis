@@ -23,7 +23,7 @@ public:
   ~MMTrack();
 
   bool IsFit() const;
-  bool IsTrigCand() const;
+  bool IsTrigCand(int m_nx = 2, int m_nuv = 2) const;
   void SetIsFit(bool isfit = true);
 
   double ConstX() const;
@@ -121,10 +121,11 @@ inline bool MMTrack::IsFit() const {
   return m_IsFit;
 }
 
-inline bool MMTrack::IsTrigCand() const {
+inline bool MMTrack::IsTrigCand(int m_nx, int m_nuv) const {
   if (m_N0 + m_N1 < 1 ||
       m_N6 + m_N7 < 1 ||
-      m_NU + m_NV < 2) 
+      m_NU + m_NV < m_nuv ||
+      m_NX < m_nx ) 
     return false;
   else
     return true;
