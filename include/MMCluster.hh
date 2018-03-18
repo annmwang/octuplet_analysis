@@ -28,6 +28,8 @@ public:
   double Charge() const;
   double Time() const;
   
+  double ChannelUnc(double slope) const;
+
   int NHoles() const;
   int VMM() const;
 };
@@ -56,6 +58,11 @@ inline double MMCluster::Channel() const {
     ch += double(Get(i).Channel())*Get(i).Charge();
   ch /= Charge();
   return ch;
+}
+
+inline double MMCluster::ChannelUnc(double slope) const {
+  // via oct_anaplus.C
+  return 0.24 + 1.15*pow(slope, 2.0);
 }
 
 inline double MMCluster::Charge() const {
