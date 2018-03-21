@@ -43,13 +43,22 @@ double channel_from_x(double xpos, int board, GeoOctuplet* geo, int begin);
 double theta(double slope);
 std::tuple<double, double> fit(std::vector<double> xs, std::vector<double> zs);
 std::tuple<double, double, double, double, double, double, double, double, double> fit_root(std::vector<double> xs, std::vector<double> zs, int invert);
-double TPCUncertainty(double ztpc, double m, double b, double sigma2_b, double sigma2_m, double sigma_bm, int invert);
+double FitUncertainty(double ztpc, double m, double b, double sigma2_b, double sigma2_m, double sigma_bm, int invert);
 double AngleCorrection(int i, int j, double slope, GeoOctuplet* GEOMETRY);
 int OkayForTPC(MMCluster* clus);
 //std::map< std::tuple<int,int>, double > ChannelOffsets(std::string filename, int board);
 std::vector< double > ChannelOffsets(std::string filename, int board, int this_vmm);
 double OffsetByChannel(int vmm, int ch, std::map< std::tuple<int,int>, double > offsets);
 double OffsetByBoard(int board);
+
+Double_t the_fit(Double_t *x,Double_t *par) {
+  Double_t f = 0;
+  if( x[0]< 20. || x[0]> 140.) f= 0.;
+  if( (x[0]>25. && x[0]<39.) || (x[0]>100. && x[0]<115.)) f= 0.02618;
+  if( (x[0]>39. && x[0]<54.) || (x[0]>115. && x[0]<135.)) f= - 0.02618;
+  return par[0]+par[1]*x[0] - (par[2]+par[3]*x[0]-217.9)*f;
+  //return par[0]+par[1]*x[0];
+}
 
 int main(int argc, char* argv[]){
 
@@ -111,7 +120,6 @@ int main(int argc, char* argv[]){
   // retrieve the channel offsets
   std::string fname = "/Users/alexandertuna/Downloads/octuplet_analysis/paolo_20180215/drift_offst.txt";
   std::vector< std::vector< std::vector<double> > > channel_offsets = {};
-  //std::vector< std::map< std::tuple<int,int>, double > > channel_offsets = {};
   for (int bo = 0; bo < 8; bo++){
     channel_offsets.push_back( std::vector< std::vector<double> >() );
     for (int vm = 0; vm < 8; vm++)
@@ -197,6 +205,16 @@ int main(int argc, char* argv[]){
   h2["track_N1_board_vs_residual_norm"] = new TH2D("track_N1_board_vs_residual_norm", ";board;x_{cluster} - x_{track, proj.};Tracks", 8, -0.5, 7.5, 200, -5.0, 5.0);
   h2["track_N1_board_vs_utpc"]          = new TH2D("track_N1_board_vs_utpc",          ";board;x_{utpc} - x_{track, proj.};   Tracks", 8, -0.5, 7.5, 200, -5.0, 5.0);
   h2["track_N1_board_vs_prob"]          = new TH2D("track_N1_board_vs_prob",          ";board;fit probability;   Tracks",             8, -0.5, 7.5, 200, -0.1, 1.1);
+
+  h1["tdo_gain"] = new TH1D("tdo_gain", "tdo_gain", 100,   0, 3);
+  h1["tdo_ped"]  = new TH1D("tdo_ped",  "tdo_ped",  100, -10, 50);
+  h1["pdo_gain"] = new TH1D("pdo_gain", "pdo_gain", 100,   0, 30);
+  h1["pdo_ped"]  = new TH1D("pdo_ped",  "pdo_ped",  100, -100, 300);
+
+  h1["delta_cx"] = new TH1D("delta_cx", "delta_cx", 100, -1, 1);
+  h1["delta_sx"] = new TH1D("delta_sx", "delta_sx", 100, -0.1, 0.1);
+  h1["delta_cy"] = new TH1D("delta_cy", "delta_cy", 100, -1, 1);
+  h1["delta_sy"] = new TH1D("delta_sy", "delta_sy", 100, -0.1, 0.1);
 
   h1["track_diff01_bary"] = new TH1D("track_diff01_bary", ";x_{bary,0} - x_{bary,1}; Tracks", 200, -5, 5);
   h1["track_diff67_bary"] = new TH1D("track_diff67_bary", ";x_{bary,6} - x_{bary,7}; Tracks", 200, -5, 5);
@@ -287,10 +305,20 @@ int main(int argc, char* argv[]){
     h2[Form("strip_zpos_vs_ch_%i", ibo)] = new TH2D(Form("strip_zpos_vs_ch_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 150, -10,   20);
     h2[Form("strip_zdri_vs_ch_%i", ibo)] = new TH2D(Form("strip_zdri_vs_ch_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 150, -10,   20);
     h2[Form("strip_zres_vs_ch_%i", ibo)] = new TH2D(Form("strip_zres_vs_ch_%i", ibo), ";strip number;#Delta z [mm];strip",  512, 0.5, 512.5, 200, -15,   15);
+
+    h2[Form("strip_zpos_vs_ch_all_%i", ibo)] = new TH2D(Form("strip_zpos_vs_ch_all_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 150, -10, 20);
+    h2[Form("strip_zpos_vs_ch_yok_%i", ibo)] = new TH2D(Form("strip_zpos_vs_ch_yok_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 150, -10, 20);
+    h2[Form("strip_zpos_vs_ch_nok_%i", ibo)] = new TH2D(Form("strip_zpos_vs_ch_nok_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 150, -10, 20);
+
+    h2[Form("strip_zres_vs_ch_BC0_%i", ibo)] = new TH2D(Form("strip_zres_vs_ch_BC0_%i", ibo), ";strip number;#Delta z [mm];strip",  512, 0.5, 512.5, 200, -15,   15);
+    h2[Form("strip_zres_vs_ch_BC1_%i", ibo)] = new TH2D(Form("strip_zres_vs_ch_BC1_%i", ibo), ";strip number;#Delta z [mm];strip",  512, 0.5, 512.5, 200, -15,   15);
+    h2[Form("strip_zres_vs_ch_BC2_%i", ibo)] = new TH2D(Form("strip_zres_vs_ch_BC2_%i", ibo), ";strip number;#Delta z [mm];strip",  512, 0.5, 512.5, 200, -15,   15);
+    h2[Form("strip_zres_vs_ch_BC3_%i", ibo)] = new TH2D(Form("strip_zres_vs_ch_BC3_%i", ibo), ";strip number;#Delta z [mm];strip",  512, 0.5, 512.5, 200, -15,   15);
   }
   h2["dups_vs_ch"] = new TH2D("dups_vs_ch", ";strip number;MMFE number;Duplicates", 512, 0.5, 512.5, 8, -0.5, 7.5);
 
   for (ibo = 0; ibo < nboards; ibo++){
+    h1[Form("track_unc_%i", ibo)]            = new TH1D(Form("track_unc_%i", ibo), ";track unc [mm];Tracks", 1000, 0, 10);
     h2[Form("strip_zpos_vs_ztrack_%i", ibo)] = new TH2D(Form("strip_zpos_vs_ztrack_%i", ibo), ";z_{track};z_{drift} [mm];strip", 100, -5, 10, 100, -2, 8);
     h2[Form("strip_chi2_vs_tpcunc_%i", ibo)] = new TH2D(Form("strip_chi2_vs_tpcunc_%i", ibo), ";chi2/ndf;#sigma(uTPC x);strip",  100,  0, 1.5, 100,  0, 2);
     h2[Form("tpc_phi_vs_phi_%i",       ibo)] = new TH2D(Form("tpc_phi_vs_phi_%i",       ibo), ";#phi [deg];#phi [deg];TPC cluster", 200,  -2, 2, 200, -2, 2);
@@ -359,9 +387,6 @@ int main(int argc, char* argv[]){
   std::vector<double> xs;
   std::vector<double> zs_dbc;
   std::vector<double> zs;
-  std::vector<double> xs_sus;
-  std::vector<double> zs_sus;
-  std::vector<double> zs_sus_dbc;
   std::vector<double> neighbor_xs;
   std::vector<double> neighbor_zs;
   double residual = 0.0;
@@ -372,38 +397,6 @@ int main(int argc, char* argv[]){
   for (ibo = 0; ibo < nboards; ibo++)
     z_middle += GEOMETRY->Get(ibo).Origin().Z();
   z_middle /= (double)(nboards);
-
-  // board positions for uTPC and trigger
-  // mu-telescope.rc.fas.harvard.edu:/data/mm_2016/mm_ana/oct_ana.C
-//   const std::vector<double> zboard = {0.4,
-//                                       10.8,
-//                                       32.4,
-//                                       43.6,
-//                                       113.6,
-//                                       124.8,
-//                                       146.7,
-//                                       156.5};
-
-//   const std::vector<double> zboard = {0.0,
-//                                       11.2,
-//                                       32.4,
-//                                       43.6,
-//                                       113.6,
-//                                       124.8,
-//                                       146.0,
-//                                       157.2};
-  //TMultiGraph* utpc_mg      = 0;
-  //TGraph*      utpc_graph   = 0;
-  //TGraph*      utpc_dbc     = 0;
-  //TGraph*      utpc_sus     = 0;
-  //TGraph*      utpc_sus_dbc = 0;
-  //TGraph*      utpc_bary    = 0;
-  //TGraph*      utpc_pred    = 0;
-  //TGraph*      utpc_others  = 0;
-  //TF1*         utpc_fit     = 0;
-  //TLine*       utpc_ref     = 0;
-  //TLine*       utpc_horiz1  = 0;
-  //TLine*       utpc_horiz2  = 0;
 
   // output
   TFile* fout = new TFile(outputFileName, "RECREATE");
@@ -461,8 +454,8 @@ int main(int argc, char* argv[]){
       clus_list.Reset();
     clusters_perboard.clear();
     
-    //if (evt > 50000)
-    //  break;
+    if (evt > 500)
+      break;
 
     // calibrate
     PDOCalibrator->Calibrate(DATA->mm_EventHits);
@@ -491,10 +484,24 @@ int main(int argc, char* argv[]){
         if( !PACMAN->IsGoodHit(hit) )
           continue;
 
-        h2[Form("strip_tdoc_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.Time());
+        h1["tdo_gain"]->Fill(hit.TDOGain());
+        h1["tdo_ped"] ->Fill(hit.TDOPed());
+        h1["pdo_gain"]->Fill(hit.PDOGain());
+        h1["pdo_ped"] ->Fill(hit.PDOPed());
+
+        h2[Form("strip_tdoc_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.Time()+10);
         h2[Form("strip_dbc_vs_ch_%i",  ibo)]->Fill(hit.Channel(), hit.DeltaBC());
         h2[Form("strip_time_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.DriftTime(deltaT));
         h2[Form("strip_zpos_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.DriftTime(deltaT) * vdrift);
+
+        double fiducial_z_hi =  6.6;
+        double fiducial_z_lo = -1.2;
+        double zdrift = hit.DriftTime(deltaT) * vdrift;
+        if (zdrift < fiducial_z_hi && zdrift > fiducial_z_lo){
+          if (true)                  h2[Form("strip_zpos_vs_ch_all_%i", ibo)]->Fill(hit.Channel(), zdrift);
+          if ( hit.SuspiciousBCID()) h2[Form("strip_zpos_vs_ch_nok_%i", ibo)]->Fill(hit.Channel(), zdrift);
+          if (!hit.SuspiciousBCID()) h2[Form("strip_zpos_vs_ch_yok_%i", ibo)]->Fill(hit.Channel(), zdrift);
+        }
 
         h2[Form("strip_q_vs_ch_%i",   ibo)]->Fill(hit.Channel(), hit.Charge());
         h2[Form("strip_pdo_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.PDO());
@@ -552,10 +559,14 @@ int main(int argc, char* argv[]){
     for (auto botpair: DATA->sc_EventHits.GetBotPair()){
       clusters_road.Reset();
       clusters_road = FILTERER->FilterClustersScint(clusters_all, *GEOMETRY, botpair.first->Channel(), DATA->mm_EventNum, debug);
-      track  = FITTER ->Fit(clusters_road, *GEOMETRY, DATA->mm_EventNum);
-      for (auto clus: clusters_road)
-        track.CountHit(GEOMETRY->Index(clus->MMFE8()));
+      if (clusters_road.size() >= 6)
+        track = FITTER->Fit(clusters_road, *GEOMETRY, DATA->mm_EventNum);
+      break;
     }
+
+    // require a good track for further analysis
+    if (clusters_road.size() < 6)
+      continue;
 
     // angles
     if (clusters_road.size() == 6) h2["track_angle_6"]->Fill(theta(track.SlopeX()), theta(track.SlopeY()));
@@ -566,10 +577,6 @@ int main(int argc, char* argv[]){
     h2["track_hits_vs_time"]->Fill(days_since_start, clusters_road.size());
     if (GEOMETRY->IsFiducial(track))
       h2["track_hits_vs_time_fid"]->Fill(days_since_start, clusters_road.size());
-
-    // require a good track for further analysis
-    if (clusters_road.size() < 6)
-      continue;
 
     // wtf
     if (clusters_road.size() == 8){
@@ -601,6 +608,63 @@ int main(int argc, char* argv[]){
         if (botpair.first->Channel() == 5) h2["track_scint_5_vs_time"]->Fill(days_since_start, theta(track.SlopeX()));
       }
     }
+
+    // uncertainty on track predictions
+    // ------------------------------------------------------------------
+    track = FITTER->Fit(clusters_road, *GEOMETRY, DATA->mm_EventNum);
+
+    // paolo approach
+    xs.clear();
+    zs.clear();
+    for (auto clus: clusters_road){
+      plane = GEOMETRY->Get(GEOMETRY->Index(clus->MMFE8()));
+      xs.push_back( plane.Origin().X() + plane.LocalXatYend(clus->Channel()) );
+      zs.push_back( plane.Origin().Z() );
+    }
+    TGraph* graph = 0; 
+    TF1* fit = 0;
+    TFitResultPtr result = 0;
+    graph = new TGraph(int(xs.size()), &zs[0], &xs[0]);
+    fit = new TF1("the_fit", the_fit, -10.,300., 4);
+    fit->SetParameter(0, 0.0);
+    fit->SetParameter(1, 0.0);
+    fit->SetParameter(2, 0.0);
+    fit->SetParameter(3, 0.0);
+    fit->SetParName(0, "c_x");
+    fit->SetParName(1, "s_x");
+    fit->SetParName(2, "c_y");
+    fit->SetParName(3, "s_y");
+    result = graph->Fit(fit, "QS");
+
+    double constX, slopeX, constY, slopeY;
+    constX = fit->GetParameter(0);
+    slopeX = fit->GetParameter(1);
+    constY = fit->GetParameter(2);
+    slopeY = fit->GetParameter(3);
+
+    TMatrixD cov = result->GetCovarianceMatrix();
+    double cov00, cov01, cov10, cov11;
+    cov00 = cov[0][0];
+    cov01 = cov[0][1];
+    cov10 = cov[1][0];
+    cov11 = cov[1][1];
+    delete fit;
+    delete graph;
+    // paolo
+
+    h1["delta_cx"]->Fill(constX - track.ConstX());
+    h1["delta_sx"]->Fill(slopeX - track.SlopeX());
+    h1["delta_cy"]->Fill(constY - track.ConstY());
+    h1["delta_sy"]->Fill(slopeY - track.SlopeY());
+
+    double track_unc = 0;
+    if (clusters_road.size() >= 6){
+      for (ibo = 0; ibo < 8; ibo++){
+        track_unc = FitUncertainty(GEOMETRY->Get(ibo).Origin().Z(), slopeX, constX, cov00, cov11, cov01, 0);
+        h1[Form("track_unc_%i", ibo)]->Fill(track_unc);
+      }
+    }
+
 
     // VMM-level efficiency
     // ------------------------------------------------------------------
@@ -732,7 +796,7 @@ int main(int argc, char* argv[]){
     double z_half = 0;
     double fiducial_x    =  1.8;
     double fiducial_z_hi =  6.6;
-    double fiducial_z_lo = -0.8;
+    double fiducial_z_lo = -1.2;
 
     int utpc_0 = 0, utpc_1 = 0, utpc_6 = 0, utpc_7 = 0;
     double x_utpc_0 = -999, x_utpc_1 = -999, x_utpc_6 = -999, x_utpc_7 = -999;
@@ -766,9 +830,6 @@ int main(int argc, char* argv[]){
       xs.clear();
       zs_dbc.clear();
       zs.clear();
-      xs_sus.clear();
-      zs_sus.clear();
-      zs_sus_dbc.clear();
       for (auto hit: *clus){
 
         x_clus  = plane.Origin().X() + plane.LocalXatYbegin(clus->Channel());
@@ -793,13 +854,18 @@ int main(int argc, char* argv[]){
         if (vdrift*hit->DriftTime(deltaT) + offset < fiducial_z_lo)
           continue;
 
-        // h2[Form("strip_zdri_vs_ch_%i",     ibo)]->Fill(hit->Channel(), sign*(z_utpc - zboard[ibo]));
+        if (hit->BCID() % 4 == 0) h2[Form("strip_zres_vs_ch_BC0_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
+        if (hit->BCID() % 4 == 1) h2[Form("strip_zres_vs_ch_BC1_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
+        if (hit->BCID() % 4 == 2) h2[Form("strip_zres_vs_ch_BC2_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
+        if (hit->BCID() % 4 == 3) h2[Form("strip_zres_vs_ch_BC3_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
+
         h2[Form("strip_zdri_vs_ch_%i",     ibo)]->Fill(hit->Channel(), vdrift*hit->DriftTime(deltaT) + offset);
         h2[Form("strip_zres_vs_ch_%i",     ibo)]->Fill(hit->Channel(), z_utpc - z_track);
         h2[Form("strip_zpos_vs_ztrack_%i", ibo)]->Fill(sign*(z_track - zboard[ibo]), vdrift*hit->DriftTime(deltaT) + offset);
         xs.push_back(x_utpc);
         zs.push_back(z_utpc);
         ntpc++;
+
       }
 
       double slope, offset, x_fit, x_track, x_unc;
@@ -819,7 +885,7 @@ int main(int argc, char* argv[]){
         h2[Form("track_N1_theta_x_vs_utpc_%i", ibo)]->Fill(theta(track.SlopeX()), residual);
 
         // uncertainty on x_fit
-        x_unc = TPCUncertainty(z_half, slope, offset, cov00, cov11, cov01, invert);
+        x_unc = FitUncertainty(z_half, slope, offset, cov00, cov11, cov01, invert);
         if (!invert){
           slope  = 1/slope;
           offset = -1*offset*slope;
@@ -936,45 +1002,8 @@ int main(int argc, char* argv[]){
 
       }
 
-      // x
-      // x_comb   = fraction*x_utpc + (1-fraction)*x_clus;
-      // x_track  = track.SlopeX()*z_half + track.ConstX();
-      // residual = x_comb - x_track;
-      // if (false){
-      //   std::cout << Form("Evt %3d, Bo %d :: unc(bary) = %6.2f, unc(utpc) = %6.2f => unc(comb) = %6.2f", evt, ibo, unc_bary, unc_utpc, unc_comb);
-      //   std::cout << Form(" :: x(bary) = %6.2f, x(utpc) = %6.2f => x(comb) = %6.2f :: x(track) = %6.2f", x_clus, x_utpc, x_comb, x_track) << std::endl;
-      // }
-      // h2[Form("track_N1_theta_x_vs_comb_%i", ibo)]->Fill(theta(track.SlopeX()), residual);
-      // if (ibo == 0) x_comb_0 = x_comb;
-      // if (ibo == 1) x_comb_1 = x_comb;
-      // if (ibo == 6) x_comb_6 = x_comb;
-      // if (ibo == 7) x_comb_7 = x_comb;
     }
   
-//     // board v board: tpc
-//     if (x_utpc_0 > -100 && x_utpc_1 > -100){
-//       dx = x_utpc_0 - x_utpc_1 + AngleCorrection(0, 1, track.SlopeX(), GEOMETRY);
-//       h1["track_diff01_utpc"]      ->Fill(dx);
-//       h2["track_diff01_utpc_theta"]->Fill(theta(track.SlopeX()), dx);
-//     }
-//     if (x_utpc_6 > -100 && x_utpc_7 > -100){
-//       dx = x_utpc_6 - x_utpc_7 + AngleCorrection(6, 7, track.SlopeX(), GEOMETRY);
-//       h1["track_diff67_utpc"]      ->Fill(dx);
-//       h2["track_diff67_utpc_theta"]->Fill(theta(track.SlopeX()), dx);
-//     }
-    
-//     // board v board: combo
-//     if (hit_0 && hit_1){
-//       dx = x_comb_0 - x_comb_1 + AngleCorrection(0, 1, track.SlopeX(), GEOMETRY);
-//       h1["track_diff01_comb"]      ->Fill(dx);
-//       h2["track_diff01_comb_theta"]->Fill(theta(track.SlopeX()), dx);
-//     }
-//     if (hit_6 && hit_7){
-//       dx = x_comb_6 - x_comb_7 + AngleCorrection(6, 7, track.SlopeX(), GEOMETRY);
-//       h1["track_diff67_comb"]      ->Fill(dx);
-//       h2["track_diff67_comb_theta"]->Fill(theta(track.SlopeX()), dx);
-//     }
-    
   }
 
   // write to file
@@ -1063,8 +1092,8 @@ std::tuple<double, double, double, double, double, double, double, double, doubl
   fit = new TF1("the_fit", "[0] + x*[1]", -5.0, 215.0);
   fit->SetParameter(0, 0.0);
   fit->SetParameter(1, 0.0);
-  // result = graph->Fit("the_fit", "QSF");
   result = graph->Fit("the_fit", "QS");
+  // result = graph->Fit("the_fit", "QSF");
 
   double slope, offset, chi2, ndf, prob;
   slope  = fit->GetParameter(1);
@@ -1085,11 +1114,10 @@ std::tuple<double, double, double, double, double, double, double, double, doubl
   return std::make_tuple(slope, offset, chi2, ndf, prob, cov00, cov01, cov10, cov11);
 }
 
-double TPCUncertainty(double z, double m, double b, double sigma2_b, double sigma2_m, double sigma_bm, int invert){
+double FitUncertainty(double z, double m, double b, double sigma2_b, double sigma2_m, double sigma_bm, int invert){
   double unc2 = -1;
   if (invert){
     unc2 = sigma2_m*(z-b)*(z-b)/(m*m) + sigma2_b + 2*sigma_bm*(z-b)/m;
-    //unc2 = unc2 / sigma2_m;
     unc2 = unc2 / (m*m);
   }
   else{
