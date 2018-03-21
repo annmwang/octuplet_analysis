@@ -44,8 +44,8 @@ private:
 
 inline MMClusterAlgo::MMClusterAlgo(){
   // default max/min difference between trig and event BCID
-  m_max_BCID_diff = 40;
-  m_min_BCID_diff = 15;
+  m_max_BCID_diff = 35;
+  m_min_BCID_diff = 20;
   m_trig_BCID = 0;
 
   // default max TDO/time upper cut
@@ -86,8 +86,12 @@ inline bool MMClusterAlgo::IsGoodHit(const MMHit& hit){
   if(hit.Charge() < 0)
     return false;
 
+  // via oct_anaplus.C
+  if(hit.TDOGain() < 1 || hit.TDOGain() > 2 || fabs(hit.TDOPed()) > 40)
+    return false;
+
   // BCID
-  if (hit.TrigBCID() < 80)
+  if(hit.TrigBCID() < 80)
     return false;
   if(fabs(hit.BCID() - hit.TrigBCID()) > m_max_BCID_diff)
     return false;
