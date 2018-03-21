@@ -454,8 +454,8 @@ int main(int argc, char* argv[]){
       clus_list.Reset();
     clusters_perboard.clear();
     
-    if (evt > 500)
-      break;
+    //if (evt > 200000)
+    //  break;
 
     // calibrate
     PDOCalibrator->Calibrate(DATA->mm_EventHits);
