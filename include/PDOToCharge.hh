@@ -24,6 +24,10 @@ public:
   // returns charge in fC
   double GetCharge(double PDO, int MMFE8, int VMM, int CH) const;
 
+  // returns calibration constants
+  double GetGain(int MMFE8, int VMM, int CH) const;
+  double GetPed( int MMFE8, int VMM, int CH) const;
+
   // returns chi2 from PDO v charge fit
   double GetFitChi2(int MMFE8, int VMM, int CH) const;
 
@@ -139,6 +143,36 @@ inline double PDOToCharge::GetCharge(double PDO, int MMFE8, int VMM, int CH) con
     return 0.5*( (PDO-m_c0[c])/m_A2[c]/m_d21[c] + m_d21[c] + 2.*m_t02[c] );
   }
 
+inline double PDOToCharge::GetGain(int MMFE8, int VMM, int CH) const {
+    pair<int,int> key(MMFE8,VMM);
+    if(m_MMFE8VMM_to_index.count(key) == 0)
+      return -999.;
+
+    int i = m_MMFE8VMM_to_index[key];
+
+    if(m_CH_to_index[i].count(CH) == 0)
+      return -999.;
+
+    int c = m_CH_to_index[i][CH];
+
+    return 2.*m_A2[c]*m_d21[c];
+  }
+
+inline double PDOToCharge::GetPed(int MMFE8, int VMM, int CH) const {
+    pair<int,int> key(MMFE8,VMM);
+    if(m_MMFE8VMM_to_index.count(key) == 0)
+      return -999.;
+
+    int i = m_MMFE8VMM_to_index[key];
+
+    if(m_CH_to_index[i].count(CH) == 0)
+      return -999.;
+
+    int c = m_CH_to_index[i][CH];
+
+    return fabs(m_c0[c]-m_A2[c]*m_d21[c]*(m_d21[c]+2.*m_t02[c]));
+  }
+
 // returns chi2 from PDO v charge fit
 inline double PDOToCharge::GetFitChi2(int MMFE8, int VMM, int CH) const {
   pair<int,int> key(MMFE8,VMM);
@@ -194,4 +228,6 @@ inline void PDOToCharge::Calibrate(MMFE8Hits& hits) const {
 
 inline void PDOToCharge::Calibrate(MMHit& hit) const {
   hit.SetCharge(GetCharge(hit.PDO(), hit.MMFE8(), hit.VMM(), hit.VMMChannel()));
+  hit.SetPDOGain(GetGain(hit.MMFE8(), hit.VMM(), hit.VMMChannel()));
+  hit.SetPDOPed(GetPed(  hit.MMFE8(), hit.VMM(), hit.VMMChannel()));
 }
