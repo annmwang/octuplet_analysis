@@ -99,13 +99,19 @@ inline MMTrack SimpleTrackFitter::Fit(const MMClusterList& clusters,
                 << " | N(V) = "     << track.NV()
                 << std::endl;
 
-    
+
     const double* param = m_minimizer->X();
     track.SetRes2(m_minimizer->MinValue());
     track.SetConstX(param[0]);
     track.SetConstY(param[2]);
     track.SetSlopeX(param[1]);
     track.SetSlopeY(param[3]);
+    track.SetCovCXCX(m_minimizer->CovMatrix(0, 0));
+    track.SetCovCXSX(m_minimizer->CovMatrix(0, 1));
+    track.SetCovSXSX(m_minimizer->CovMatrix(1, 1));
+    track.SetCovCYCY(m_minimizer->CovMatrix(2, 2));
+    track.SetCovCYSY(m_minimizer->CovMatrix(2, 3));
+    track.SetCovSYSY(m_minimizer->CovMatrix(3, 3));
     track.SetIsFit();
   }
 
