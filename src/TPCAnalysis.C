@@ -1,4 +1,4 @@
-///
+//
 ///  \file   TPCAnalysis.C
 ///
 ///  \author Tunaface
@@ -43,7 +43,9 @@ double channel_from_x(double xpos, int board, GeoOctuplet* geo, int begin);
 double theta(double slope);
 std::tuple<double, double> fit(std::vector<double> xs, std::vector<double> zs);
 std::tuple<double, double, double, double, double, double, double, double, double> fit_root(std::vector<double> xs, std::vector<double> zs, int invert);
-double FitUncertainty(double ztpc, double m, double b, double sigma2_b, double sigma2_m, double sigma_bm, int invert);
+double FitUncertainty(double z, double m, double b, double sigma2_b, double sigma2_m, double sigma_bm, int invert);
+double FitStereoUncertainty(double z, double alpha, double sigma2_00, double sigma2_11, double sigma2_22, double sigma2_33, 
+                            double sigma_01, double sigma_02, double sigma_03, double sigma_12, double sigma_13, double sigma_23);
 double AngleCorrection(int i, int j, double slope, GeoOctuplet* GEOMETRY);
 int OkayForTPC(MMCluster* clus);
 //std::map< std::tuple<int,int>, double > ChannelOffsets(std::string filename, int board);
@@ -54,8 +56,8 @@ double OffsetByBoard(int board);
 Double_t the_fit(Double_t *x,Double_t *par) {
   Double_t f = 0;
   if( x[0]< 20. || x[0]> 140.) f= 0.;
-  if( (x[0]>25. && x[0]<39.) || (x[0]>100. && x[0]<115.)) f= 0.02618;
-  if( (x[0]>39. && x[0]<54.) || (x[0]>115. && x[0]<135.)) f= - 0.02618;
+  if( (x[0]>25. && x[0]<39.) || (x[0]>100. && x[0]<115.)) f= 0.0261799;
+  if( (x[0]>39. && x[0]<54.) || (x[0]>115. && x[0]<135.)) f= - 0.0261799;
   return par[0]+par[1]*x[0] - (par[2]+par[3]*x[0]-217.9)*f;
   //return par[0]+par[1]*x[0];
 }
@@ -87,6 +89,8 @@ int main(int argc, char* argv[]){
   bool b_tdo   = false;
   bool b_align = false;
   bool b_paolo = false;
+  int recipe = 0;
+  bool b_recipe = false;
   for (int i=1;i<argc-1;i++){
     if (strncmp(argv[i],"-i",2)==0){
       sscanf(argv[i+1],"%s", inputFileName);
@@ -111,19 +115,93 @@ int main(int argc, char* argv[]){
     if (strncmp(argv[i+1],"-g",2)==0){
       b_paolo = true;
     }
+    if (strncmp(argv[i+1],"--r",3)==0){
+      sscanf(argv[i+1],"%d",&recipe);
+      b_recipe = true;
+    }
   }
 
   if(!b_input) std::cout << "Error at Input: please specify  input file (-i flag)" << std::endl;
   if(!b_out)   std::cout << "Error at Input: please specify output file (-o flag)" << std::endl;
   if(!b_input || !b_out) return 0;
+  if (b_recipe) {
+    if (recipe == 0){
+      std::cout << "Using nominal TPC strategy" << std::endl;
+    }
+    if (recipe == 1){
+      std::cout << "Vetoing all hits with BC %4 == 1" << std::endl;
+    }
+    if (recipe == 2){
+      std::cout << "Assigning BC %4 == 1 to 0.625 mm from track z" << std::endl;
+    }
+  }
 
   // retrieve the channel offsets
-  std::string fname = "/Users/alexandertuna/Downloads/octuplet_analysis/paolo_20180215/drift_offst.txt";
+  std::string fname = "corrections/drift_offsets_1.txt";
   std::vector< std::vector< std::vector<double> > > channel_offsets = {};
+  //std::vector< std::map< std::tuple<int,int>, double > > channel_offsets = {};
   for (int bo = 0; bo < 8; bo++){
     channel_offsets.push_back( std::vector< std::vector<double> >() );
     for (int vm = 0; vm < 8; vm++)
       channel_offsets[bo].push_back( ChannelOffsets(fname, bo, vm) );
+  }
+
+  std::string fname2 = "corrections/drift_offsets_2.txt";
+  std::vector< std::vector< std::vector<double> > > channel_offsets2 = {};
+  //std::vector< std::map< std::tuple<int,int>, double > > channel_offsets = {};
+  for (int bo = 0; bo < 8; bo++){
+    channel_offsets2.push_back( std::vector< std::vector<double> >() );
+    for (int vm = 0; vm < 8; vm++)
+      channel_offsets2[bo].push_back( ChannelOffsets(fname2, bo, vm) );
+  }
+
+  std::string fname3 = "corrections/drift_offsets_3.txt";
+  std::vector< std::vector< std::vector<double> > > channel_offsets3 = {};
+  //std::vector< std::map< std::tuple<int,int>, double > > channel_offsets = {};
+  for (int bo = 0; bo < 8; bo++){
+    channel_offsets3.push_back( std::vector< std::vector<double> >() );
+    for (int vm = 0; vm < 8; vm++)
+      channel_offsets3[bo].push_back( ChannelOffsets(fname3, bo, vm) );
+  }
+
+  std::string fname4 = "corrections/drift_offsets_4.txt";
+  //std::string fname = "corrections/drift_offst.txt";
+  std::vector< std::vector< std::vector<double> > > channel_offsets4 = {};
+  //std::vector< std::map< std::tuple<int,int>, double > > channel_offsets = {};
+  for (int bo = 0; bo < 8; bo++){
+    channel_offsets4.push_back( std::vector< std::vector<double> >() );
+    for (int vm = 0; vm < 8; vm++)
+      channel_offsets4[bo].push_back( ChannelOffsets(fname4, bo, vm) );
+  }
+
+  std::string fname5 = "corrections/drift_offsets_5.txt";
+  //std::string fname = "corrections/drift_offst.txt";
+  std::vector< std::vector< std::vector<double> > > channel_offsets5 = {};
+  //std::vector< std::map< std::tuple<int,int>, double > > channel_offsets = {};
+  for (int bo = 0; bo < 8; bo++){
+    channel_offsets5.push_back( std::vector< std::vector<double> >() );
+    for (int vm = 0; vm < 8; vm++)
+      channel_offsets5[bo].push_back( ChannelOffsets(fname5, bo, vm) );
+  }
+
+  std::string fname6 = "corrections/drift_offsets_6.txt";
+  //std::string fname = "corrections/drift_offst.txt";
+  std::vector< std::vector< std::vector<double> > > channel_offsets6 = {};
+  //std::vector< std::map< std::tuple<int,int>, double > > channel_offsets = {};
+  for (int bo = 0; bo < 8; bo++){
+    channel_offsets6.push_back( std::vector< std::vector<double> >() );
+    for (int vm = 0; vm < 8; vm++)
+      channel_offsets6[bo].push_back( ChannelOffsets(fname6, bo, vm) );
+  }
+
+  std::string fname7 = "corrections/drift_offsets_7.txt";
+  //std::string fname = "corrections/drift_offst.txt";
+  std::vector< std::vector< std::vector<double> > > channel_offsets7 = {};
+  //std::vector< std::map< std::tuple<int,int>, double > > channel_offsets = {};
+  for (int bo = 0; bo < 8; bo++){
+    channel_offsets7.push_back( std::vector< std::vector<double> >() );
+    for (int vm = 0; vm < 8; vm++)
+      channel_offsets7[bo].push_back( ChannelOffsets(fname7, bo, vm) );
   }
 
   const int nboards = 8;
@@ -237,6 +315,10 @@ int main(int argc, char* argv[]){
   h1["track_diff67_utpc_norm"] = new TH1D("track_diff67_utpc_norm", ";x_{utpc,6} - x_{utpc,7}; Tracks", 200, -5, 5);
   h1["track_diff06_utpc_norm"] = new TH1D("track_diff06_utpc_norm", ";x_{utpc,0} - x_{utpc,6}; Tracks", 200, -5, 5);
   h1["track_diff17_utpc_norm"] = new TH1D("track_diff17_utpc_norm", ";x_{utpc,1} - x_{utpc,7}; Tracks", 200, -5, 5);
+  h1["track_diff01_utpc_norm_vetoBC01"] = new TH1D("track_diff01_utpc_norm_vetoBC01", ";x_{utpc,0} - x_{utpc,1}; Tracks", 200, -5, 5);
+  h1["track_diff67_utpc_norm_vetoBC01"] = new TH1D("track_diff67_utpc_norm_vetoBC01", ";x_{utpc,6} - x_{utpc,7}; Tracks", 200, -5, 5);
+  h1["track_diff06_utpc_norm_vetoBC01"] = new TH1D("track_diff06_utpc_norm_vetoBC01", ";x_{utpc,0} - x_{utpc,6}; Tracks", 200, -5, 5);
+  h1["track_diff17_utpc_norm_vetoBC01"] = new TH1D("track_diff17_utpc_norm_vetoBC01", ";x_{utpc,1} - x_{utpc,7}; Tracks", 200, -5, 5);
   h1["track_diff01_comb_norm"] = new TH1D("track_diff01_comb_norm", ";x_{comb,0} - x_{comb,1}; Tracks", 200, -5, 5);
   h1["track_diff67_comb_norm"] = new TH1D("track_diff67_comb_norm", ";x_{comb,6} - x_{comb,7}; Tracks", 200, -5, 5);
 
@@ -265,8 +347,10 @@ int main(int argc, char* argv[]){
   h1["tpc_uncertainty_7"] = new TH1D("tpc_uncertainty_7", ";TPC unceratinty;TPC Clusters", 1000, -10, 40);
   h2["tpc_unc01"] = new TH2D("tpc_unc01", ";TPC uncertainty 0; TPC uncertainty 1;TPC Clusters", 1000, -1, 10, 1000, -1, 10);
   h2["tpc_unc67"] = new TH2D("tpc_unc67", ";TPC uncertainty 6; TPC uncertainty 7;TPC Clusters", 1000, -1, 10, 1000, -1, 10);
-  h2["tpc_val01"] = new TH2D("tpc_val01", ";TPC val 0; TPC val 1;TPC Clusters", 100, -1, 10, 100, -1, 7);
-  h2["tpc_val67"] = new TH2D("tpc_val67", ";TPC val 6; TPC val 7;TPC Clusters", 100, -1, 10, 100, -1, 7);
+  h2["tpc_val01"] = new TH2D("tpc_val01", ";TPC val 0; TPC val 1;TPC Clusters", 1000, -50., 50., 1000, -50., 50.);
+  h2["tpc_val67"] = new TH2D("tpc_val67", ";TPC val 6; TPC val 7;TPC Clusters", 1000, -50., 50., 1000, -50., 50.);
+  h2["tpc_val01_truth"] = new TH2D("tpc_val01_truth", ";TPC val 0; TPC val 1;TPC Clusters", 1000, -50., 50., 1000, -50., 50.);
+  h2["tpc_val67_truth"] = new TH2D("tpc_val67_truth", ";TPC val 6; TPC val 7;TPC Clusters", 1000, -50., 50., 1000, -50., 50.);
 
   TString name;
   for (ibo = 0; ibo < nboards; ibo++){
@@ -301,9 +385,12 @@ int main(int argc, char* argv[]){
     h2[Form("strip_tdo_vs_ch_%i",  ibo)] = new TH2D(Form("strip_tdo_vs_ch_%i",  ibo), ";strip number;TDO [counts];strip",   512, 0.5, 512.5, 256,   0,  256);
     h2[Form("strip_tdoc_vs_ch_%i", ibo)] = new TH2D(Form("strip_tdoc_vs_ch_%i", ibo), ";strip number;TDO corr. [ns];strip", 512, 0.5, 512.5, 110, -10,  100);
     h2[Form("strip_dbc_vs_ch_%i",  ibo)] = new TH2D(Form("strip_dbc_vs_ch_%i",  ibo), ";strip number;#Delta BC;strip",      512, 0.5, 512.5,  64,   0,   64);
+    h2[Form("strip_dbc_corr_vs_ch_%i",  ibo)] = new TH2D(Form("strip_dbc_corr_vs_ch_%i",  ibo), ";strip number;#Delta BC;strip",      512, 0.5, 512.5,  321,   0,   64);
     h2[Form("strip_time_vs_ch_%i", ibo)] = new TH2D(Form("strip_time_vs_ch_%i", ibo), ";strip number;Time [ns];strip",      512, 0.5, 512.5, 100, 300, 1000);
     h2[Form("strip_zpos_vs_ch_%i", ibo)] = new TH2D(Form("strip_zpos_vs_ch_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 150, -10,   20);
     h2[Form("strip_zdri_vs_ch_%i", ibo)] = new TH2D(Form("strip_zdri_vs_ch_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 150, -10,   20);
+    h2[Form("strip_zdri_vs_ch_vetoBC1_%i", ibo)] = new TH2D(Form("strip_zdri_vs_ch_vetoBC1_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 150, -10,   20);
+    h2[Form("strip_zdri_vs_ch_prezcut_%i", ibo)] = new TH2D(Form("strip_zdri_vs_ch_prezcut_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 150, -10,   20);
     h2[Form("strip_zres_vs_ch_%i", ibo)] = new TH2D(Form("strip_zres_vs_ch_%i", ibo), ";strip number;#Delta z [mm];strip",  512, 0.5, 512.5, 200, -15,   15);
 
     h2[Form("strip_zpos_vs_ch_all_%i", ibo)] = new TH2D(Form("strip_zpos_vs_ch_all_%i", ibo), ";strip number;z_{drift} [mm];strip", 512, 0.5, 512.5, 150, -10, 20);
@@ -454,10 +541,7 @@ int main(int argc, char* argv[]){
       clus_list.Reset();
     clusters_perboard.clear();
     
-    //if (evt > 200000)
-    //  break;
-
-    // calibrate
+    // CALIBRATE
     PDOCalibrator->Calibrate(DATA->mm_EventHits);
     TDOCalibrator->Calibrate(DATA->mm_EventHits);
     PACMAN->SetEventPadTime(0);
@@ -490,7 +574,7 @@ int main(int argc, char* argv[]){
         h1["pdo_ped"] ->Fill(hit.PDOPed());
 
         h2[Form("strip_tdoc_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.Time()+10);
-        h2[Form("strip_dbc_vs_ch_%i",  ibo)]->Fill(hit.Channel(), hit.DeltaBC());
+        //h2[Form("strip_dbc_vs_ch_%i",  ibo)]->Fill(hit.Channel(), hit.DeltaBC());
         h2[Form("strip_time_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.DriftTime(deltaT));
         h2[Form("strip_zpos_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.DriftTime(deltaT) * vdrift);
 
@@ -643,11 +727,19 @@ int main(int argc, char* argv[]){
     slopeY = fit->GetParameter(3);
 
     TMatrixD cov = result->GetCovarianceMatrix();
-    double cov00, cov01, cov10, cov11;
+    double cov00, cov01, cov10, cov11, cov02;
+    double cov22, cov33, cov23, cov13, cov03, cov12;
     cov00 = cov[0][0];
     cov01 = cov[0][1];
     cov10 = cov[1][0];
     cov11 = cov[1][1];
+    cov02 = cov[0][2];
+    cov22 = cov[2][2];
+    cov33 = cov[3][3];
+    cov23 = cov[2][3];
+    cov13 = cov[1][3];
+    cov03 = cov[0][3];
+    cov12 = cov[1][2];
     delete fit;
     delete graph;
     // paolo
@@ -660,7 +752,8 @@ int main(int argc, char* argv[]){
     double track_unc = 0;
     if (clusters_road.size() >= 6){
       for (ibo = 0; ibo < 8; ibo++){
-        track_unc = FitUncertainty(GEOMETRY->Get(ibo).Origin().Z(), slopeX, constX, cov00, cov11, cov01, 0);
+        track_unc = FitStereoUncertainty(GEOMETRY->Get(ibo).Origin().Z(), GEOMETRY->Get(ibo).StripAlpha(), cov00, cov11, 
+                                         cov22, cov33, cov10, cov02, cov03, cov12, cov13, cov23);
         h1[Form("track_unc_%i", ibo)]->Fill(track_unc);
       }
     }
@@ -835,17 +928,35 @@ int main(int argc, char* argv[]){
         x_clus  = plane.Origin().X() + plane.LocalXatYbegin(clus->Channel());
         x_utpc  = plane.Origin().X() + plane.LocalXatYbegin(hit->Channel());
         z_track = (x_utpc - track.ConstX()) / track.SlopeX();
-        offset  = OffsetByBoard(ibo) + channel_offsets[ibo][hit->VMM()][(int)(hit->VMMChannel())];
+        offset = channel_offsets[ibo][hit->VMM()][(int)(hit->VMMChannel())];
+        offset += channel_offsets2[ibo][hit->VMM()][(int)(hit->VMMChannel())];
+        offset += channel_offsets3[ibo][hit->VMM()][(int)(hit->VMMChannel())];
+        offset += channel_offsets4[ibo][hit->VMM()][(int)(hit->VMMChannel())];
+        offset += channel_offsets5[ibo][hit->VMM()][(int)(hit->VMMChannel())];
+        offset += channel_offsets6[ibo][hit->VMM()][(int)(hit->VMMChannel())];
+        offset += channel_offsets7[ibo][hit->VMM()][(int)(hit->VMMChannel())];
+        //offset = 0.;
+        //offset  = OffsetByBoard(ibo) + channel_offsets[ibo][hit->VMM()][(int)(hit->VMMChannel())];
         z_utpc  = zboard[ibo] + sign*(vdrift * hit->DriftTime(deltaT) + offset);
 
+        h2[Form("strip_dbc_vs_ch_%i",  ibo)]->Fill(hit->Channel(), hit->DeltaBC());
+
+        bool susp_bcid = false;
         // rose-colored lens for suspicious BCIDs: keep the best one
         if (hit->SuspiciousBCID()){
+          //continue; // AW just for checks
+          susp_bcid = true;
           hit->SetBCID(hit->BCID() - 1);
           z_utpc_check = zboard[ibo] + sign*(vdrift * hit->DriftTime(deltaT) + offset);
           if (fabs(z_track - z_utpc_check) > fabs(z_track - z_utpc))
             hit->SetBCID(hit->BCID() + 1);
         }
+
+        h2[Form("strip_dbc_corr_vs_ch_%i",  ibo)] ->Fill(hit->Channel(), hit->DeltaBC());
+
         z_utpc = zboard[ibo] + sign*(vdrift * hit->DriftTime(deltaT) + offset);
+
+        h2[Form("strip_zdri_vs_ch_prezcut_%i", ibo)]->Fill(hit->Channel(), vdrift*hit->DriftTime(deltaT) + offset);
 
         if (fabs(x_clus - x_utpc) > fiducial_x)
           continue;
@@ -858,6 +969,9 @@ int main(int argc, char* argv[]){
         if (hit->BCID() % 4 == 1) h2[Form("strip_zres_vs_ch_BC1_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
         if (hit->BCID() % 4 == 2) h2[Form("strip_zres_vs_ch_BC2_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
         if (hit->BCID() % 4 == 3) h2[Form("strip_zres_vs_ch_BC3_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
+
+        if (!susp_bcid)
+          h2[Form("strip_zdri_vs_ch_vetoBC1_%i", ibo)]->Fill(hit->Channel(), vdrift*hit->DriftTime(deltaT) + offset);
 
         h2[Form("strip_zdri_vs_ch_%i",     ibo)]->Fill(hit->Channel(), vdrift*hit->DriftTime(deltaT) + offset);
         h2[Form("strip_zres_vs_ch_%i",     ibo)]->Fill(hit->Channel(), z_utpc - z_track);
@@ -938,7 +1052,21 @@ int main(int argc, char* argv[]){
           h2["track_diff01_utpc_theta"]->Fill(theta(track.SlopeX()), dx);
           h2["track_diff01_utpc_abstheta"]->Fill(fabs(theta(track.SlopeX())), dx);
           h2["tpc_unc01"]->Fill(u_utpc_0, u_utpc_1);
-          h2["tpc_val01"]->Fill(x_utpc_0, x_utpc_1);
+          //std::cout << "x_utpc_0:" << x_utpc_0 << std::endl;
+          double x_tr_ref_0 = track.SlopeX() *  GEOMETRY->Get(0).Origin().Z() + track.ConstX();
+          double x_tr_ref_1 = track.SlopeX() *  GEOMETRY->Get(1).Origin().Z() + track.ConstX();
+          if (ibo == 0) {
+            h2["tpc_val01"]->Fill(x_utpc_0 - x_tr_ref_0, 
+                                  x_utpc_1 - AngleCorrection(0, 1, track.SlopeX(), GEOMETRY) - x_tr_ref_0);
+            h2["tpc_val01_truth"]->Fill(x_utpc_0 - x_tr_ref_0, 
+                                         x_utpc_1 - x_tr_ref_1);
+          }
+          else{
+            h2["tpc_val01"]->Fill(x_utpc_0 + AngleCorrection(0, 1, track.SlopeX(), GEOMETRY) - x_tr_ref_1, 
+                                  x_utpc_1 - x_tr_ref_1);
+//             h2["tpc_val01_truth"]->Fill(x_utpc_0 - x_tr_ref_0, 
+//                                         x_utpc_1 - x_tr_ref_1);
+          }
         }
         if ((ibo == 6 && utpc_7) || (ibo == 7 && utpc_6)){
           dx = x_utpc_6 - x_utpc_7 + AngleCorrection(6, 7, track.SlopeX(), GEOMETRY);
@@ -947,7 +1075,18 @@ int main(int argc, char* argv[]){
           h2["track_diff67_utpc_theta"]->Fill(theta(track.SlopeX()), dx);
           h2["track_diff67_utpc_abstheta"]->Fill(fabs(theta(track.SlopeX())), dx);
           h2["tpc_unc67"]->Fill(u_utpc_6, u_utpc_7);
-          h2["tpc_val67"]->Fill(x_utpc_6, x_utpc_7);
+          double x_tr_ref_6 = track.SlopeX() *  GEOMETRY->Get(6).Origin().Z() + track.ConstX();
+          double x_tr_ref_7 = track.SlopeX() *  GEOMETRY->Get(7).Origin().Z() + track.ConstX();
+          if (ibo == 6){
+            h2["tpc_val67"]->Fill(x_utpc_6 - x_tr_ref_6, 
+                                  x_utpc_7 - AngleCorrection(6, 7, track.SlopeX(), GEOMETRY) - x_tr_ref_6);
+            h2["tpc_val67_truth"]->Fill(x_utpc_6 - x_tr_ref_6, 
+                                        x_utpc_7 - x_tr_ref_7);
+          }
+          else{
+            h2["tpc_val67"]->Fill(x_utpc_6 + AngleCorrection(6, 7, track.SlopeX(), GEOMETRY) - x_tr_ref_7, 
+                                  x_utpc_7 - x_tr_ref_7);
+          }
         }
         if ((ibo == 0 && utpc_6) || (ibo == 6 && utpc_0)){
           dx = x_utpc_0 - x_utpc_6 + AngleCorrection(0, 6, track.SlopeX(), GEOMETRY);
@@ -1125,7 +1264,14 @@ double FitUncertainty(double z, double m, double b, double sigma2_b, double sigm
   }
   return sqrt(unc2);
 }
-
+double FitStereoUncertainty(double z, double alpha, double sigma2_00, double sigma2_11, double sigma2_22, double sigma2_33,
+                            double sigma_01, double sigma_02, double sigma_03, double sigma_12, double sigma_13, double sigma_23){
+  double unc2 = -1;
+  unc2 = sigma2_00 + pow(z,2)*sigma2_11 + pow(TMath::Tan(alpha),2)*sigma2_22 + pow(TMath::Tan(alpha),2)*pow(z,2)*sigma2_33
+    + 2*z*sigma_01 - 2*TMath::Tan(alpha)*sigma_02 - 2*z*TMath::Tan(alpha)*sigma_03 - 2*z*TMath::Tan(alpha)*sigma_12 - 2*pow(z,2)*TMath::Tan(alpha)*sigma_13
+    + 2*z*pow(TMath::Tan(alpha),2)*sigma_23;
+  return sqrt(unc2);
+}
 double AngleCorrection(int i, int j, double slope, GeoOctuplet* GEOMETRY){
   GeoPlane plane_i = GEOMETRY->Get(i);
   GeoPlane plane_j = GEOMETRY->Get(j);

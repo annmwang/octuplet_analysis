@@ -115,15 +115,29 @@ inline double TDOToTime::GetTime(double TDO, int MMFE8, int VMM, int CH) const {
   pair<int,int> key(MMFE8,VMM);
   if(m_MMFE8VMM_to_index.count(key) == 0){
     //PrintError(MMFE8,VMM,CH);
-    return GetTimeDefault(TDO);
+    return -5.;
+    //return GetTimeDefault(TDO);
   }
   int i = m_MMFE8VMM_to_index[key];
 
   if(m_CH_to_index[i].count(CH) == 0){
     //PrintError(MMFE8,VMM,CH);
-    return GetTimeDefault(TDO);
+    return -4.;
+    //return GetTimeDefault(TDO);
   }
   int c = m_CH_to_index[i][CH];
+
+  // Pedestal unrealistic value
+  if (fabs(m_C[c]) > 40.) {
+    //PrintError(MMFE8,VMM,CH);
+    return -2.;
+  }
+
+  // Gain unrealistic value
+  if ( (m_S[c] < 1.) || (m_S[c] > 2.) ) {
+    //PrintError(MMFE8,VMM,CH);
+    return -3.;
+  }
 
   return (TDO-m_C[c])/m_S[c];
 }
@@ -135,12 +149,14 @@ inline double TDOToTime::GetTimeDefault(double TDO) const {
 inline double TDOToTime::GetGain(int MMFE8, int VMM, int CH) const {
   pair<int,int> key(MMFE8,VMM);
   if(m_MMFE8VMM_to_index.count(key) == 0)
-    return m_Sdef;
+    return -999.;
+  //return m_Sdef;
 
   int i = m_MMFE8VMM_to_index[key];
 
   if(m_CH_to_index[i].count(CH) == 0)
-    return m_Sdef;
+    return -999.;
+  //return m_Sdef;
 
   int c = m_CH_to_index[i][CH];
 
@@ -150,12 +166,14 @@ inline double TDOToTime::GetGain(int MMFE8, int VMM, int CH) const {
 inline double TDOToTime::GetPed(int MMFE8, int VMM, int CH) const {
   pair<int,int> key(MMFE8,VMM);
   if(m_MMFE8VMM_to_index.count(key) == 0)
-    return m_Cdef;
+    return -999.;
+  //return m_Cdef;
 
   int i = m_MMFE8VMM_to_index[key];
 
   if(m_CH_to_index[i].count(CH) == 0)
-    return m_Cdef;
+    return -999.;
+  //return m_Cdef;
 
   int c = m_CH_to_index[i][CH];
 
