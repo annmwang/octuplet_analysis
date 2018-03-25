@@ -35,8 +35,12 @@ public:
 
   double Charge() const;
   double Time() const;
-  double DriftTime(double T) const;
+  double DriftTime(double T, int recipe) const;
   double DeltaBC() const;
+  double TDOGain() const;
+  double TDOPed() const;
+  double PDOGain() const;
+  double PDOPed() const;
 
   bool IsChargeCalib() const;
   bool IsTimeCalib() const;
@@ -54,7 +58,11 @@ public:
   void SetFIFOcount(int fifo);
   void SetCharge(double q);
   void SetTime(double t);
-  
+  void SetTDOGain(double g);
+  void SetTDOPed(double p);
+  void SetPDOGain(double g);
+  void SetPDOPed(double p);
+
 private:
   int m_MMFE8;
   int m_MMFE8index;
@@ -70,6 +78,10 @@ private:
 
   double m_charge;
   double m_time;
+  double m_TDO_gain;
+  double m_TDO_ped;
+  double m_PDO_gain;
+  double m_PDO_ped;
 
   bool m_charge_calib;
   bool m_time_calib;
@@ -93,6 +105,10 @@ inline MMHit::MMHit(){
   m_RunNumber = -1;
   m_charge = -1;
   m_time = -1;
+  m_TDO_gain = -1;
+  m_TDO_ped = -1;
+  m_PDO_gain = -1;
+  m_PDO_ped = -1;
 
   m_charge_calib = false;
   m_time_calib = false;
@@ -113,6 +129,10 @@ inline MMHit::MMHit(int mmfe8, int vmm, double ch, int RunNumber){
   m_RunNumber = RunNumber;
   m_charge = -1;
   m_time = -1;
+  m_TDO_gain = -1;
+  m_TDO_ped = -1;
+  m_PDO_gain = -1;
+  m_PDO_ped = -1;
 
   m_charge_calib = false;
   m_time_calib = false;
@@ -135,6 +155,10 @@ inline MMHit::MMHit(const MMHit& hit){
 
   m_charge = hit.Charge();
   m_time = hit.Time();
+  m_TDO_gain = hit.TDOGain();
+  m_TDO_ped = hit.TDOPed();
+  m_PDO_gain = hit.PDOGain();
+  m_PDO_ped = hit.PDOPed();
 
   m_charge_calib = hit.IsChargeCalib();
   m_time_calib = hit.IsTimeCalib();
@@ -204,8 +228,29 @@ inline double MMHit::Time() const {
   return m_time;
 }
 
-inline double MMHit::DriftTime(double T) const {
-  return T - 25*DeltaBC() - Time();
+inline double MMHit::TDOGain() const {
+  return m_TDO_gain;
+}
+
+inline double MMHit::TDOPed() const {
+  return m_TDO_ped;
+}
+
+inline double MMHit::PDOGain() const {
+  return m_PDO_gain;
+}
+
+inline double MMHit::PDOPed() const {
+  return m_PDO_ped;
+}
+
+inline double MMHit::DriftTime(double T, int recipe) const {
+  if (SuspiciousBCID() != 1 or recipe != 2) {
+    return T - 25*DeltaBC() - Time();
+  }
+  else {
+    return T - 25* (DeltaBC() + 0.5) - Time();
+  }
 }
 
 inline double MMHit::DeltaBC() const {
@@ -272,6 +317,22 @@ inline void MMHit::SetCharge(double q){
 inline void MMHit::SetTime(double t){
   m_time = t;
   m_time_calib = true;
+}
+
+inline void MMHit::SetTDOGain(double g){
+  m_TDO_gain = g;
+}
+
+inline void MMHit::SetTDOPed(double p){
+  m_TDO_ped = p;
+}
+
+inline void MMHit::SetPDOGain(double g){
+  m_PDO_gain = g;
+}
+
+inline void MMHit::SetPDOPed(double p){
+  m_PDO_ped = p;
 }
 
 inline void MMHit::SetMMFE8Index(int RunNumber) {

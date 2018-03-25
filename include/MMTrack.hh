@@ -30,6 +30,14 @@ public:
   double ConstY() const;
   double SlopeX() const;
   double SlopeY() const;
+  double CovCXCX() const;
+  double CovCXSX() const;
+  double CovSXSX() const;
+  double CovCYCY() const;
+  double CovCYSY() const;
+  double CovSYSY() const;
+  double XPos(double z) const;
+  double XUnc(double z) const;
   int NX() const;
   int NU() const;
   int NV() const;
@@ -46,6 +54,12 @@ public:
   void SetConstY(double CY);
   void SetSlopeX(double SX);
   void SetSlopeY(double SY);
+  void SetCovCXCX(double val);
+  void SetCovCXSX(double val);
+  void SetCovSXSX(double val);
+  void SetCovCYCY(double val);
+  void SetCovCYSY(double val);
+  void SetCovSYSY(double val);
   void CountHit(int immfe8);
   
   TGraph*   GetXZGraph(double zmin, double zmax) const;
@@ -59,6 +73,12 @@ private:
   double m_CY;
   double m_SX;
   double m_SY;
+  double m_covCXCX;
+  double m_covCXSX;
+  double m_covSXSX;
+  double m_covCYCY;
+  double m_covCYSY;
+  double m_covSYSY;
   
   // number of hits counting for all boards
   int m_NX;
@@ -80,6 +100,12 @@ inline MMTrack::MMTrack(){
   m_CY = 0.;
   m_SX = 0.;
   m_SY = 0.;
+  m_covCXCX = 0.;
+  m_covCXSX = 0.;
+  m_covSXSX = 0.;
+  m_covCYCY = 0.;
+  m_covCYSY = 0.;
+  m_covSYSY = 0.;
   m_NX = 0;
   m_NU = 0;
   m_NV = 0;
@@ -94,6 +120,12 @@ inline MMTrack::MMTrack(const MMTrack& track){
   m_CY = track.ConstY();
   m_SX = track.SlopeX();
   m_SY = track.SlopeX();
+  m_covCXCX = track.CovCXCX();
+  m_covCXSX = track.CovCXSX();
+  m_covSXSX = track.CovSXSX();
+  m_covCYCY = track.CovCYCY();
+  m_covCYSY = track.CovCYSY();
+  m_covSYSY = track.CovSYSY();
   m_NX = track.NX();
   m_NU = track.NU();
   m_NV = track.NV();
@@ -110,6 +142,12 @@ inline void MMTrack::Reset(){
   m_CY = 0.;
   m_SX = 0.;
   m_SY = 0.;
+  m_covCXCX = 0.;
+  m_covCXSX = 0.;
+  m_covSXSX = 0.;
+  m_covCYCY = 0.;
+  m_covCYSY = 0.;
+  m_covSYSY = 0.;
   m_NX = 0;
   m_NU = 0;
   m_NV = 0;
@@ -140,6 +178,12 @@ inline double MMTrack::ConstX() const { return m_CX; }
 inline double MMTrack::ConstY() const { return m_CY; }
 inline double MMTrack::SlopeX() const { return m_SX; }
 inline double MMTrack::SlopeY() const { return m_SY; }
+inline double MMTrack::CovCXCX() const { return m_covCXCX; }
+inline double MMTrack::CovCXSX() const { return m_covCXSX; }
+inline double MMTrack::CovSXSX() const { return m_covSXSX; }
+inline double MMTrack::CovCYCY() const { return m_covCYCY; }
+inline double MMTrack::CovCYSY() const { return m_covCYSY; }
+inline double MMTrack::CovSYSY() const { return m_covSYSY; }
 inline    int MMTrack::NX()     const { return m_NX; }
 inline    int MMTrack::NU()     const { return m_NU; }
 inline    int MMTrack::NV()     const { return m_NV; }
@@ -193,11 +237,28 @@ inline TVector3 MMTrack::PointZ(double z) const {
   return p;
 }
 
+inline double MMTrack::XPos(double z) const {
+  return PointZ(z).X();
+}
+
+inline double MMTrack::XUnc(double z) const {
+  // x = mz + b
+  // dx2 = 
+  // return PointZ(z).X();
+  return 0.0;
+}
+
 inline void MMTrack::SetRes2(double Res2){ m_Res2 = Res2; }
 inline void MMTrack::SetConstX(double CX){ m_CX = CX; }
 inline void MMTrack::SetConstY(double CY){ m_CY = CY; }
 inline void MMTrack::SetSlopeX(double SX){ m_SX = SX; }
 inline void MMTrack::SetSlopeY(double SY){ m_SY = SY; }
+inline void MMTrack::SetCovCXCX(double val){ m_covCXCX = val; }
+inline void MMTrack::SetCovCXSX(double val){ m_covCXSX = val; }
+inline void MMTrack::SetCovSXSX(double val){ m_covSXSX = val; }
+inline void MMTrack::SetCovCYCY(double val){ m_covCYCY = val; }
+inline void MMTrack::SetCovCYSY(double val){ m_covCYSY = val; }
+inline void MMTrack::SetCovSYSY(double val){ m_covSYSY = val; }
 
 inline void MMTrack::CountHit(int immfe8) {
     if      (immfe8 == 0 || immfe8 == 1 ||

@@ -25,6 +25,10 @@ public:
   // returns charge in fC
   double GetTime(double TDO, int MMFE8, int VMM, int CH) const;
 
+  // return calibration constants
+  double GetGain(int MMFE8, int VMM, int CH) const;
+  double GetPed (int MMFE8, int VMM, int CH) const;
+
   double GetTimeDefault(double TDO) const;
 
   // returns chi2 from PDO v charge fit
@@ -111,21 +115,69 @@ inline double TDOToTime::GetTime(double TDO, int MMFE8, int VMM, int CH) const {
   pair<int,int> key(MMFE8,VMM);
   if(m_MMFE8VMM_to_index.count(key) == 0){
     //PrintError(MMFE8,VMM,CH);
-    return GetTimeDefault(TDO);
+    return -5.;
+    //return GetTimeDefault(TDO);
   }
   int i = m_MMFE8VMM_to_index[key];
 
   if(m_CH_to_index[i].count(CH) == 0){
     //PrintError(MMFE8,VMM,CH);
-    return GetTimeDefault(TDO);
+    return -4.;
+    //return GetTimeDefault(TDO);
   }
   int c = m_CH_to_index[i][CH];
+
+  // Pedestal unrealistic value
+  if (fabs(m_C[c]) > 40.) {
+    //PrintError(MMFE8,VMM,CH);
+    return -2.;
+  }
+
+  // Gain unrealistic value
+  if ( (m_S[c] < 1.) || (m_S[c] > 2.) ) {
+    //PrintError(MMFE8,VMM,CH);
+    return -3.;
+  }
 
   return (TDO-m_C[c])/m_S[c];
 }
 
 inline double TDOToTime::GetTimeDefault(double TDO) const {
   return (TDO-m_Cdef)/m_Sdef;
+}
+
+inline double TDOToTime::GetGain(int MMFE8, int VMM, int CH) const {
+  pair<int,int> key(MMFE8,VMM);
+  if(m_MMFE8VMM_to_index.count(key) == 0)
+    return -999.;
+  //return m_Sdef;
+
+  int i = m_MMFE8VMM_to_index[key];
+
+  if(m_CH_to_index[i].count(CH) == 0)
+    return -999.;
+  //return m_Sdef;
+
+  int c = m_CH_to_index[i][CH];
+
+  return m_S[c];
+}
+
+inline double TDOToTime::GetPed(int MMFE8, int VMM, int CH) const {
+  pair<int,int> key(MMFE8,VMM);
+  if(m_MMFE8VMM_to_index.count(key) == 0)
+    return -999.;
+  //return m_Cdef;
+
+  int i = m_MMFE8VMM_to_index[key];
+
+  if(m_CH_to_index[i].count(CH) == 0)
+    return -999.;
+  //return m_Cdef;
+
+  int c = m_CH_to_index[i][CH];
+
+  return m_C[c];
 }
 
 // returns chi2 from PDO v charge fit
@@ -184,4 +236,6 @@ inline void TDOToTime::Calibrate(MMFE8Hits& hits) const {
 inline void TDOToTime::Calibrate(MMHit& hit) const {
   // Jonah calib: 10 ns offset (why)
   hit.SetTime(GetTime(hit.TDO(), hit.MMFE8(), hit.VMM(), hit.VMMChannel()) - 10);
+  hit.SetTDOGain(GetGain(hit.MMFE8(), hit.VMM(), hit.VMMChannel()));
+  hit.SetTDOPed(GetPed(  hit.MMFE8(), hit.VMM(), hit.VMMChannel()));
 }

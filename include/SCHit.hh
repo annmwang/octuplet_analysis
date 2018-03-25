@@ -129,6 +129,33 @@ inline void SCHit::CorrectCount(int RunNumber){
     else if (m_CH == 27) m_Count += 6.2-1.4;
   }
   else if (RunNumber > 3540){
+    if      (m_CH ==  0) m_Count += -2.+0.6;
+    else if (m_CH ==  1) m_Count += 3.-2.6-3.2;
+    else if (m_CH ==  2) m_Count += -5.+6.2;
+    else if (m_CH ==  3) m_Count += -2.+0.8;
+    else if (m_CH ==  4) m_Count += -5.+4.2;
+    else if (m_CH ==  5) m_Count += -1.+1.1-0.7;
+    else if (m_CH ==  6) m_Count += 4.-3.2;
+    else if (m_CH ==  7) m_Count +=  0.1+0.6;
+    else if (m_CH ==  8) m_Count += 3.+0.4-3.;
+    else if (m_CH ==  9) m_Count += 3.-0.8-2.0;
+    else if (m_CH == 10) m_Count += -1.-0.7+1.;
+    else if (m_CH == 11) m_Count += -1.-0.3+0.8;
+    // ----------------------------------
+    // no correction to middle scint.
+    // ----------------------------------
+    else if (m_CH == 16) m_Count += -1.8;
+    else if (m_CH == 17) m_Count +=  2.4;
+    else if (m_CH == 18) m_Count +=  1.2;
+    else if (m_CH == 19) m_Count += -7.+0.6+4.2;
+    else if (m_CH == 20) m_Count +=  0.5-1.+0.6;
+    else if (m_CH == 21) m_Count += -1.6+1.1;
+    else if (m_CH == 22) m_Count +=  1.1;
+    else if (m_CH == 23) m_Count +=  2.0;
+    else if (m_CH == 24) m_Count += -0.1;
+    else if (m_CH == 25) m_Count += 1.-2.0-3.0+0.6;
+    else if (m_CH == 26) m_Count += -2.6+0.3+2.0;
+    else if (m_CH == 27) m_Count += 6.2-1.4-5.1;
   }
 }
 
@@ -149,9 +176,10 @@ inline int SCHit::PassCountReqs(int RunNumber) {
     else                return (int)(m_Count >= 175.0 && m_Count <= 225.0);
   }
   else if (RunNumber >= 3540) {
-    if      (m_CH < 12) return (int)(m_Count >  170.0 && m_Count  < 245.0);
-    else if (m_CH > 15) return (int)(m_Count >  200.0 && m_Count  < 260.0);
-    else                return (int)(m_Count >= 220.0 && m_Count <= 260.0);
+    // paolo has a 25 count offset
+    if      (m_CH < 12) return (int)(m_Count >  175.0 && m_Count  < 235.0);
+    else if (m_CH > 15) return (int)(m_Count >  195.0 && m_Count  < 255.0);
+    else                return (int)(m_Count >= 235.0 && m_Count <= 255.0);
   }
   else{
     std::cout << "Need to add RunNumber settings to include/SCHit.hh! Error!" << std::endl;
