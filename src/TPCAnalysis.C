@@ -42,7 +42,7 @@ void progress(double time_diff, int nprocessed, int ntotal);
 double channel_from_x(double xpos, int board, GeoOctuplet* geo, int begin);
 double theta(double slope);
 std::tuple<double, double> fit(std::vector<double> xs, std::vector<double> zs);
-std::tuple<double, double, double, double, double, double, double, double, double> fit_root(std::vector<double> xs, std::vector<double> zs, int invert);
+std::tuple<double, double, double, double, double, double, double, double, double> fit_root(std::vector<double> xs, std::vector<double> zs, int invert, bool add_unc);
 double FitUncertainty(double z, double m, double b, double sigma2_b, double sigma2_m, double sigma_bm, int invert);
 double FitStereoUncertainty(double z, double alpha, double sigma2_00, double sigma2_11, double sigma2_22, double sigma2_33, 
                             double sigma_01, double sigma_02, double sigma_03, double sigma_12, double sigma_13, double sigma_23);
@@ -69,6 +69,7 @@ int main(int argc, char* argv[]){
   char PDOFileName[400];
   char TDOFileName[400];
   char AlignFileName[400];
+  int recipe = 0;
   
   if ( argc < 5 ){
     cout << "Error at Input: please specify input/output .root files ";
@@ -89,7 +90,6 @@ int main(int argc, char* argv[]){
   bool b_tdo   = false;
   bool b_align = false;
   bool b_paolo = false;
-  int recipe = 0;
   bool b_recipe = false;
   for (int i=1;i<argc-1;i++){
     if (strncmp(argv[i],"-i",2)==0){
@@ -112,14 +112,15 @@ int main(int argc, char* argv[]){
       sscanf(argv[i+1],"%s", AlignFileName);
       b_align = true;
     }
+    if (strncmp(argv[i],"--r",3)==0){
+      recipe = atoi(argv[i+1]);
+      b_recipe = true;
+    }
     if (strncmp(argv[i+1],"-g",2)==0){
       b_paolo = true;
     }
-    if (strncmp(argv[i+1],"--r",3)==0){
-      sscanf(argv[i+1],"%d",&recipe);
-      b_recipe = true;
-    }
   }
+  std::cout << recipe << std::endl;
 
   if(!b_input) std::cout << "Error at Input: please specify  input file (-i flag)" << std::endl;
   if(!b_out)   std::cout << "Error at Input: please specify output file (-o flag)" << std::endl;
@@ -132,7 +133,7 @@ int main(int argc, char* argv[]){
       std::cout << "Vetoing all hits with BC %4 == 1" << std::endl;
     }
     if (recipe == 2){
-      std::cout << "Assigning BC %4 == 1 to 0.625 mm from track z" << std::endl;
+      std::cout << "Assigning BC %4 == 1 to BC minus 0.5" << std::endl;
     }
   }
 
@@ -202,6 +203,16 @@ int main(int argc, char* argv[]){
     channel_offsets7.push_back( std::vector< std::vector<double> >() );
     for (int vm = 0; vm < 8; vm++)
       channel_offsets7[bo].push_back( ChannelOffsets(fname7, bo, vm) );
+  }
+
+  std::string fname8 = "corrections/drift_offsets_8.txt";
+  //std::string fname = "corrections/drift_offst.txt";
+  std::vector< std::vector< std::vector<double> > > channel_offsets8 = {};
+  //std::vector< std::map< std::tuple<int,int>, double > > channel_offsets = {};
+  for (int bo = 0; bo < 8; bo++){
+    channel_offsets8.push_back( std::vector< std::vector<double> >() );
+    for (int vm = 0; vm < 8; vm++)
+      channel_offsets8[bo].push_back( ChannelOffsets(fname8, bo, vm) );
   }
 
   const int nboards = 8;
@@ -575,12 +586,12 @@ int main(int argc, char* argv[]){
 
         h2[Form("strip_tdoc_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.Time()+10);
         //h2[Form("strip_dbc_vs_ch_%i",  ibo)]->Fill(hit.Channel(), hit.DeltaBC());
-        h2[Form("strip_time_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.DriftTime(deltaT));
-        h2[Form("strip_zpos_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.DriftTime(deltaT) * vdrift);
+        h2[Form("strip_time_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.DriftTime(deltaT, recipe));
+        h2[Form("strip_zpos_vs_ch_%i", ibo)]->Fill(hit.Channel(), hit.DriftTime(deltaT, recipe) * vdrift);
 
         double fiducial_z_hi =  6.6;
         double fiducial_z_lo = -1.2;
-        double zdrift = hit.DriftTime(deltaT) * vdrift;
+        double zdrift = hit.DriftTime(deltaT, recipe) * vdrift;
         if (zdrift < fiducial_z_hi && zdrift > fiducial_z_lo){
           if (true)                  h2[Form("strip_zpos_vs_ch_all_%i", ibo)]->Fill(hit.Channel(), zdrift);
           if ( hit.SuspiciousBCID()) h2[Form("strip_zpos_vs_ch_nok_%i", ibo)]->Fill(hit.Channel(), zdrift);
@@ -899,6 +910,7 @@ int main(int argc, char* argv[]){
     double u_bary_0 = -999, u_bary_1 = -999, u_bary_6 = -999, u_bary_7 = -999;
     double u_comb_0 = -999, u_comb_1 = -999, u_comb_6 = -999, u_comb_7 = -999;
 
+    bool clus_w_susp_bcid = false;
     for (auto clus: clusters_road){
       
       // N-1 track
@@ -935,34 +947,40 @@ int main(int argc, char* argv[]){
         offset += channel_offsets5[ibo][hit->VMM()][(int)(hit->VMMChannel())];
         offset += channel_offsets6[ibo][hit->VMM()][(int)(hit->VMMChannel())];
         offset += channel_offsets7[ibo][hit->VMM()][(int)(hit->VMMChannel())];
+        offset += channel_offsets8[ibo][hit->VMM()][(int)(hit->VMMChannel())];
         //offset = 0.;
         //offset  = OffsetByBoard(ibo) + channel_offsets[ibo][hit->VMM()][(int)(hit->VMMChannel())];
-        z_utpc  = zboard[ibo] + sign*(vdrift * hit->DriftTime(deltaT) + offset);
+        z_utpc  = zboard[ibo] + sign*(vdrift * hit->DriftTime(deltaT, recipe) + offset);
 
         h2[Form("strip_dbc_vs_ch_%i",  ibo)]->Fill(hit->Channel(), hit->DeltaBC());
 
         bool susp_bcid = false;
         // rose-colored lens for suspicious BCIDs: keep the best one
         if (hit->SuspiciousBCID()){
-          //continue; // AW just for checks
           susp_bcid = true;
-          hit->SetBCID(hit->BCID() - 1);
-          z_utpc_check = zboard[ibo] + sign*(vdrift * hit->DriftTime(deltaT) + offset);
-          if (fabs(z_track - z_utpc_check) > fabs(z_track - z_utpc))
-            hit->SetBCID(hit->BCID() + 1);
+          clus_w_susp_bcid = true;
+          if (recipe == 1) {
+            continue;
+          }
+          if (recipe == 0) {
+            hit->SetBCID(hit->BCID() - 1);
+            z_utpc_check = zboard[ibo] + sign*(vdrift * hit->DriftTime(deltaT, recipe) + offset);
+            if (fabs(z_track - z_utpc_check) > fabs(z_track - z_utpc))
+              hit->SetBCID(hit->BCID() + 1);
+          }
         }
 
         h2[Form("strip_dbc_corr_vs_ch_%i",  ibo)] ->Fill(hit->Channel(), hit->DeltaBC());
 
-        z_utpc = zboard[ibo] + sign*(vdrift * hit->DriftTime(deltaT) + offset);
+        z_utpc = zboard[ibo] + sign*(vdrift * hit->DriftTime(deltaT, recipe) + offset);
 
-        h2[Form("strip_zdri_vs_ch_prezcut_%i", ibo)]->Fill(hit->Channel(), vdrift*hit->DriftTime(deltaT) + offset);
+        h2[Form("strip_zdri_vs_ch_prezcut_%i", ibo)]->Fill(hit->Channel(), vdrift*hit->DriftTime(deltaT, recipe) + offset);
 
         if (fabs(x_clus - x_utpc) > fiducial_x)
           continue;
-        if (vdrift*hit->DriftTime(deltaT) + offset > fiducial_z_hi)
+        if (vdrift*hit->DriftTime(deltaT, recipe) + offset > fiducial_z_hi)
           continue;
-        if (vdrift*hit->DriftTime(deltaT) + offset < fiducial_z_lo)
+        if (vdrift*hit->DriftTime(deltaT, recipe) + offset < fiducial_z_lo)
           continue;
 
         if (hit->BCID() % 4 == 0) h2[Form("strip_zres_vs_ch_BC0_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
@@ -971,11 +989,11 @@ int main(int argc, char* argv[]){
         if (hit->BCID() % 4 == 3) h2[Form("strip_zres_vs_ch_BC3_%i", ibo)]->Fill(hit->Channel(), z_utpc - z_track);
 
         if (!susp_bcid)
-          h2[Form("strip_zdri_vs_ch_vetoBC1_%i", ibo)]->Fill(hit->Channel(), vdrift*hit->DriftTime(deltaT) + offset);
+          h2[Form("strip_zdri_vs_ch_vetoBC1_%i", ibo)]->Fill(hit->Channel(), vdrift*hit->DriftTime(deltaT, recipe) + offset);
 
-        h2[Form("strip_zdri_vs_ch_%i",     ibo)]->Fill(hit->Channel(), vdrift*hit->DriftTime(deltaT) + offset);
+        h2[Form("strip_zdri_vs_ch_%i",     ibo)]->Fill(hit->Channel(), vdrift*hit->DriftTime(deltaT, recipe) + offset);
         h2[Form("strip_zres_vs_ch_%i",     ibo)]->Fill(hit->Channel(), z_utpc - z_track);
-        h2[Form("strip_zpos_vs_ztrack_%i", ibo)]->Fill(sign*(z_track - zboard[ibo]), vdrift*hit->DriftTime(deltaT) + offset);
+        h2[Form("strip_zpos_vs_ztrack_%i", ibo)]->Fill(sign*(z_track - zboard[ibo]), vdrift*hit->DriftTime(deltaT, recipe) + offset);
         xs.push_back(x_utpc);
         zs.push_back(z_utpc);
         ntpc++;
@@ -990,7 +1008,11 @@ int main(int argc, char* argv[]){
 
         // local fit
         int invert = 1;
-        std::tie(slope, offset, chi2, ndf, prob, cov00, cov01, cov10, cov11) = fit_root(xs, zs, invert);
+        bool add_bcid_unc = false;
+        if (clus_w_susp_bcid && recipe == 2){
+          add_bcid_unc = true;
+        }
+        std::tie(slope, offset, chi2, ndf, prob, cov00, cov01, cov10, cov11) = fit_root(xs, zs, invert, add_bcid_unc);
         x_fit    = (z_half - offset) / slope;
         x_track  = track.SlopeX()*z_half + track.ConstX();
         residual = x_fit - x_track;
@@ -1068,6 +1090,7 @@ int main(int argc, char* argv[]){
 //                                         x_utpc_1 - x_tr_ref_1);
           }
         }
+
         if ((ibo == 6 && utpc_7) || (ibo == 7 && utpc_6)){
           dx = x_utpc_6 - x_utpc_7 + AngleCorrection(6, 7, track.SlopeX(), GEOMETRY);
           h1["track_diff67_utpc"]->Fill(dx);
@@ -1207,14 +1230,20 @@ std::tuple<double, double> fit(std::vector<double> xs, std::vector<double> zs){
   return std::make_pair(slope, offset);
 }
 
-std::tuple<double, double, double, double, double, double, double, double, double> fit_root(std::vector<double> xs, std::vector<double> zs, int invert){
+std::tuple<double, double, double, double, double, double, double, double, double> fit_root(std::vector<double> xs, std::vector<double> zs, int invert, bool add_unc){
 
   TGraphErrors* graph = 0;
   TF1* fit = 0;
   TFitResultPtr result = 0;
 
   double dummy = 0;
-  double unc_z = 0.60;
+  double unc_z;
+  if (!add_unc) {
+    unc_z = 0.60;
+  }
+  else {
+    unc_z = sqrt(pow(0.6,2) + pow(0.625*2/sqrt(12),2)); // add uncertainty of BC
+  }
   std::vector<double> exs = {};
   std::vector<double> ezs = {};
   for (auto z: zs){

@@ -9,10 +9,12 @@ import array
 import copy
 import math
 import os
+import sys
 import ROOT
+import numpy as np 
 ROOT.gROOT.SetBatch()
 
-bigpdf = True
+bigpdf = False
 
 def main():
 
@@ -201,6 +203,10 @@ def main():
     #    strip_duplicates_vs_channel(dups_vs_ch, bo, pdf)
     #for bo in xrange(8):
     #    strip_lifetime(ch_vs_time[bo], bo, event_range(ops.r), pdf)
+            
+    #close_pdf(pdf)
+    #sys.exit(1)
+
     for bo in xrange(8):
         if bo in [0, 1, 6, 7]:
             strip_zres(zres_vs_ch[bo],   bo, pdf)
@@ -403,7 +409,14 @@ def filename(run, align=""):
     elif run == "3545-3547" : return "test_3545-3547.root" if not align else "test_3545-3547_%s.root" % (align)
     elif run == "3545-3548" : return "test_3545-3548.root" if not align else "test_3545-3548_%s.root" % (align)
     # elif run == "3545-3549" : return "test_3545-3549.root" if not align else "test_3545-3549_%s.root" % (align)
-    elif run == "3545-3549" : return "test_3545-3549.root"
+    #elif run == "3545-3549" : return "tpc_Run3545-3549_no_offset.root"
+    elif run == "3545-3549" : return "tpc_Run3545-3549_BC0p5_fixedoffsets.root"
+    #elif run == "3545-3549" : return "tpc_Run3545-3549_vetosuspBC.root"
+    #elif run == "3545-3549" : return "tpc_Run3545-3549_BC0p5.root"
+    #elif run == "3545-3549" : return "tpc_Run3545-3549_updated_trackuncfix.root"
+    #elif run == "3545-3549" : return "tpc_Run3545-3549.root"
+    #elif run == "3545-3549" : return "../../utpc/octuplet_analysis/tpc_Run3545-3549_TDOonly.root"
+    # elif run == "3545-3549" : return "test_3545-3549.root"
     fatal("Dont have filename for %s" % (run))
 
 def event_range(run):
@@ -472,7 +485,7 @@ def strip_charge_vs_channel(h2, board, pdf):
     h2.RebinY(4)
     h2.GetXaxis().SetTitle("Strip number")
     h2.GetYaxis().SetTitle("Charge [fC]")
-    h2.GetZaxis().SetTitle("Strips")
+    h2.GetZaxis().SetTitle("Events")
     style(h2)
     h2.GetZaxis().SetTitleOffset(1.6)
     h2.Draw("colz")
@@ -495,7 +508,7 @@ def strip_pdo_vs_channel(h2, board, pdf):
     h2.RebinY(4)
     h2.GetXaxis().SetTitle("Strip number")
     h2.GetYaxis().SetTitle("PDO [counts]")
-    h2.GetZaxis().SetTitle("Strips")
+    h2.GetZaxis().SetTitle("Events")
     h2.GetYaxis().SetRangeUser(0, 1200)
     style(h2)
     h2.GetZaxis().SetTitleOffset(1.6)
@@ -519,7 +532,7 @@ def strip_tdo_vs_channel(h2, board, pdf):
     h2.RebinY(4)
     h2.GetXaxis().SetTitle("Strip number")
     h2.GetYaxis().SetTitle("TDO [counts]")
-    h2.GetZaxis().SetTitle("Strips")
+    h2.GetZaxis().SetTitle("Events")
     style(h2)
     h2.GetZaxis().SetTitleOffset(1.6)
     h2.Draw("colz")
@@ -542,8 +555,9 @@ def strip_tdoc_vs_channel(h2, board, pdf):
     # h2.RebinY(4)
     h2.GetXaxis().SetTitle("Strip number")
     h2.GetYaxis().SetTitle("TDO [ns]")
-    h2.GetZaxis().SetTitle("Strips")
+    h2.GetZaxis().SetTitle("Events")
     style(h2)
+    h2.GetYaxis().SetRangeUser(-10.,60.)
     h2.GetZaxis().SetTitleOffset(1.6)
     h2.Draw("colz")
 
@@ -567,7 +581,7 @@ def strip_zpos_vs_channel(h2, board, pdf, ontrack=False):
     # h2.RebinY(4)
     h2.GetXaxis().SetTitle("Strip number")
     h2.GetYaxis().SetTitle("Drift position [mm]")
-    h2.GetZaxis().SetTitle("Strips")
+    h2.GetZaxis().SetTitle("Events")
     style(h2)
     h2.GetZaxis().SetTitleOffset(1.6)
     h2.Draw("colz")
@@ -608,13 +622,40 @@ def strip_zpos_vs_channel(h2, board, pdf, ontrack=False):
     latex2.Draw()
     save(canv, pdf, "strip_%s_mmfe%s_proj.pdf" % ("zdri" if ontrack else "zpos", board))
 
+    # -------- profile -----------
+    rootlogon()
+    ROOT.gStyle.SetPadLeftMargin(0.18)
+    prof = h2.ProfileX()
+    style(prof)
+    #prof.GetXaxis().SetRangeUser(-8, 16)
+    prof.GetYaxis().SetRangeUser(-1.2, 6.6)
+    #prof.GetYaxis().SetRangeUser(2., 2.7+.7)
+    prof.GetYaxis().SetTitleOffset(1.6)
+    prof.SetLineWidth(2)
+    prof.SetLineColor(ROOT.kBlack)
+    #prof.SetFillColor(ROOT.kYellow)
+    prof.GetYaxis().SetTitle("Drift average [mm]")
+    prof.GetXaxis().SetTitle("Strip number")
+    prof.GetZaxis().SetTitle("Events")
+    canv = ROOT.TCanvas("%s_%s_prof" % ("zdri" if ontrack else "zpos", board), 
+                        "%s_%s_prof" % ("zdri" if ontrack else "zpos", board), 
+                        800, 800)
+    canv.Draw()
+    prof.Draw()
+    #prof.Draw("histsame")
+    latex.SetX(latex.GetX()+0.1)
+    latex2.SetX(latex2.GetX()+0.1)
+    latex.Draw()
+    latex2.Draw()
+    save(canv, pdf, "strip_%s_mmfe%s_prof.pdf" % ("zdri" if ontrack else "zpos", board))
+
 def strip_zres(h2, board, pdf, bc=None):
 
     rootlogon()
     zres = h2.ProjectionY()
     zres.GetXaxis().SetRangeUser(-10, 10)
     zres.GetXaxis().SetTitle("#Deltaz(#muTPC, track) [mm]")
-    zres.GetYaxis().SetTitle("Strips")
+    zres.GetYaxis().SetTitle("Events")
     style(zres)
     zres.SetLineWidth(2)
     zres.SetLineColor(ROOT.kBlack)
@@ -671,7 +712,7 @@ def phi_vs_phi(h2, board, pdf):
     h2.GetYaxis().SetRangeUser(-2, 2)
     h2.GetXaxis().SetTitle("Track slope")
     h2.GetYaxis().SetTitle("#muTPC slope")
-    h2.GetZaxis().SetTitle("Clusters")
+    h2.GetZaxis().SetTitle("Events")
     style(h2)
     h2.GetYaxis().SetTitleOffset(1.2)
     h2.GetZaxis().SetTitleOffset(1.6)
@@ -699,7 +740,7 @@ def tpc_fitprob(h2, pdf):
         proj.SetLineColor(ROOT.kBlack)
         proj.SetFillColor(ROOT.kMagenta-10)
         proj.GetXaxis().SetTitle("#muTPC fit probability")
-        proj.GetYaxis().SetTitle("#muTPC clusters")
+        proj.GetYaxis().SetTitle("Events")
         proj.Draw("histsame")
 
         latex = ROOT.TLatex(0.20, 0.95, "Board %s" % (bo))
@@ -724,7 +765,7 @@ def tpc_unc(h1, bo, pdf):
     h1.Rebin(2)
     h1.GetXaxis().SetRangeUser(-2, 30)
     h1.GetXaxis().SetTitle("#muTPC uncertainty [mm]")
-    h1.GetYaxis().SetTitle("Clusters")
+    h1.GetYaxis().SetTitle("Events")
     h1.GetYaxis().SetTitleOffset(1.4)
     h1.Draw("histsame")
 
@@ -752,7 +793,7 @@ def track_unc(h1, bo, pdf):
     h1.Rebin(2)
     h1.GetXaxis().SetRangeUser(0, 1.3)
     h1.GetXaxis().SetTitle("Track uncertainty [mm]")
-    h1.GetYaxis().SetTitle("Tracks")
+    h1.GetYaxis().SetTitle("Events")
     h1.GetYaxis().SetTitleOffset(1.9)
     h1.Draw("histsame")
 
@@ -797,7 +838,9 @@ def dx_ij_vs_theta(h2, fabs, pdf, dxrange, tag=None, onesided=True):
 
     h2.GetXaxis().SetTitle("#theta_{MM} [deg.]" if not fabs else "#left|#theta_{MM}#right| [deg.]")
     h2.GetYaxis().SetTitle("x_{%s,i} #minus x_{%s,j} [mm]" % (meas.replace("uTPC", "#muTPC"), meas.replace("uTPC", "#muTPC")))
-    h2.GetZaxis().SetTitle("Clusters")
+    h2.GetZaxis().SetTitle("Events")
+    #h2.GetZaxis().SetTitle("Clusters")
+
     if d01:
         h2.GetYaxis().SetTitle(h2.GetYaxis().GetTitle().replace(",i", ",0").replace(",j", ",1"))
     if d67:
@@ -809,8 +852,8 @@ def dx_ij_vs_theta(h2, fabs, pdf, dxrange, tag=None, onesided=True):
         if tag:
             h2.GetXaxis().SetRangeUser(-25, -10)
 
-    h2.GetYaxis().SetRangeUser(-dxrange*2, dxrange*2)
-
+    h2.GetYaxis().SetRangeUser(-dxrange, dxrange)
+    
     style(h2)
     h2.GetYaxis().SetTitleOffset(1.2)
     h2.GetZaxis().SetTitleOffset(1.6)
@@ -835,11 +878,23 @@ def dx_ij_vs_theta(h2, fabs, pdf, dxrange, tag=None, onesided=True):
     rootlogon()
     ROOT.gStyle.SetPadLeftMargin(0.14)
     if onesided:
-        h2_ = h2.RebinX(2, h2.GetName()+"_rebinx")
+        h2_ = h2.RebinX(8, h2.GetName()+"_rebinx") # AW
         prof = h2_.ProfileX("_pfx", h2.GetYaxis().FindBin(-dxrange), h2.GetYaxis().FindBin(dxrange), "s")
     else:
         prof = h2.ProfileX("_pfx", h2.GetYaxis().FindBin(-dxrange), h2.GetYaxis().FindBin(dxrange), "s")
     prof1 = None
+
+    # find the rms devs + errors
+    nbinsx = h2.GetXaxis().GetNbins()
+    sigs = []
+    sigerrs = []
+    if onesided:
+        for i in np.arange(0,nbinsx/8):
+            h2_ = h2.ProjectionY("proj_%d"%(i*8+1), i*8+1, i*8+8) # AW
+            h2_.GetXaxis().SetRangeUser(-dxrange, dxrange)
+            sigs.append(h2_.GetRMS())
+            sigerrs.append(h2_.GetRMSError())
+
     if onesided:
         name1 = prof.GetName() + "_onesided"
         title = ";%s;%s" % (prof.GetXaxis().GetTitle(), prof.GetYaxis().GetTitle())
@@ -848,9 +903,11 @@ def dx_ij_vs_theta(h2, fabs, pdf, dxrange, tag=None, onesided=True):
         xmax  = prof.GetXaxis().GetBinLowEdge(nbins+1)
         prof1 = ROOT.TH1F(name1, title, nbins, xmin, xmax)
         for bin in xrange(1, nbins+1):
-            if prof.GetBinError(bin) > 0.01:
-                prof1.SetBinContent(bin, prof.GetBinError(bin))
-            prof1.SetBinError(  bin, 0.000001)
+            #if prof.GetBinError(bin) > 0.01:
+            #    prof1.SetBinContent(bin, prof.GetBinError(bin))
+            #prof1.SetBinError(  bin, 0.000001)
+            prof1.SetBinContent(bin, sigs[bin-1])
+            prof1.SetBinError(bin, sigerrs[bin-1])
         prof = prof1
 
     style(prof)
@@ -871,7 +928,7 @@ def dx_ij_vs_theta(h2, fabs, pdf, dxrange, tag=None, onesided=True):
         if dxrange > 10:
             prof.SetMaximum(2)
         else:
-            prof.SetMaximum(1)
+            prof.SetMaximum(1.2)
     prof.GetYaxis().SetTitleOffset(1.4)
     prof.GetYaxis().SetTitle("RMS of %s" % (h2.GetYaxis().GetTitle()))
     if onesided:
@@ -885,11 +942,14 @@ def dx_ij_vs_theta(h2, fabs, pdf, dxrange, tag=None, onesided=True):
     canv = ROOT.TCanvas(name+"prof", name+"prof", 800, 800)
     canv.Draw()
     canv.SetGrid()
+
     if onesided:
         tmp = ROOT.gStyle.GetErrorX()
-        ROOT.gStyle.SetErrorX(1)
+        ROOT.gStyle.SetErrorX(0.0001)
+        #ROOT.gStyle.SetErrorX(1)
         prof.Draw("psame")
         ROOT.gStyle.SetErrorX(tmp)
+        ROOT.gStyle.SetErrorX(0.0001)
     else:
         prof.Draw("same")
     # latex.Draw()
@@ -898,7 +958,7 @@ def dx_ij_vs_theta(h2, fabs, pdf, dxrange, tag=None, onesided=True):
         latex2.Draw()
 
     save(canv, pdf, "%s_%s.pdf" % (name, "prof"))
-    
+
     # ---- projection ----
     rootlogon()
     ROOT.gStyle.SetPadLeftMargin(0.18)
@@ -910,7 +970,9 @@ def dx_ij_vs_theta(h2, fabs, pdf, dxrange, tag=None, onesided=True):
     proj.GetXaxis().SetRangeUser(-dxrange, dxrange)
     #rms = proj.GetRMS()
     #proj.GetXaxis().SetRangeUser(-5, 5)
-    proj.GetYaxis().SetTitle("Clusters")
+    proj.Rebin(2)
+    proj.GetYaxis().SetTitle("Events / %2.2f mm"%(proj.GetBinWidth(1)))
+    #proj.GetYaxis().SetTitle("Clusters")
     proj.GetYaxis().SetTitleOffset(2.0)
     canv = ROOT.TCanvas(name+"proj", name+"proj", 800, 800)
     canv.Draw()
@@ -920,12 +982,12 @@ def dx_ij_vs_theta(h2, fabs, pdf, dxrange, tag=None, onesided=True):
         latex2.Draw()
 
     latexRMS1 = ROOT.TLatex(0.23, 0.70, "RMS = %.2f mm" % (proj.GetRMS()))
-    latexRMS2 = ROOT.TLatex(0.23, 0.65, "from %i#minus%i" % (-dxrange, dxrange))
+    #latexRMS2 = ROOT.TLatex(0.23, 0.65, "from %i#minus%i" % (-dxrange, dxrange))
     for latexRMS in [latexRMS1]:
         latexRMS.SetTextSize(0.040)
         latexRMS.SetTextFont(42)
         latexRMS.SetNDC()
-        # latexRMS.Draw()
+        latexRMS.Draw()
 
     save(canv, pdf, "%s_%s.pdf" % (name, "proj"))
 
@@ -951,15 +1013,16 @@ def residuals_1D(h1, tag, pdf, rms=False):
     h1.SetFillColor(ROOT.kRed-7 if not "bary" in tag else ROOT.kViolet-9)
     # rms = h1.GetRMS()
     ROOT.gStyle.SetPadBottomMargin(0.14)
+    h1.Rebin(4)
     h1.GetXaxis().SetTitle(xaxis)
-    h1.GetYaxis().SetTitle("Tracks")
+    h1.GetYaxis().SetTitle("Events / %2.2f" %(h1.GetBinWidth(1)))
     h1.GetYaxis().SetTitleOffset(1.8)
     h1.GetXaxis().SetTitleOffset(1.3)
     canv = ROOT.TCanvas(tag, tag, 800, 800)
     canv.Draw()
     h1.Draw("histsame")
 
-    latexRMS = ROOT.TLatex(0.23, 0.95, "RMS = %.2f" % (h1.GetRMS()))
+    latexRMS = ROOT.TLatex(0.23, 0.95, "RMS = %.2f mm" % (h1.GetRMS()))
     latexRMS.SetTextSize(0.040)
     latexRMS.SetTextFont(42)
     latexRMS.SetNDC()
@@ -1177,6 +1240,7 @@ def residuals_N1(h2, board_a, board_b, pdf, art=True, tag=None, tpc=False, norm=
     gausses = [gaus_a, gaus_b]
 
     for (residual, gaus) in zip(residuals, gausses):
+        residual.Rebin(2)
         board  = board_a if residual==residual_a else board_b
         offset = 0       if residual==residual_a else 1
         style(residual)
@@ -1186,7 +1250,8 @@ def residuals_N1(h2, board_a, board_b, pdf, art=True, tag=None, tpc=False, norm=
             det = "x_{#muTPC}"
         else:
             det = "x_{cluster}"
-        residual.GetYaxis().SetTitle("Tracks with #geq6 clusters")
+        residual.GetYaxis().SetTitle("Events / %2.2f" % (residual.GetXaxis().GetBinWidth(1)) )
+        #residual.GetYaxis().SetTitle("Tracks with #geq6 clusters")
         residual.GetXaxis().SetTitle("%s #minus x_{track, proj.} [mm]" % (det))
         if norm:
             title = residual.GetXaxis().GetTitle()
@@ -1195,7 +1260,11 @@ def residuals_N1(h2, board_a, board_b, pdf, art=True, tag=None, tpc=False, norm=
             title = "(%s)" % (title)
             title = title + " / #sigma_{bary.}"
             residual.GetXaxis().SetTitle(title)
-        residual.SetLineWidth(2)
+        residual.SetLineWidth(3)
+        residual.SetMarkerStyle(8)
+        residual.SetMarkerSize(0.8)
+        residual.SetMarkerColor(colors[board])
+        #residual.SetLineWidth(2)
         residual.SetLineColor(ROOT.kBlack)
         mean = residual.GetMean()
         rms  = residual.GetRMS()
@@ -1207,7 +1276,7 @@ def residuals_N1(h2, board_a, board_b, pdf, art=True, tag=None, tpc=False, norm=
             residual.GetXaxis().SetRangeUser(-2.4, 2.4)
         gaus.SetRange(mean-0.3, mean+0.3)
         residual.Fit(gaus, "QRNM")
-        gaus.SetLineWidth(3)
+        gaus.SetLineWidth(4)
         gaus.SetLineColor(colors[board])
         sigma = gaus.GetParameter(2)
         bo   = ROOT.TLatex(0.24, 0.70-0.06*offset, "Board %i" % (board))

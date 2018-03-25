@@ -35,7 +35,7 @@ public:
 
   double Charge() const;
   double Time() const;
-  double DriftTime(double T) const;
+  double DriftTime(double T, int recipe) const;
   double DeltaBC() const;
   double TDOGain() const;
   double TDOPed() const;
@@ -244,8 +244,13 @@ inline double MMHit::PDOPed() const {
   return m_PDO_ped;
 }
 
-inline double MMHit::DriftTime(double T) const {
-  return T - 25*DeltaBC() - Time();
+inline double MMHit::DriftTime(double T, int recipe) const {
+  if (SuspiciousBCID() != 1 or recipe != 2) {
+    return T - 25*DeltaBC() - Time();
+  }
+  else {
+    return T - 25* (DeltaBC() + 0.5) - Time();
+  }
 }
 
 inline double MMHit::DeltaBC() const {
