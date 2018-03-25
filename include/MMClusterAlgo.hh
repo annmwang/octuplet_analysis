@@ -86,10 +86,6 @@ inline bool MMClusterAlgo::IsGoodHit(const MMHit& hit){
   if(hit.Charge() < 0)
     return false;
 
-  // via oct_anaplus.C
-  if(hit.TDOGain() < 1 || hit.TDOGain() > 2 || fabs(hit.TDOPed()) > 40)
-    return false;
-
   // BCID
   if(hit.TrigBCID() < 80)
     return false;
