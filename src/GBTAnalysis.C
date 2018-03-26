@@ -748,25 +748,7 @@ int main(int argc, char* argv[]){
     // set tbegin, tend
 
     // Set delta scintillator 
-    int dB;
-    if (DATA->RunNum == 3551){
-      dB = 867;
-    }
-    else if (DATA->RunNum == 3522){
-      dB = 1944;
-    }
-    else if (DATA->RunNum == 3530){
-      dB = 1160;
-    }
-    else if (DATA->RunNum == 3528){
-      dB = 1846;
-      //      dB = 2250;
-    }
-    else if (DATA->RunNum == 3527){
-      dB = 1042;
-    }
-    if (debug)
-      cout << "Assumed constant: " << dB << endl;
+    int dB = tp_EventTracks.FetchSciOffset(DATA->RunNum);
 
     // book histograms for MM hits
     int Nboard = DATA->mm_EventHits.GetNBoards();
@@ -870,14 +852,14 @@ int main(int argc, char* argv[]){
     int maxMatch = bestTrack.NMatch();
 
     //------------------------------------------------//
-    // CUT: if vmm3, board 118 exists, skip
-//     bool badvmm = false;
-//     for (auto art: bestTrack){
-//       if (art->MMFE8Index()==0 && art->VMM()==3)
-//         badvmm = true;
-//     }
-//     if (badvmm)
-//       continue;
+    // CUT: if vmm3, board 118 exists, skip for Runs 3525-3539
+    bool badvmm = false;
+    for (auto art: bestTrack){
+      if (art->MMFE8Index()==0 && art->VMM()==3)
+        badvmm = true;
+    }
+    if (badvmm && DATA->RunNum >= 3525 && DATA->RunNum <= 3539)
+      continue;
     //------------------------------------------------//
 
     //------------------------------------------------//
@@ -885,7 +867,6 @@ int main(int argc, char* argv[]){
     if (maxMatch < 1)
       continue;
     //------------------------------------------------//
-
     
     //------------------------------------------------//
     // CUT: get rid of error flag cases
