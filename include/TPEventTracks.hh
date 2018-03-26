@@ -152,6 +152,10 @@ inline int TPEventTracks::SciOffset() {
 }
 
 inline int TPEventTracks::FetchSciOffset(int run) {
+  if (run == 3522) return 1944;             
+  if (run == 3527) return 1042;
+  if (run == 3528) return 1846;
+  if (run == 3530) return 1160;
   if (run == 3551) return  871;
   if (run == 3552) return 1767;
   if (run == 3553) return 2229;
