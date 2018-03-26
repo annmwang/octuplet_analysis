@@ -17,7 +17,7 @@ CC_FILES := $(wildcard src/*.C)
 HH_FILES := $(wildcard include/*.hh) 
 OBJ_FILES := $(addprefix $(OUTOBJ),$(notdir $(CC_FILES:.C=.o)))
 
-all: RunMMAnalysisTemplate.x RunMMAnalysis.x RunMMAnalysis_v2.x MakeClusterTree.x RunAlignment.x HitEffAnalysis.x ResolutionAnalysis.x TPAnalysis.x GBTAnalysis.x TPCAnalysis.x
+all: RunMMAnalysisTemplate.x RunMMAnalysis.x RunMMAnalysis_v2.x MakeClusterTree.x RunAlignment.x HitEffAnalysis.x ResolutionAnalysis.x TPAnalysis.x GBTAnalysis.x TPCAnalysis.x StereoRoadAnalysis.x
 
 RunMMAnalysisTemplate.x:  $(SRCDIR)RunMMAnalysisTemplate.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o RunMMAnalysisTemplate.x $(GLIBS) $ $<
@@ -46,6 +46,10 @@ TPCAnalysis.x:  $(SRCDIR)TPCAnalysis.C $(HH_FILES)
 TPAnalysis.x:  $(SRCDIR)TPAnalysis.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o TPAnalysis.x $(GLIBS) $ $<
 	touch TPAnalysis.x
+
+StereoRoadAnalysis.x:  $(SRCDIR)StereoRoadAnalysis.C $(HH_FILES)
+	$(CXX) $(CXXFLAGS) -o StereoRoadAnalysis.x $(GLIBS) $ $<
+	touch StereoRoadAnalysis.x
 
 GBTAnalysis.x:  $(SRCDIR)GBTAnalysis.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o GBTAnalysis.x $(GLIBS) $ $<

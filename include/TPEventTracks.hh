@@ -34,6 +34,7 @@ public:
 
   double SciBCID();
   int SciOffset();
+  int FetchSciOffset(int run);
 
   TPTrack const& Get(int itrack) const;
   TPTrack const& operator [] (int itrack) const;
@@ -148,6 +149,17 @@ inline double TPEventTracks::SciBCID() {
 
 inline int TPEventTracks::SciOffset() {
   return m_offset;
+}
+
+inline int TPEventTracks::FetchSciOffset(int run) {
+  if (run == 3551) return  872;
+  if (run == 3552) return 1768;
+  if (run == 3553) return 2230;
+  if (run == 3554) return  246;
+  if (run == 3555) return 1225;
+  if (run == 3556) return 2047;
+  cout << "Cant fetch SciOffset for Run " << run << endl;
+  return 0;
 }
 
 inline TPTrack const& TPEventTracks::Get(int itrack) const {
