@@ -738,8 +738,8 @@ int main(int argc, char* argv[]){
     TDOCalibrator->Calibrate(DATA->mm_EventHits);
   
     // initialize PACMAN info for this event
-    PACMAN->SetEventTrigBCID(DATA->mm_trig_BCID);
-    PACMAN->SetEventPadTime(0); // add this
+    //PACMAN->SetEventTrigBCID(DATA->mm_trig_BCID);
+    //PACMAN->SetEventPadTime(0); // add this
 
     
     // initialize cluster making
@@ -749,7 +749,10 @@ int main(int argc, char* argv[]){
 
     // Set delta scintillator 
     int dB;
-    if (DATA->RunNum == 3522){
+    if (DATA->RunNum == 3551){
+      dB = 867;
+    }
+    else if (DATA->RunNum == 3522){
       dB = 1944;
     }
     else if (DATA->RunNum == 3530){
@@ -868,13 +871,13 @@ int main(int argc, char* argv[]){
 
     //------------------------------------------------//
     // CUT: if vmm3, board 118 exists, skip
-    bool badvmm = false;
-    for (auto art: bestTrack){
-      if (art->MMFE8Index()==0 && art->VMM()==3)
-        badvmm = true;
-    }
-    if (badvmm)
-      continue;
+//     bool badvmm = false;
+//     for (auto art: bestTrack){
+//       if (art->MMFE8Index()==0 && art->VMM()==3)
+//         badvmm = true;
+//     }
+//     if (badvmm)
+//       continue;
     //------------------------------------------------//
 
     //------------------------------------------------//

@@ -51,6 +51,10 @@ StereoRoadAnalysis.x:  $(SRCDIR)StereoRoadAnalysis.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o StereoRoadAnalysis.x $(GLIBS) $ $<
 	touch StereoRoadAnalysis.x
 
+uvrTPAnalysis.x:  $(SRCDIR)uvrTPAnalysis.C $(HH_FILES)
+	$(CXX) $(CXXFLAGS) -o uvrTPAnalysis.x $(GLIBS) $ $<
+	touch uvrTPAnalysis.x
+
 GBTAnalysis.x:  $(SRCDIR)GBTAnalysis.C $(HH_FILES)
 	$(CXX) $(CXXFLAGS) -o GBTAnalysis.x $(GLIBS) $ $<
 	touch GBTAnalysis.x
