@@ -748,7 +748,7 @@ int main(int argc, char* argv[]){
     // set tbegin, tend
 
     // Set delta scintillator 
-    int dB = tp_EventTracks.FetchSciOffset(DATA->RunNum);
+    int dB = DATA->tp_EventTracks.FetchSciOffset(DATA->RunNum);
 
     // book histograms for MM hits
     int Nboard = DATA->mm_EventHits.GetNBoards();
