@@ -194,6 +194,9 @@ int main(int argc, char* argv[]){
     name = Form("track_N1_theta_x_vs_art_%i", ibo);
     h2[name.Data()] = new TH2D(name, ";x theta;x_{ART} - x_{track, proj.};Tracks", 100, -35, 35, 200, -5.0, 5.0);
 
+    name = Form("track_N1_theta_x_vs_art_vetodray_%i", ibo);
+    h2[name.Data()] = new TH2D(name, ";x theta;x_{ART} - x_{track, proj.};Tracks", 100, -35, 35, 200, -5.0, 5.0);
+
     name = Form("track_N1_theta_x_vs_utpc_%i", ibo);
     h2[name.Data()] = new TH2D(name, ";x theta;x_{utpc} - x_{track, proj.};Tracks", 100, -35, 35, 200, -5.0, 5.0);
   }
@@ -218,6 +221,7 @@ int main(int argc, char* argv[]){
   }
 
   h2["clus_vs_board"]          = new TH2D("clus_vs_board",          ";MMFE number;clusters;Events",            8, -0.5, 7.5, 32, -0.5, 31.5);
+  h1["clus"]                   = new TH1D("clus",                   ";clusters;Events",                        50, -0.5, 49.5);
   h2["hits_vs_board"]          = new TH2D("hits_vs_board",          ";MMFE number;strips;Events",              8, -0.5, 7.5, 32, -0.5, 31.5);
   h2["dups_vs_board"]          = new TH2D("dups_vs_board",          ";MMFE number;duplicate strips;Events",    8, -0.5, 7.5, 32, -0.5, 31.5);
   h2["hits_per_clus_vs_board"] = new TH2D("hits_per_clus_vs_board", ";MMFE number;hits in a cluster;Clusters", 8, -0.5, 7.5, 13, -0.5, 12.5);
@@ -245,8 +249,10 @@ int main(int argc, char* argv[]){
   h1["trig_dbc_pairs"]      = new TH1D("trig_dbc_pairs",      ";#DeltaBCID, pairs;",                     23, -11.5, 11.5);
   h2["trig_art_vs_evt"]     = new TH2D("trig_art_vs_evt",     ";MM Event Number;N(ART in trigger)",      1000, -100, 1000, 10, -0.5, 9.5);
 
-  h2["track_angle_N_denom"] = new TH2D("track_angle_N_denom", ";#theta#lower[0.5]{xz} [degrees];#theta#lower[0.5]{yz} [degrees];Tracks", 300, -20, 20, 200, -150, 150);
-  h2["track_angle_N_numer"] = new TH2D("track_angle_N_numer", ";#theta#lower[0.5]{xz} [degrees];#theta#lower[0.5]{yz} [degrees];Tracks", 300, -20, 20, 200, -150, 150);
+  h2["track_angle_N_denom"] = new TH2D("track_angle_N_denom", ";#theta#lower[0.5]{xz} [degrees];#theta#lower[0.5]{yz} [degrees];Tracks", 450, -30, 30, 200, -150, 150);
+  h2["track_angle_N_numer"] = new TH2D("track_angle_N_numer", ";#theta#lower[0.5]{xz} [degrees];#theta#lower[0.5]{yz} [degrees];Tracks", 450, -30, 30, 200, -150, 150);
+  h2["track_angle_N_denom_vetodray"] = new TH2D("track_angle_N_denom_vetodray", ";#theta#lower[0.5]{xz} [degrees];#theta#lower[0.5]{yz} [degrees];Tracks", 450, -30, 30, 200, -150, 150);
+  h2["track_angle_N_numer_vetodray"] = new TH2D("track_angle_N_numer_vetodray", ";#theta#lower[0.5]{xz} [degrees];#theta#lower[0.5]{yz} [degrees];Tracks", 450, -30, 30, 200, -150, 150);
   h2["track_pos_N_denom"]   = new TH2D("track_pos_N_denom",   ";xpos [mm];ypos [mm];Tracks", 200, -10, 220, 200, -100, 300);
   h2["track_pos_N_numer"]   = new TH2D("track_pos_N_numer",   ";xpos [mm];ypos [mm];Tracks", 200, -10, 220, 200, -100, 300);
 
@@ -346,9 +352,6 @@ int main(int argc, char* argv[]){
       clus_list.Reset();
     clusters_perboard.clear();
     
-    //if (evt > 50000)
-    //  break;
-
     // calibrate
     PDOCalibrator->Calibrate(DATA->mm_EventHits);
     TDOCalibrator->Calibrate(DATA->mm_EventHits);
@@ -363,7 +366,7 @@ int main(int argc, char* argv[]){
       MMClusterList board_clusters = PACMAN->Cluster(DATA->mm_EventHits[i]);
       if(board_clusters.GetNCluster() > 0)
         clusters_perboard.push_back(board_clusters);
-
+ 
       // strips: PDO vs channel
       // its slow. only run if hella desired.
       for(ich = 0; ich < DATA->mm_EventHits[i].GetNHits(); ich++){
@@ -424,7 +427,9 @@ int main(int argc, char* argv[]){
     for (auto clus_list: clusters_perboard)
       for (auto clus: clus_list)
         clusters_all.AddCluster(*clus);
-    
+
+    h1["clus"]->Fill(clusters_all.size());
+
     // fit it!
     for (auto botpair: DATA->sc_EventHits.GetBotPair()){
       clusters_road.Reset();
@@ -562,13 +567,24 @@ int main(int argc, char* argv[]){
     //if (!triggerableX(clusters_road, 8, 4))
     //  continue;
 
-    // int dB = 865;
-    int dB = 0;
+    int dB = DATA->tp_EventTracks.FetchSciOffset(DATA->RunNum);
     DATA->tp_EventTracks.SetSciBCID(DATA->sc_EventHits.TPBCID(), DATA->sc_EventHits.TPph());
     DATA->tp_EventTracks.SetSciOffset(dB);
 
-    // TPTrack* neo = DATA->tp_EventTracks.Highlander(clusters_road, true, 10);
-    TPTrack* neo = DATA->tp_EventTracks.Highlander(clusters_road, true, 10000);
+    // count # clusters per board                                                                                                                 
+    vector <int> clus_boards;
+    bool poss_dray = false;
+    for (auto clus : clusters_all){
+      int m_ib = clus[0].MMFE8Index();
+      if (std::find(clus_boards.begin(),clus_boards.end(),m_ib) == clus_boards.end()){
+        clus_boards.push_back(m_ib);
+      }
+      else
+        poss_dray = true;
+    }
+
+    TPTrack* neo = DATA->tp_EventTracks.Highlander(clusters_road, true, 10);
+    //TPTrack* neo = DATA->tp_EventTracks.Highlander(clusters_road, true, 10000);
     if (neo)
       h1["trig_dbc_scint"]->Fill(DATA->tp_EventTracks.deltaBCID(neo->BCID()));
 
@@ -577,8 +593,12 @@ int main(int argc, char* argv[]){
     h2["track_angle_N_denom"]->Fill(theta(track.SlopeX()), theta(track.SlopeY()));
     h2["track_pos_N_denom"]  ->Fill(track.PointZ(z_middle).X(), track.PointZ(z_middle).Y());
 
+    if (!poss_dray) {
+      h2["track_angle_N_denom_vetodray"]->Fill(theta(track.SlopeX()), theta(track.SlopeY()));
+    }
     // tracks without friends
-    if (false && !neo && std::fabs(theta(track.SlopeX())) < 1 && track.IsTrigCand(4, 4)){
+    if (false && !neo && std::fabs(theta(track.SlopeX())) < 1. && track.IsTrigCand(3, 3) && poss_dray){
+      //std::cout << "event had no tp track, but had possible delta ray" << std::endl;
       //std::cout << Form("%7i :: %i %i", DATA->mm_EventNum, DATA->mm_EventHits.Time_S(), DATA->mm_EventHits.Time_NS()) << std::endl;
       fout->cd("event_displays");
       can = Plot_Track2D(Form("track2D_%05d_MMall", DATA->mm_EventNum), track, *GEOMETRY, &clusters_all);
@@ -596,6 +616,11 @@ int main(int argc, char* argv[]){
       continue;
     h2["track_angle_N_numer"]->Fill(theta(track.SlopeX()), theta(track.SlopeY()));
     h2["track_pos_N_numer"]  ->Fill(track.PointZ(z_middle).X(), track.PointZ(z_middle).Y());
+
+    if (!poss_dray){
+      h2["track_angle_N_numer_vetodray"]->Fill(theta(track.SlopeX()), theta(track.SlopeY()));
+    }
+
 
     // residuals
     // ------------------------------
@@ -618,8 +643,10 @@ int main(int argc, char* argv[]){
         h2["track_N1_board_vs_art"]                ->Fill(ibo,                   residual);
         h2[Form("track_N1_theta_x_vs_art_%i", ibo)]->Fill(theta(track.SlopeX()), residual);
 
-        // event displays
-        if (false and std::fabs(residual) > 15){
+        if (!poss_dray)
+          h2[Form("track_N1_theta_x_vs_art_vetodray_%i", ibo)]->Fill(theta(track.SlopeX()), residual);
+
+        if (fabs(residual) > 3. and !poss_dray and (ibo < 2 || ibo > 5) ){
           clusters_tp.Reset();
           track_tp.Reset();
           for (auto art: *neo)
