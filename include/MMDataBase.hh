@@ -47,6 +47,7 @@ public :
    vector<int>     *mm_FIFOcount;
    Int_t           tp_n;
    vector<int>     *tp_EventNum;
+   vector<int>     *tp_EventNumGBT;
    vector<int>     *tp_cntr;
    vector<int>     *tp_Time_sec;
    vector<int>     *tp_Time_nsec;
@@ -88,6 +89,7 @@ public :
    TBranch        *b_mm_FIFOcount;   //!
    TBranch        *b_tp_n;   //!
    TBranch        *b_tp_EventNum;   //!
+   TBranch        *b_tp_EventNumGBT;   //!
    TBranch        *b_tp_cntr;   //!
    TBranch        *b_tp_Time_sec;   //!
    TBranch        *b_tp_Time_nsec;   //!
@@ -178,6 +180,7 @@ inline void MMDataBase::Init(TTree *tree)
    mm_MMFE8 = 0;
    mm_FIFOcount = 0;
    tp_EventNum = 0;
+   tp_EventNumGBT = 0;
    tp_cntr = 0;
    tp_Time_sec = 0;
    tp_Time_nsec = 0;
@@ -217,6 +220,7 @@ inline void MMDataBase::Init(TTree *tree)
    fChain->SetBranchAddress("mm_FIFOcount", &mm_FIFOcount, &b_mm_FIFOcount);
    fChain->SetBranchAddress("tp_n", &tp_n, &b_tp_n);
    fChain->SetBranchAddress("tp_EventNum", &tp_EventNum, &b_tp_EventNum);
+   fChain->SetBranchAddress("tp_EventNumGBT", &tp_EventNumGBT, &b_tp_EventNumGBT);
    fChain->SetBranchAddress("tp_cntr", &tp_cntr, &b_tp_cntr);
    fChain->SetBranchAddress("tp_Time_sec", &tp_Time_sec, &b_tp_Time_sec);
    fChain->SetBranchAddress("tp_Time_nsec", &tp_Time_nsec, &b_tp_Time_nsec);
