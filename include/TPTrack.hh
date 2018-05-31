@@ -35,12 +35,14 @@ public:
   void SetBCID(int bcid);
   void SetTime(int time, int time_ns);    
   void SetEventNum(int evt);    
+  void SetEventNumGBT(int evt_gbt);
   void SetNMatch(int nmatch);
 
   double MxLocal() const;
   int BCID() const;
   double Time() const;
   int EventNum() const;
+  int EventNumGBT() const;
   int NMatch() const;
 
   int NX();
@@ -72,6 +74,7 @@ private:
   int m_BCID;
   double m_time;
   int m_evt;
+  int m_evt_gbt;
   int m_nmatch;
   std::vector<int> m_bcids;
   std::vector<int> m_bcids_a;
@@ -89,6 +92,7 @@ inline TPTrack::TPTrack() {
   m_BCID = -1;
   m_time = -1;
   m_evt = -1;
+  m_evt_gbt = -1;
   m_nmatch = -1;
 }
 
@@ -97,6 +101,7 @@ inline TPTrack::TPTrack(const TPHit& hit){
   m_BCID = -1;
   m_time = -1;
   m_evt = -1;
+  m_evt_gbt = -1;
   m_nmatch = -1;
   AddHit(hit);
 }
@@ -106,6 +111,7 @@ inline TPTrack::TPTrack(const TPTrack& track){
   m_BCID = track.BCID();
   m_time = track.Time();
   m_evt = track.EventNum();
+  m_evt_gbt = track.EventNumGBT();
   m_nmatch = track.NMatch();
   AddTrack(track);
 }
@@ -177,6 +183,10 @@ inline void TPTrack::SetEventNum(int evt){
   m_evt = evt;
 }
 
+inline void TPTrack::SetEventNumGBT(int evt_gbt){
+  m_evt_gbt = evt_gbt;
+}
+
 inline void TPTrack::SetNMatch(int nmatch){
   m_nmatch = nmatch;
 }
@@ -203,6 +213,10 @@ inline double TPTrack::Time() const{
 
 inline int TPTrack::EventNum() const{
   return m_evt;
+}
+
+inline int TPTrack::EventNumGBT() const{
+  return m_evt_gbt;
 }
 
 inline int TPTrack::NMatch() const{

@@ -68,6 +68,7 @@ int main(int argc, char* argv[]){
   bool b_tdo   = false;
   bool b_align = false;
   bool b_paolo = false;
+  bool b_nate  = false;
   for (int i=1;i<argc-1;i++){
     if (strncmp(argv[i],"-i",2)==0){
       sscanf(argv[i+1],"%s", inputFileName);
@@ -91,6 +92,9 @@ int main(int argc, char* argv[]){
     }
     if (strncmp(argv[i+1],"-g",2)==0){
       b_paolo = true;
+    }
+    if (strncmp(argv[i+1],"-n",2)==0){
+      b_nate = true;
     }
   }
 
@@ -318,7 +322,8 @@ int main(int argc, char* argv[]){
     DATA->GetEntry(evt);
     if(evt % 1000 == 0) {    
       elapsed_seconds = (std::chrono::system_clock::now() - time_start);
-      progress(elapsed_seconds.count(), evt, Nevent);
+      if (!b_nate)
+        progress(elapsed_seconds.count(), evt, Nevent);
     }
     if(GEOMETRY->RunNumber() < 0)
       GEOMETRY->SetRunNumber(DATA->RunNum);
@@ -621,6 +626,20 @@ int main(int argc, char* argv[]){
       h2["track_angle_N_numer_vetodray"]->Fill(theta(track.SlopeX()), theta(track.SlopeY()));
     }
 
+    // event dump for nathan!
+    if (b_nate){
+      if (neo->EventNumGBT() != -1)
+        {
+          std::cout << Form("ALL %8d ", neo->EventNumGBT());
+          for (auto tr: DATA->tp_EventTracks)
+            std::cout << Form("%8d ", tr->EventNum());
+          std::cout << std::endl;
+          for (auto tr: DATA->tp_EventTracks)
+            std::cout << Form("FIT %8d ", tr->EventNum()) << std::endl;
+          std::cout << Form("GBT %8d ", neo->EventNumGBT()) << std::endl;
+          std::cout << std::endl;
+        }
+    }
 
     // residuals
     // ------------------------------
